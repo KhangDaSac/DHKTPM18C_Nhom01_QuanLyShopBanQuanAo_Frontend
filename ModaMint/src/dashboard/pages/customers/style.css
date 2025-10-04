@@ -1,0 +1,72 @@
+/* Custom Table Styles - Override Ant Design */
+.custom-customers-table .ant-table-container {
+    border: none !important;
+}
+
+.custom-customers-table .ant-table {
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+}
+
+.custom-customers-table .ant-table-thead>tr>th {
+    vertical-align: middle !important;
+    text-align: center !important;
+    font-weight: 600 !important;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    background-color: #fafafa !important;
+    height: 48px !important;
+    position: relative !important;
+}
+
+.custom-customers-table .ant-table-tbody>tr>td {
+    vertical-align: middle !important;
+    padding: 12px 16px !important;
+    height: 76px !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    position: relative !important;
+}
+
+/* Remove any spacing between header and body */
+.custom-customers-table .ant-table-thead {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+.custom-customers-table .ant-table-tbody {
+    position: relative !important;
+    z-index: 0 !important;
+    margin-top: -1px !important;
+}
+
+.custom-customers-table .ant-table-tbody>tr:first-child>td {
+    border-top: none !important;
+}
+
+/* Selection column */
+.custom-customers-table .ant-table-thead>tr>th.ant-table-selection-column {
+    padding: 12px 8px !important;
+    width: 50px !important;
+    text-align: center !important;
+    background-color: #fafafa !important;
+}
+
+.custom-customers-table .ant-table-tbody>tr>td.ant-table-selection-column {
+    padding: 12px 8px !important;
+    width: 50px !important;
+    text-align: center !important;
+}
+
+/* Hover effect */
+.custom-customers-table .ant-table-row:hover {
+    background-color: #f5f5f5 !important;
+}
+
+/* First column padding adjustment */
+.custom-customers-table .ant-table-thead>tr>th:first-child {
+    padding-left: 8px !important;
+}
+
+.custom-customers-table .ant-table-tbody>tr>td:first-child {
+    padding-left: 8px !important;
+}

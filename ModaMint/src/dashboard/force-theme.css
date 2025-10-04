@@ -1,0 +1,43 @@
+/* Force theme override - Maximum specificity approach */
+
+/* Theme variables injection */
+:root {
+    --theme-primary: #ff6347;
+    --theme-primary-hover: #ff7f50;
+    --theme-sidebar: linear-gradient(135deg, #ff6347 0%, #ff7f50 100%);
+}
+
+/* Force apply theme variables with maximum specificity */
+html body div.ant-layout div.ant-layout div[role="main"] .text-primary,
+html body div.ant-layout .ant-typography.text-primary,
+html body .text-primary {
+    color: var(--theme-primary) !important;
+}
+
+html body div.ant-layout .ant-btn.btn-primary,
+html body .btn-primary {
+    background-color: var(--theme-primary) !important;
+    border-color: var(--theme-primary) !important;
+    color: white !important;
+}
+
+html body div.ant-layout .ant-btn.btn-primary:hover,
+html body .btn-primary:hover {
+    background-color: var(--theme-primary-hover) !important;
+    border-color: var(--theme-primary-hover) !important;
+}
+
+html body div.ant-layout div.modamint-sidebar.bg-primary .ant-layout-sider,
+html body .modamint-sidebar.bg-primary .ant-layout-sider {
+    background: var(--theme-sidebar) !important;
+}
+
+/* Atomic approach - force by ID if needed */
+#root .text-primary {
+    color: var(--theme-primary) !important;
+}
+
+#root .btn-primary {
+    background-color: var(--theme-primary) !important;
+    border-color: var(--theme-primary) !important;
+}

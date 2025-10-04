@@ -1,0 +1,52 @@
+/* Override DaisyUI theme styles for specific components */
+
+/* Force theme colors on Ant Design components */
+[data-theme] .text-primary,
+[data-theme] .ant-typography.text-primary {
+    color: hsl(var(--p)) !important;
+}
+
+[data-theme] .btn-primary,
+[data-theme] .ant-btn.btn-primary {
+    background-color: hsl(var(--p)) !important;
+    border-color: hsl(var(--p)) !important;
+    color: hsl(var(--pc)) !important;
+}
+
+[data-theme] .btn-primary:hover,
+[data-theme] .ant-btn.btn-primary:hover {
+    background-color: hsl(var(--pf, var(--p))) !important;
+    border-color: hsl(var(--pf, var(--p))) !important;
+}
+
+[data-theme] .bg-primary {
+    background-color: hsl(var(--p)) !important;
+}
+
+/* Sidebar themed */
+[data-theme] .modamint-sidebar.bg-primary .ant-layout-sider {
+    background: hsl(var(--p)) !important;
+}
+
+/* Reset for modamint theme */
+[data-theme="modamint"] .text-primary,
+[data-theme="modamint"] .ant-typography.text-primary {
+    color: #ff6347 !important;
+}
+
+[data-theme="modamint"] .btn-primary,
+[data-theme="modamint"] .ant-btn.btn-primary {
+    background-color: #ff6347 !important;
+    border-color: #ff6347 !important;
+    color: white !important;
+}
+
+[data-theme="modamint"] .btn-primary:hover,
+[data-theme="modamint"] .ant-btn.btn-primary:hover {
+    background-color: #ff7f50 !important;
+    border-color: #ff7f50 !important;
+}
+
+[data-theme="modamint"] .modamint-sidebar.bg-primary .ant-layout-sider {
+    background: linear-gradient(135deg, #ff6347 0%, #ff7f50 100%) !important;
+}
