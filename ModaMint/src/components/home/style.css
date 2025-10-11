@@ -1,0 +1,84 @@
+.sale-banner-container{
+    position: relative;
+}
+
+.sale-banner-overlay{
+    position: absolute;
+    top: 650px;
+    left: 25%;
+    width: 50%;
+    height: 150px;
+    background-color: rgb(255, 255, 255);
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 10;
+    box-shadow: 5px, 5px, 10px, rgb(165, 165, 165);
+}
+
+.box {
+    width: 80px;
+    height: 80px;
+    background-color: #ff6347;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+/* Category List */
+.category-list{
+    margin: auto;
+    margin-top: 150px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    width: 70%;
+}
+
+/* Carousel Discount */
+.carousel-container {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.carousel-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  color: #ff6347;
+}
+
+.title-line {
+  flex: 1;
+  height: 2px;
+  background: #ff6347;
+  position: relative;
+}
+
+.title-line::before {
+  content: '◆';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.title-line:last-child::before {
+  right: -10px;
+  left: auto;
+}
+
+.carousel-wrapper {
+  display: flex;
+  transition: transform 0.5s ease;
+}
