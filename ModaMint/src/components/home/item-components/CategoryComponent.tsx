@@ -1,12 +1,17 @@
-import './style.css'
+import './style.css';
 
-export const CategoryComponent = () => {
-      return (
-        <div className="category-item">
-          <div className="category-image">
-            <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760199723/image_cate_1_wwqg84.webp" alt="Áo Nữ" />
-          </div>
-          <div className="category-name">Áo Nữ</div>
-        </div>
-      );
-    };
+interface CategoryComponentProps {
+  name: string;
+  image: string;
+}
+
+export const CategoryComponent: React.FC<CategoryComponentProps> = ({ name, image }) => {
+  return (
+    <div className="category-item">
+      <div className="category-image">
+        <img src={image} alt={name} />
+      </div>
+      <div className="category-name">{name}</div>
+    </div>
+  );
+};

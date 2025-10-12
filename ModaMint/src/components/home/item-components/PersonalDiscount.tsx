@@ -8,7 +8,7 @@ interface PersonalDiscountProps {
 }
 export const PersonalDisCount: React.FC<PersonalDiscountProps> = ({ discount, price, buttonText }) => {
     return (
-        <div className="promotion-item">
+        <div className="discount-item">
             <div className="coupon">
                 <div className="discount">{discount}</div>
                 <div className="cashback">Giảm {price}</div>

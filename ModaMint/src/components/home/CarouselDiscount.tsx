@@ -25,11 +25,6 @@ export const CarouselDiscount: React.FC<CarouselDiscountProps> = ({ promotions }
 
     return (
         <div className="carousel-container">
-            <div className="carousel-title">
-                <span className="title-line"></span>
-                <h2>DANH RIÊNG CHO BẠN</h2>
-                <span className="title-line"></span>
-            </div>
             <div className="carousel-wrapper" style={{ transform: `translateX(-${currentIndex * 33.33}%)` }}>
                 {promotions.map((promo) => (
                     <PersonalDisCount key={promo.id} {...promo} />
