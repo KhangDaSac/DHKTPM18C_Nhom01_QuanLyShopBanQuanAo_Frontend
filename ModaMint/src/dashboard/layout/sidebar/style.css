@@ -1,0 +1,81 @@
+/* Custom styles for ModaMint Dashboard Sidebar */
+.ant-menu-inline.ant-menu-root .ant-menu-item {
+    color: white !important;
+}
+
+.ant-menu-inline.ant-menu-root .ant-menu-item:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+.ant-menu-inline.ant-menu-root .ant-menu-item-selected {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+}
+
+.ant-menu-inline.ant-menu-root .ant-menu-item-selected::after {
+    border-right: 3px solid white;
+}
+
+.ant-menu-inline.ant-menu-root .ant-menu-item .ant-menu-item-icon {
+    color: white !important;
+}
+
+.ant-menu-inline.ant-menu-root .ant-menu-item-selected .ant-menu-item-icon {
+    color: white !important;
+}
+
+/* Sidebar theme-aware background */
+.modamint-sidebar.bg-primary .ant-layout-sider {
+    background: hsl(var(--p)) !important;
+}
+
+/* Fallback for modamint theme */
+[data-theme="modamint"] .modamint-sidebar.bg-primary .ant-layout-sider,
+:root .modamint-sidebar.bg-primary .ant-layout-sider {
+    background: linear-gradient(135deg, #ff6347 0%, #ff7f50 100%) !important;
+}
+
+/* Custom hover effects for buttons */
+.modamint-sidebar .ant-btn-text:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+/* Đảm bảo menu item không giữ trạng thái selected khi không đúng route */
+.modamint-sidebar .ant-menu-item:not(.ant-menu-item-selected) {
+    background-color: transparent !important;
+}
+
+/* Reset background cho tất cả menu items khi không selected */
+.modamint-sidebar .ant-menu-item {
+    transition: background-color 0.2s ease !important;
+}
+
+/* Chỉ áp dụng selected style khi thực sự được chọn */
+.modamint-sidebar .ant-menu-item-selected {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    margin: 2px 8px !important;
+}
+
+/* Styling cho logo section khi collapsed */
+.modamint-sidebar .ant-layout-sider-collapsed .ant-avatar {
+    margin-bottom: 4px;
+}
+
+/* Đảm bảo button toggle hiển thị đúng khi collapsed */
+.modamint-sidebar .ant-layout-sider-collapsed .ant-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Smooth transition cho logo */
+.modamint-sidebar .ant-avatar {
+    transition: all 0.2s ease;
+}
+
+.modamint-sidebar .ant-btn {
+    transition: all 0.2s ease;
+}

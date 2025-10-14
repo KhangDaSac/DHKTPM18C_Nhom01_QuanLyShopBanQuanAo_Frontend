@@ -1,0 +1,90 @@
+/* Common status button styles for all tables */
+.status-button-container {
+    padding: 8px 0;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-button {
+    font-weight: bold !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+    min-width: 80px !important;
+}
+
+.status-button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.status-button.active {
+    background-color: #52c41a !important;
+    border-color: #52c41a !important;
+    color: white !important;
+}
+
+.status-button.inactive {
+    background-color: #d9d9d9 !important;
+    border-color: #d9d9d9 !important;
+    color: #666 !important;
+}
+
+.status-button.blocked {
+    background-color: #ff4d4f !important;
+    border-color: #ff4d4f !important;
+    color: white !important;
+}
+
+.status-button.deleted {
+    background-color: #f5222d !important;
+    border-color: #f5222d !important;
+    color: white !important;
+    cursor: not-allowed !important;
+}
+
+/* Status tag for non-clickable states */
+.status-tag-container {
+    padding: 8px 0;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Common table cell styling */
+.table-cell-container {
+    padding: 8px 0;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-cell-container.left {
+    justify-content: flex-start;
+}
+
+.table-cell-container.right {
+    justify-content: flex-end;
+}
+
+/* Animation for status changes */
+@keyframes statusChange {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.status-button.changing {
+    animation: statusChange 0.3s ease;
+}

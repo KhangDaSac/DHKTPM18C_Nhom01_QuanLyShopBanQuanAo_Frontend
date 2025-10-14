@@ -1,0 +1,525 @@
+/* Orders Management - Comprehensive Styles */
+
+/* Layout & Container Styles */
+.orders-container {
+    padding: 20px;
+    background-color: #f0f2f5;
+    min-height: 100vh;
+}
+
+.orders-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.orders-header h1 {
+    color: white !important;
+    margin-bottom: 8px;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.orders-header p {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 0;
+    font-size: 16px;
+}
+
+/* Statistics Cards */
+.stats-grid {
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: #1890ff;
+}
+
+.stat-card .ant-statistic-title {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.stat-card .ant-statistic-content {
+    color: #1890ff;
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.stat-card .stat-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    color: #1890ff;
+    opacity: 0.8;
+}
+
+/* Filter & Search Section */
+.orders-filters {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.filter-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filter-item {
+    min-width: 200px;
+}
+
+.filter-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+}
+
+/* Table Styles */
+.orders-table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.orders-table .ant-table-thead>tr>th {
+    background: #fafafa;
+    font-weight: 600;
+    text-align: center;
+    color: #262626;
+    font-size: 14px;
+    padding: 16px 12px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.orders-table .ant-table-tbody>tr>td {
+    padding: 16px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.orders-table .ant-table-tbody>tr:hover {
+    background-color: #f8f9ff;
+}
+
+/* Order Status Tags */
+.order-status-pending {
+    background: #fff7e6;
+    color: #fa8c16;
+    border: 1px solid #ffd591;
+}
+
+.order-status-confirmed {
+    background: #e6f7ff;
+    color: #1890ff;
+    border: 1px solid #91d5ff;
+}
+
+.order-status-processing {
+    background: #f6ffed;
+    color: #52c41a;
+    border: 1px solid #b7eb8f;
+}
+
+.order-status-shipping {
+    background: #fff1f0;
+    color: #fa541c;
+    border: 1px solid #ffb3a3;
+}
+
+.order-status-delivered {
+    background: #f6ffed;
+    color: #389e0d;
+    border: 1px solid #95de64;
+}
+
+.order-status-cancelled {
+    background: #fff2f0;
+    color: #cf1322;
+    border: 1px solid #ffa39e;
+}
+
+.order-status-returned {
+    background: #f9f0ff;
+    color: #722ed1;
+    border: 1px solid #c3aed6;
+}
+
+/* Payment Status Tags */
+.payment-status-pending {
+    background: #fff7e6;
+    color: #fa8c16;
+    border: 1px solid #ffd591;
+}
+
+.payment-status-paid {
+    background: #f6ffed;
+    color: #52c41a;
+    border: 1px solid #b7eb8f;
+}
+
+.payment-status-failed {
+    background: #fff2f0;
+    color: #cf1322;
+    border: 1px solid #ffa39e;
+}
+
+.payment-status-refunded {
+    background: #f0f5ff;
+    color: #2f54eb;
+    border: 1px solid #adc6ff;
+}
+
+/* Customer Information */
+.customer-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.customer-info .customer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #1890ff, #722ed1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.customer-info .customer-details h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #262626;
+}
+
+.customer-info .customer-details p {
+    margin: 0;
+    font-size: 12px;
+    color: #8c8c8c;
+}
+
+/* Order Items Display */
+.order-items-preview {
+    max-width: 250px;
+}
+
+.item-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.item-preview:last-child {
+    margin-bottom: 0;
+}
+
+.item-image {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 1px solid #f0f0f0;
+}
+
+.item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.item-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: #262626;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-quantity {
+    font-size: 11px;
+    color: #8c8c8c;
+}
+
+.more-items {
+    font-size: 11px;
+    color: #1890ff;
+    font-style: italic;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.action-buttons .ant-btn {
+    border-radius: 6px;
+    font-size: 12px;
+    height: 32px;
+    padding: 0 12px;
+    transition: all 0.3s ease;
+}
+
+.action-buttons .ant-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-view {
+    color: #1890ff;
+    border-color: #1890ff;
+}
+
+.btn-view:hover {
+    background: #1890ff;
+    color: white;
+}
+
+.btn-edit {
+    color: #faad14;
+    border-color: #faad14;
+}
+
+.btn-edit:hover {
+    background: #faad14;
+    color: white;
+}
+
+.btn-print {
+    color: #52c41a;
+    border-color: #52c41a;
+}
+
+.btn-print:hover {
+    background: #52c41a;
+    color: white;
+}
+
+.btn-delete {
+    color: #ff4d4f;
+    border-color: #ff4d4f;
+}
+
+.btn-delete:hover {
+    background: #ff4d4f;
+    color: white;
+}
+
+/* Modal Styles */
+.order-detail-modal .ant-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px 8px 0 0;
+    border-bottom: none;
+}
+
+.order-detail-modal .ant-modal-title {
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.order-detail-modal .ant-modal-close-x {
+    color: white;
+}
+
+.order-detail-modal .ant-modal-body {
+    padding: 24px;
+}
+
+/* Order Timeline */
+.order-timeline {
+    margin: 24px 0;
+}
+
+.order-timeline .ant-steps-item-title {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.order-timeline .ant-steps-item-description {
+    font-size: 12px;
+    color: #8c8c8c;
+}
+
+/* Order Summary */
+.order-summary {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.summary-row:last-child {
+    margin-bottom: 0;
+    padding-top: 12px;
+    border-top: 2px solid #dee2e6;
+    font-weight: bold;
+    font-size: 16px;
+    color: #1890ff;
+}
+
+.summary-label {
+    color: #6c757d;
+}
+
+.summary-value {
+    font-weight: 500;
+    color: #212529;
+}
+
+/* Progress & Status Indicators */
+.progress-container {
+    margin: 16px 0;
+}
+
+.progress-label {
+    font-size: 12px;
+    color: #8c8c8c;
+    margin-bottom: 4px;
+}
+
+/* QR Code Styles */
+.qr-code-container {
+    text-align: center;
+    padding: 20px;
+    background: #fafafa;
+    border-radius: 8px;
+    margin: 16px 0;
+}
+
+/* Shipping Address */
+.shipping-address {
+    background: #f0f8ff;
+    border: 1px solid #d6e7ff;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+}
+
+.address-title {
+    font-weight: 600;
+    color: #1890ff;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.address-details {
+    color: #262626;
+    line-height: 1.6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .orders-container {
+        padding: 12px;
+    }
+
+    .orders-header {
+        padding: 16px;
+        text-align: center;
+    }
+
+    .orders-header h1 {
+        font-size: 24px;
+    }
+
+    .filter-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .filter-item {
+        min-width: 100%;
+    }
+
+    .filter-actions {
+        margin-left: 0;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .customer-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+
+    .order-items-preview {
+        max-width: 100%;
+    }
+
+    .summary-row {
+        font-size: 12px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .orders-container {
+        background: white;
+        padding: 0;
+    }
+
+    .orders-filters,
+    .action-buttons,
+    .ant-pagination {
+        display: none !important;
+    }
+
+    .orders-table {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+
+    .orders-table .ant-table-thead>tr>th {
+        background: #f5f5f5 !important;
+        color: #000 !important;
+    }
+}

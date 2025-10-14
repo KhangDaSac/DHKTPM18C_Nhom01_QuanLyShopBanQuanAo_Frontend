@@ -1,0 +1,248 @@
+/* Styles for Role Management */
+.custom-roles-table .ant-table-thead>tr>th {
+    vertical-align: middle !important;
+    text-align: center !important;
+    font-weight: 600 !important;
+    padding: 8px 16px !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    background-color: #fafafa !important;
+    height: 40px !important;
+}
+
+.custom-roles-table .ant-table-tbody>tr>td {
+    vertical-align: middle !important;
+    padding: 8px 16px !important;
+    height: 60px !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.permission-tree .ant-tree-node-content-wrapper {
+    padding: 2px 4px;
+}
+
+/* Role and User Card Styles */
+.role-card {
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.role-card:hover {
+    border-color: #1890ff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.role-card .ant-card-head {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px 8px 0 0;
+}
+
+.role-card .ant-card-head-title {
+    color: white;
+    font-weight: bold;
+}
+
+/* Permission Badge Styles */
+.permission-badge {
+    background: linear-gradient(45deg, #1890ff, #52c41a);
+    border: none;
+    color: white;
+    font-weight: bold;
+    border-radius: 16px;
+    padding: 4px 12px;
+}
+
+/* User Status Indicators */
+.user-status-online {
+    color: #52c41a;
+}
+
+.user-status-offline {
+    color: #f5222d;
+}
+
+.user-status-away {
+    color: #faad14;
+}
+
+/* Role Permission Tree */
+.permission-tree {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    padding: 8px;
+    background-color: #fafafa;
+}
+
+.permission-tree .ant-tree-node-content-wrapper:hover {
+    background-color: #e6f7ff;
+}
+
+.permission-tree .ant-tree-node-selected .ant-tree-node-content-wrapper {
+    background-color: #bae7ff;
+}
+
+/* Statistics Cards */
+.stats-card {
+    text-align: center;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Role Badge Styles */
+.role-default {
+    background: linear-gradient(45deg, #faad14, #ffc53d);
+    border: none;
+    color: white;
+    font-weight: bold;
+}
+
+.role-admin {
+    background: linear-gradient(45deg, #1890ff, #40a9ff);
+    border: none;
+    color: white;
+    font-weight: bold;
+}
+
+.role-staff {
+    background: linear-gradient(45deg, #52c41a, #73d13d);
+    border: none;
+    color: white;
+    font-weight: bold;
+}
+
+/* Modal Styles */
+.role-modal .ant-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px 8px 0 0;
+}
+
+.role-modal .ant-modal-title {
+    color: white;
+    font-weight: bold;
+}
+
+/* Permission Tree Custom Styles */
+.ant-tree.permission-tree .ant-tree-treenode {
+    padding: 2px 0;
+}
+
+.ant-tree.permission-tree .ant-tree-node-content-wrapper {
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.ant-tree.permission-tree .ant-tree-checkbox {
+    margin-right: 8px;
+}
+
+/* User Avatar Styles */
+.user-avatar-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar-container .ant-avatar {
+    border: 2px solid #1890ff;
+}
+
+/* Action Button Styles */
+.action-buttons {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+.action-buttons .ant-btn {
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.action-buttons .ant-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Search and Filter Styles */
+.filter-section {
+    background: #fafafa;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.filter-section .ant-input-search {
+    border-radius: 20px;
+}
+
+/* Table Responsive Styles */
+@media (max-width: 768px) {
+
+    .custom-roles-table .ant-table-thead>tr>th,
+    .custom-roles-table .ant-table-tbody>tr>td {
+        padding: 4px 8px !important;
+        font-size: 12px;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .user-avatar-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 4px;
+    }
+}
+
+/* Loading and Empty States */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+/* Permission Count Badge */
+.permission-count {
+    background: linear-gradient(45deg, #1890ff, #40a9ff);
+    color: white;
+    font-weight: bold;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 12px;
+}
+
+/* User Count Badge */
+.user-count-badge {
+    background: #52c41a;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}

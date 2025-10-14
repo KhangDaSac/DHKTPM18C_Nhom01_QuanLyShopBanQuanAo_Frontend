@@ -1,0 +1,148 @@
+/* Theme-aware styles for ModaMint Dashboard */
+
+/* Default theme (ModaMint) - fallback values */
+:root {
+    --primary-color: #ff6347;
+    --primary-hover: #ff7f50;
+    --primary-light: rgba(255, 99, 71, 0.1);
+    --primary-border: rgba(255, 99, 71, 0.2);
+}
+
+/* DaisyUI theme integration - Direct class application */
+[data-theme] .theme-title {
+    color: hsl(var(--p)) !important;
+}
+
+[data-theme] .theme-button {
+    background-color: hsl(var(--p)) !important;
+    border-color: hsl(var(--p)) !important;
+    color: hsl(var(--pc)) !important;
+}
+
+[data-theme] .theme-button:hover {
+    background-color: hsl(var(--pf, var(--p))) !important;
+    border-color: hsl(var(--pf, var(--p))) !important;
+}
+
+/* Fallback for modamint theme or when no data-theme */
+:root .theme-title,
+[data-theme="modamint"] .theme-title {
+    color: #ff6347 !important;
+}
+
+:root .theme-button,
+[data-theme="modamint"] .theme-button {
+    background-color: #ff6347 !important;
+    border-color: #ff6347 !important;
+    color: white !important;
+}
+
+:root .theme-button:hover,
+[data-theme="modamint"] .theme-button:hover {
+    background-color: #ff7f50 !important;
+    border-color: #ff7f50 !important;
+}
+
+[data-theme] .theme-text-primary {
+    color: hsl(var(--p)) !important;
+}
+
+[data-theme] .theme-bg-primary {
+    background-color: hsl(var(--p)) !important;
+}
+
+[data-theme] .theme-border-primary {
+    border-color: hsl(var(--p)) !important;
+}
+
+/* Fallbacks */
+:root .theme-text-primary,
+[data-theme="modamint"] .theme-text-primary {
+    color: #ff6347 !important;
+}
+
+:root .theme-bg-primary,
+[data-theme="modamint"] .theme-bg-primary {
+    background-color: #ff6347 !important;
+}
+
+:root .theme-border-primary,
+[data-theme="modamint"] .theme-border-primary {
+    border-color: #ff6347 !important;
+}
+
+/* Sidebar theme integration */
+[data-theme] .modamint-sidebar.theme-aware .ant-layout-sider {
+    background: hsl(var(--p)) !important;
+    background: linear-gradient(135deg, hsl(var(--p)) 0%, hsl(var(--pf, var(--p))) 100%) !important;
+}
+
+/* Fallback sidebar for modamint theme */
+:root .modamint-sidebar.theme-aware .ant-layout-sider,
+[data-theme="modamint"] .modamint-sidebar.theme-aware .ant-layout-sider {
+    background: linear-gradient(135deg, #ff6347 0%, #ff7f50 100%) !important;
+}
+
+/* Menu items theme */
+[data-theme] .theme-aware .ant-menu-inline.ant-menu-root .ant-menu-item {
+    color: white !important;
+}
+
+[data-theme] .theme-aware .ant-menu-inline.ant-menu-root .ant-menu-item:hover {
+    background-color: hsla(var(--p), 0.1) !important;
+    color: white !important;
+}
+
+[data-theme] .theme-aware .ant-menu-inline.ant-menu-root .ant-menu-item-selected {
+    background-color: hsla(var(--p), 0.2) !important;
+    color: white !important;
+}
+
+/* Fallback menu styles */
+:root .theme-aware .ant-menu-inline.ant-menu-root .ant-menu-item,
+[data-theme="modamint"] .theme-aware .ant-menu-inline.ant-menu-root .ant-menu-item {
+    color: white !important;
+}
+
+:root .theme-aware .ant-menu-inline.ant-menu-root .ant-menu-item:hover,
+[data-theme="modamint"] .theme-aware .ant-menu-inline.ant-menu-root .ant-menu-item:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+:root .theme-aware .ant-menu-inline.ant-menu-root .ant-menu-item-selected,
+[data-theme="modamint"] .theme-aware .ant-menu-inline.ant-menu-root .ant-menu-item-selected {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+}
+
+.theme-aware .ant-menu-inline.ant-menu-root .ant-menu-item-selected::after {
+    border-right: 3px solid white;
+}
+
+.theme-aware .ant-menu-inline.ant-menu-root .ant-menu-item .ant-menu-item-icon {
+    color: white !important;
+}
+
+.theme-aware .ant-menu-inline.ant-menu-root .ant-menu-item-selected .ant-menu-item-icon {
+    color: white !important;
+}
+
+/* Card themed borders and titles */
+.theme-card .ant-card-head {
+    border-color: var(--primary-light) !important;
+}
+
+.theme-card .ant-card-head-title {
+    color: var(--primary-color) !important;
+}
+
+/* Statistic themed values */
+.theme-statistic .ant-statistic-content-value {
+    color: var(--primary-color) !important;
+}
+
+/* Badge themed styles */
+.theme-badge.ant-badge-status-success {
+    color: var(--primary-color) !important;
+}
