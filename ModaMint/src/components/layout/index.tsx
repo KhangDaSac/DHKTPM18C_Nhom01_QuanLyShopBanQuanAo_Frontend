@@ -4,6 +4,8 @@ import Header from '../header'
 import Footer from '../footer'
 import FloatingButton from "../floating-button/index"
 
+import Chatbox from '../chatbox';
+
 export default function RootLayout() {
     return (
         <div>
@@ -13,6 +15,7 @@ export default function RootLayout() {
             </main>
             <Footer />
             <FloatingButton />
+            <Chatbox />
         </div>
     )
 }
