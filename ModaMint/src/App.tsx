@@ -14,6 +14,7 @@ import RegisterPage from './pages/register';
 import StoresPage from "./pages/stores";
 import ContactPage from "./pages/contact";
 import NotFoundPage from "./pages/not-found"
+import Detail from "./pages/detail"
 
 // Import dashboard routes
 import dashboardRoutes from './dashboard/routes';
@@ -33,6 +34,7 @@ function App() {
         { path: "contact", element: <ContactPage /> },
         { path: "login", element: <LoginPage /> },
         { path: "register", element: <RegisterPage /> },
+        { path: "detail/:id", element: <Detail /> },
       ]
     },
 
