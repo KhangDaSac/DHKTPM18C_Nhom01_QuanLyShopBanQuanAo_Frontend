@@ -215,6 +215,30 @@
     text-decoration: underline;
 }
 
+/* Disabled states */
+.form-group input:disabled {
+    background-color: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+    border-color: #e0e0e0;
+}
+
+.login-button:disabled {
+    background-color: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.login-button:disabled:hover {
+    background-color: #ccc;
+}
+
+.remember-me input:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 /* Responsive design */
 @media (max-width: 576px) {
     .login-container {

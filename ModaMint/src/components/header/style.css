@@ -414,6 +414,24 @@
     background-color: rgba(255, 99, 71, 0.05);
 }
 
+.account-submenu ul li .logout-button {
+    display: block;
+    width: 100%;
+    padding: 8px 16px;
+    font-size: 14px;
+    color: #dc3545;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.account-submenu ul li .logout-button:hover {
+    color: #fff;
+    background-color: #dc3545;
+}
+
 /* Responsive Menu */
 @media (max-width: 992px) {
     .menu-list {

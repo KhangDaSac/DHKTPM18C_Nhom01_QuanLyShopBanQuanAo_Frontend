@@ -13,11 +13,18 @@ import LoginPage from "./pages/login"
 import RegisterPage from './pages/register';
 import StoresPage from "./pages/stores";
 import ContactPage from "./pages/contact";
-import NotFoundPage from "./pages/not-found"
+import NotFoundPage from "./pages/not-found";
+import ProfilePage from "./pages/profile";
+
+// Import protected routes
+import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
 
 // Import dashboard routes
 import dashboardRoutes from './dashboard/routes';
 
+// Import React Toastify
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
 
@@ -31,8 +38,34 @@ function App() {
         { path: "about", element: <AboutPage /> },
         { path: "stores", element: <StoresPage /> },
         { path: "contact", element: <ContactPage /> },
-        { path: "login", element: <LoginPage /> },
-        { path: "register", element: <RegisterPage /> },
+
+        // Routes chỉ cho phép user CHƯA đăng nhập
+        {
+          path: "login",
+          element: (
+            <AuthRoute>
+              <LoginPage />
+            </AuthRoute>
+          )
+        },
+        {
+          path: "register",
+          element: (
+            <AuthRoute>
+              <RegisterPage />
+            </AuthRoute>
+          )
+        },
+
+        // Routes chỉ cho phép user ĐÃ đăng nhập
+        {
+          path: "profile",
+          element: (
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          )
+        },
       ]
     },
 
@@ -49,6 +82,18 @@ function App() {
   return (
     <>
       <RouterProvider router={router} />
+      <ToastContainer
+        position="top-right"
+        autoClose={3500}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </>
   )
 }

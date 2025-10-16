@@ -79,16 +79,145 @@
     margin-bottom: 5px;
 }
 
+/* Social icon và button styles */
+.social-icon {
+    font-size: 20px;
+}
+
+.facebook-button {
+    background-color: #1877f2;
+    color: white;
+}
+
+.facebook-button:hover {
+    background-color: #166fe5;
+    transform: translateY(-1px);
+}
+
+.google-button {
+    background-color: #ffffff;
+    color: #333;
+    border: 2px solid #dadce0;
+}
+
+.google-button:hover {
+    background-color: #f8f9fa;
+    border-color: #1a73e8;
+    transform: translateY(-1px);
+}
+
 .register-form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 15px;
+    /* Giảm từ 20px xuống 15px */
+}
+
+.advanced-fields-toggle {
+    margin: 10px 0;
+    /* Giảm từ 15px xuống 10px */
+    text-align: center;
+}
+
+.toggle-button {
+    background: none;
+    border: 1px solid #ddd;
+    color: #666;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.toggle-button:hover {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.advanced-fields {
+    margin-top: 10px;
+    /* Giảm từ 15px xuống 10px */
+    padding-top: 10px;
+    /* Giảm từ 15px xuống 10px */
+    border-top: 1px solid #eee;
+}
+
+.field-hint {
+    font-size: 12px;
+    color: #999;
+    margin-top: 5px;
+    display: block;
+}
+
+/* Social Register Containers */
+.social-register-container {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.social-register-info {
+    margin-bottom: 25px;
+}
+
+.social-register-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.facebook-color {
+    color: #1877f2;
+}
+
+.google-color {
+    color: #4285f4;
+}
+
+.social-register-info h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.social-register-info p {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.social-register-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.form-row {
+    display: flex;
+    gap: 12px;
+    /* Giảm từ 15px xuống 12px */
+}
+
+.form-row .form-group {
+    flex: 1;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+    /* Giảm từ 8px xuống 6px */
 }
 
 .form-group label {
@@ -235,5 +364,40 @@
 
     .terms-agreement {
         flex-direction: column;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .form-row .form-group {
+        flex: none;
+    }
+
+    .social-register-container {
+        padding: 20px 15px;
+    }
+
+    .social-register-icon {
+        font-size: 40px;
+    }
+
+    .social-register-info h3 {
+        font-size: 18px;
+    }
+
+    .social-register-button {
+        padding: 12px 20px;
+        font-size: 15px;
+    }
+
+    .social-icon {
+        font-size: 18px;
+    }
+
+    .toggle-button {
+        width: 100%;
+        padding: 12px;
     }
 }

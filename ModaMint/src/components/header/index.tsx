@@ -1,9 +1,8 @@
-import type { GetProps, Input } from 'antd';
-import Search from 'antd/es/input/Search'
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import "./style.css"
 import { AiOutlineLeft, AiOutlineRight, AiOutlineSearch, AiOutlineHeart, AiOutlineUser, AiOutlineShoppingCart, AiFillCaretDown } from "react-icons/ai";
+import { useAuth } from '../../contexts/authContext';
 
 
 export default function Header() {
@@ -16,11 +15,24 @@ export default function Header() {
     ];
 
     const [currentAnnouncementIndex, setCurrentAnnouncementIndex] = useState(0);
-
     const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
 
-    const showPreviousAnnouncement = () => {
+    // Sử dụng AuthContext
+    const { isAuthenticated, user, logout } = useAuth();
+
+    // Lấy display name từ user data
+    const getDisplayName = () => {
+        if (user) {
+            if (user.firstName && user.lastName) {
+                return `${user.firstName} ${user.lastName}`;
+            }
+            return user.username;
+        }
+        return null;
+    };
+
+    const displayName = getDisplayName(); const showPreviousAnnouncement = () => {
         if (isTransitioning) return;
 
         setSlideDirection('left');
@@ -109,11 +121,22 @@ export default function Header() {
                             </div>
                             <div className='action-item has-account-submenu'>
                                 <AiOutlineUser className='action-icon' />
-                                <span className='action-text'>Tài khoản</span>
+                                <span className='action-text'>
+                                    {isAuthenticated && displayName ? displayName : 'Tài khoản'}
+                                </span>
                                 <div className="account-submenu">
                                     <ul>
-                                        <li><Link to="/dang-nhap">Đăng nhập</Link></li>
-                                        <li><Link to="/dang-ky">Đăng ký</Link></li>
+                                        {isAuthenticated ? (
+                                            <>
+                                                <li><Link to="/profile">Thông tin cá nhân</Link></li>
+                                                <li><button onClick={logout} className="logout-button">Đăng xuất</button></li>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <li><Link to="/login">Đăng nhập</Link></li>
+                                                <li><Link to="/register">Đăng ký</Link></li>
+                                            </>
+                                        )}
                                     </ul>
                                 </div>
                             </div>
