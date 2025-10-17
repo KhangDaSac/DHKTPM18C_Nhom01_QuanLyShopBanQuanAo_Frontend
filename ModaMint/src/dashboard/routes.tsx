@@ -14,6 +14,7 @@ import Promotions from './pages/promotions';
 import Roles from './pages/roles';
 import Stores from './pages/stores';
 import ThemeTest from './components/theme-test';
+import ProductDetail from "../pages/detail";
 
 const dashboardRoutes: RouteObject = {
     path: 'dashboard',
@@ -29,6 +30,7 @@ const dashboardRoutes: RouteObject = {
         { path: 'stores', element: <Stores /> },
         { path: 'settings', element: <Settings /> },
         { path: 'theme-test', element: <ThemeTest /> },
+        { path: 'products/:id', element: <ProductDetail /> },
     ],
 };
 

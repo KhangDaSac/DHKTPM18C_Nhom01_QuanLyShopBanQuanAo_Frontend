@@ -14,11 +14,14 @@ import RegisterPage from './pages/register';
 import StoresPage from "./pages/stores";
 import ContactPage from "./pages/contact";
 
+
 import NotFoundPage from "./pages/not-found";
 import ProfilePage from "./pages/profile";
 
 // Import protected routes
 import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
+
+import Detail from "./pages/detail"
 
 // Import dashboard routes
 import dashboardRoutes from './dashboard/routes';
@@ -76,6 +79,8 @@ function App() {
 
         { path: "products", element: <ProductList /> },
 
+
+        { path: "detail/:id", element: <Detail /> },
       ]
     },
 
