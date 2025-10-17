@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import "./style.css"
 import { AiOutlineLeft, AiOutlineRight, AiOutlineSearch, AiOutlineHeart, AiOutlineUser, AiOutlineShoppingCart, AiFillCaretDown } from "react-icons/ai";
@@ -94,7 +94,7 @@ export default function Header() {
                     <div className="container">
                         <div className="logo-container">
                             <Link to="/">
-                                <img src="../../../public/header/logo.webp" alt="ND Style" className='header-logo' />
+                                <img src="/header/logo.webp" alt="ND Style" className='header-logo' />
                             </Link>
                         </div>
                         <div className='search-container'>

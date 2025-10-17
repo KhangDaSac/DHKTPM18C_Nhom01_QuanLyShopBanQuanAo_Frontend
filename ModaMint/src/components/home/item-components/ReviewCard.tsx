@@ -1,5 +1,5 @@
-import {Star} from "lucide-react";
-import React, { useState } from 'react';
+import { Star } from "lucide-react";
+// import React, { useState } from 'react'; // Not used
 
 interface Review {
   id: number;
@@ -11,20 +11,20 @@ interface Review {
 }
 
 export const ReviewCard = ({ review }: { review: Review }) => {
-    const items = Array.from({ length: review.rating }, (_, i) => i + 1);
+  const items = Array.from({ length: review.rating }, (_, i) => i + 1);
   return (
     <div className="review-card">
       <p className="review-text">{review.text}</p>
 
       <div className="star-rating">
         {
-            items.map( i => <Star key={i} color="yellow" fill="yellow"/>)
+          items.map(i => <Star key={i} color="yellow" fill="yellow" />)
         }
       </div>
 
       <div className="reviewer-info">
         <div className="avatar-container">
-          <img 
+          <img
             src={review.avatar}
             alt={review.name}
             className="avatar"

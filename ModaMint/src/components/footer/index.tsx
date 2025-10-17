@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import './style.css';
 import { FaTiktok, FaInstagram, FaFacebookF, FaYoutube, FaTwitter } from 'react-icons/fa';

@@ -1,4 +1,4 @@
-import React from 'react'
+// import React from 'react' // Not needed in modern React
 import { Outlet } from 'react-router-dom'
 import Header from '../header'
 import Footer from '../footer'

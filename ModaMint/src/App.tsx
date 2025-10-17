@@ -1,10 +1,6 @@
 
 import './App.css'
-import { BrowserRouter, createBrowserRouter, Link, Route, RouterProvider, Routes } from 'react-router-dom';
-import Header from './components/header';
-import Footer from './components/footer';
-import Login from './pages/login';
-import Register from './pages/register';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import RootLayout from './components/layout';
 import HomePage from "./pages/home"
 import NewsPage from "./pages/news"
@@ -13,8 +9,6 @@ import LoginPage from "./pages/login"
 import RegisterPage from './pages/register';
 import StoresPage from "./pages/stores";
 import ContactPage from "./pages/contact";
-
-
 import NotFoundPage from "./pages/not-found";
 import ProfilePage from "./pages/profile";
 
@@ -23,15 +17,18 @@ import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
 
 import Detail from "./pages/detail"
 
+// Trang sản phẩm
+import ProductList from './pages/products/ProductList';
+import Cart from './components/cart';
+import CheckoutPage from './pages/checkout/CheckoutPage';
+// Context
+import { CartProvider } from '../src/components/contexts/CartContext';
 // Import dashboard routes
 import dashboardRoutes from './dashboard/routes';
 
 // Import React Toastify
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-
-import ProductList from './pages/product/ProductList';
 
 
 
@@ -81,6 +78,11 @@ function App() {
 
 
         { path: "detail/:id", element: <Detail /> },
+
+        // Phần sản phẩm
+        { path: "ProductList", element: <ProductList /> },
+        { path: "carts", element: <Cart /> },
+        { path: 'checkoutpage', element: <CheckoutPage /> },
       ]
     },
 
@@ -96,19 +98,23 @@ function App() {
 
   return (
     <>
-      <RouterProvider router={router} />
-      <ToastContainer
-        position="top-right"
-        autoClose={3500}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
+      <CartProvider>
+        <RouterProvider router={router} />
+        <ToastContainer
+          position="top-right"
+          autoClose={3500}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+      </CartProvider>
+
+
     </>
   )
 }

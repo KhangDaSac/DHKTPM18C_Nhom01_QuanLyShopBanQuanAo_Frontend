@@ -2,17 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import theme-aware styles */
-@import './dashboard/theme-styles.css';
-@import './dashboard/daisyui-override.css';
-@import './dashboard/debug-theme.css';
-@import './dashboard/force-theme.css';
-
 body {
     font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     margin: 0;
     padding: 0;
     @apply transition-colors duration-300;
+}
+
+main {
+    margin-bottom: 80px;
+    min-height: calc(100vh - 300px);
+    padding-bottom: 40px;
 }
 
 .content {

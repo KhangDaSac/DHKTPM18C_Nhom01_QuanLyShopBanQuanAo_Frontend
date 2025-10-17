@@ -12,8 +12,14 @@
     max-width: 450px;
     padding: 40px;
     background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.login-container:hover {
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
 }
 
 .login-header {
@@ -147,16 +153,26 @@
     color: #fff;
     border: none;
     border-radius: 5px;
-    padding: 24px;
+    padding: 15px 24px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     margin-top: 10px;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .login-button:hover {
     background-color: #e55a40;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 99, 71, 0.3);
+}
+
+.login-button:active {
+    transform: translateY(0);
 }
 
 /* Facebook login styles */
@@ -178,23 +194,83 @@
     color: #fff;
     border: none;
     border-radius: 5px;
-    padding: 14px;
+    padding: 15px 14px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .facebook-login-button:hover {
     background-color: #166fe5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+}
+
+.facebook-login-button:active {
+    transform: translateY(0);
 }
 
 .facebook-icon {
     font-size: 20px;
+}
+
+/* Google login styles */
+.google-login-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.google-login-info {
+    text-align: center;
+    color: #666;
+    font-size: 15px;
+    margin: 10px 0;
+    line-height: 1.4;
+}
+
+.google-login-button {
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #dadce0;
+    border-radius: 5px;
+    padding: 15px 14px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.google-login-button:hover {
+    background-color: #f8f9fa;
+    border-color: #c6c8ca;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.google-login-button:active {
+    background-color: #f1f3f4;
+    transform: translateY(0);
+}
+
+.google-icon {
+    font-size: 20px;
+    color: #4285f4;
 }
 
 .login-footer {
@@ -215,7 +291,6 @@
     text-decoration: underline;
 }
 
-<<<<<<< HEAD
 /* Disabled states */
 .form-group input:disabled {
     background-color: #f5f5f5;
@@ -240,16 +315,30 @@
     opacity: 0.6;
 }
 
-=======
->>>>>>> Khoa
 /* Responsive design */
 @media (max-width: 576px) {
     .login-container {
         padding: 25px;
+        margin: 0 10px;
     }
 
     .login-header h1 {
         font-size: 24px;
+    }
+
+    .login-options {
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: space-around;
+    }
+
+    .login-option {
+        padding: 8px 12px;
+        min-width: 80px;
+    }
+
+    .login-option-icon {
+        font-size: 20px;
     }
 
     .form-options {
@@ -258,7 +347,16 @@
         gap: 10px;
     }
 
-    .login-button {
+    .login-button,
+    .facebook-login-button,
+    .google-login-button {
         padding: 12px;
+        font-size: 15px;
+    }
+
+    .facebook-login-info,
+    .google-login-info {
+        font-size: 14px;
+        margin: 5px 0;
     }
 }

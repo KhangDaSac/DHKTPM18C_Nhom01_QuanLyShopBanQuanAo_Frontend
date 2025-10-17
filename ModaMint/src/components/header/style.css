@@ -11,7 +11,7 @@
 }
 
 .header__topbar {
-    background-image: url("../../../public/header/background-topbar.webp");
+    background-image: url("/header/background-topbar.webp");
     width: 100%;
     height: 50px;
     background-size: cover;
@@ -414,7 +414,6 @@
     background-color: rgba(255, 99, 71, 0.05);
 }
 
-<<<<<<< HEAD
 .account-submenu ul li .logout-button {
     display: block;
     width: 100%;
@@ -431,41 +430,4 @@
 .account-submenu ul li .logout-button:hover {
     color: #fff;
     background-color: #dc3545;
-}
-
-=======
->>>>>>> Khoa
-/* Responsive Menu */
-@media (max-width: 992px) {
-    .menu-list {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 5px;
-    }
-
-    .menu-item a {
-        padding: 12px 15px;
-        white-space: nowrap;
-    }
-
-    .submenu {
-        width: 180px;
-    }
-}
-
-@media (max-width: 768px) {
-    .menu-item a {
-        padding: 10px 12px;
-        font-size: 14px;
-    }
-
-    .account-submenu {
-        width: 120px;
-    }
-
-    .account-submenu ul li a {
-        padding: 6px 12px;
-        font-size: 13px;
-    }
 }

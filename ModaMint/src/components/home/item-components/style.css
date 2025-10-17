@@ -1,58 +1,72 @@
 /* Category Component */
 .category-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    position: relative;
-    margin: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  margin: 10px;
 }
 
 .category-image {
-    width: 250px;
-    height: 250px;
-    border-radius: 50%;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.3s ease;
-    margin-bottom: 30px;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+  margin-bottom: 30px;
 }
 
 .category-image img {
-    width: 100%;
-    height: auto;
+  width: 100%;
+  height: auto;
 }
 
 .category-item:hover .category-image {
-    animation: shake 0.5s;
-    animation-iteration-count: 1;
+  animation: shake 0.5s;
+  animation-iteration-count: 1;
 }
 
 @keyframes shake {
-    0% { transform: translate(0, 0); }
-    25% { transform: translate(5px, 0); }
-    50% { transform: translate(-5px, 0); }
-    75% { transform: translate(5px, 0); }
-    100% { transform: translate(0, 0); }
+  0% {
+    transform: translate(0, 0);
+  }
+
+  25% {
+    transform: translate(5px, 0);
+  }
+
+  50% {
+    transform: translate(-5px, 0);
+  }
+
+  75% {
+    transform: translate(5px, 0);
+  }
+
+  100% {
+    transform: translate(0, 0);
+  }
 }
 
 .category-name {
-    position: absolute;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
-    color: black;
-    text-transform: uppercase;
-    font-weight: bold;
-    padding: 18px 50px;
-    border-radius: 20px;
-    border: 1px solid #ff6347;
-    font-family: Arial, sans-serif;
+  position: absolute;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  color: black;
+  text-transform: uppercase;
+  font-weight: bold;
+  padding: 18px 50px;
+  border-radius: 20px;
+  border: 1px solid #ff6347;
+  font-family: Arial, sans-serif;
 }
 
 .category-name:hover {
-    color: #ff6347;
+  color: #ff6347;
 }
 
 
@@ -169,7 +183,8 @@
   justify-content: center;
   color: #ff6347;
 }
-.container-line{
+
+.container-line {
   flex: 1;
   display: flex;
   align-items: center;
@@ -177,7 +192,7 @@
   margin: 0px 20px;
 }
 
-.square-title{
+.square-title {
   width: 15px;
   height: 15px;
   background-color: #ff6347;
@@ -191,7 +206,7 @@
   position: relative;
 }
 
-.text-title-home{
+.text-title-home {
   text-transform: uppercase;
   margin: auto;
   font-size: 200%;
@@ -199,10 +214,7 @@
 
 /* Product Card */
 .product-card {
-<<<<<<< HEAD
-=======
   height: fit-content;
->>>>>>> Khoa
   width: 100%;
   max-width: 220px;
   background: white;
@@ -385,58 +397,58 @@
 
 /* Review Card */
 .review-card {
-max-width: 500px;
-margin: 40px auto;
-padding: 30px;
-background: linear-gradient(135deg, #fdf6f0 0%, #fef8f4 100%);
-border-radius: 16px;
-box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 30px;
+  background: linear-gradient(135deg, #fdf6f0 0%, #fef8f4 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
 }
 
 .review-text {
-color: #4a5568;
-font-size: 15px;
-line-height: 1.8;
-text-align: center;
-margin-bottom: 24px;
+  color: #4a5568;
+  font-size: 15px;
+  line-height: 1.8;
+  text-align: center;
+  margin-bottom: 24px;
 }
 
 .star-rating {
-display: flex;
-justify-content: center;
-gap: 8px;
-margin-bottom: 28px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 28px;
 }
 
 .reviewer-info {
-text-align: center;
+  text-align: center;
 }
 
 .avatar-container {
-margin-bottom: 16px;
+  margin-bottom: 16px;
 }
 
 .avatar {
-width: 80px;
-height: 80px;
-border-radius: 50%;
-margin: 0 auto;
-border: 4px solid #fff;
-box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-object-fit: cover;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin: 0 auto;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  object-fit: cover;
 }
 
 .reviewer-name {
-font-size: 18px;
-font-weight: 600;
-color: #2d3748;
-margin-bottom: 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 4px;
 }
 
 .reviewer-role {
-font-size: 14px;
-color: #718096;
+  font-size: 14px;
+  color: #718096;
 }
 
 .review-text {
@@ -528,6 +540,7 @@ color: #718096;
   transform: scale(1.15);
   background: #ff6b6b;
 }
+
 .icon-btn:active {
   transform: scale(0.95);
 }

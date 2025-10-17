@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
-interface Product {
+interface ProductCardData {
   id: number;
   image: string;
   name: string;
   discount?: string;
-
   originalPrice: string;
   currentPrice: string;
   soldCount?: number;
 }
 
 interface ProductCardProps {
-  product: Product;
+  product: ProductCardData;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
