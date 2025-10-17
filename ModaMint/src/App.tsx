@@ -13,6 +13,7 @@ import LoginPage from "./pages/login"
 import RegisterPage from './pages/register';
 import StoresPage from "./pages/stores";
 import ContactPage from "./pages/contact";
+
 import NotFoundPage from "./pages/not-found";
 import ProfilePage from "./pages/profile";
 
@@ -25,6 +26,11 @@ import dashboardRoutes from './dashboard/routes';
 // Import React Toastify
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+
+import ProductList from './pages/product/ProductList';
+
+
 
 function App() {
 
@@ -66,6 +72,10 @@ function App() {
             </ProtectedRoute>
           )
         },
+
+
+        { path: "products", element: <ProductList /> },
+
       ]
     },
 

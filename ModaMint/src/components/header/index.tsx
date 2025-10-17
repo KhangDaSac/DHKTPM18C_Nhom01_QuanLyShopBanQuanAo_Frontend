@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import "./style.css"
 import { AiOutlineLeft, AiOutlineRight, AiOutlineSearch, AiOutlineHeart, AiOutlineUser, AiOutlineShoppingCart, AiFillCaretDown } from "react-icons/ai";
-import { useAuth } from '../../contexts/authContext';
 
+import { useAuth } from '../../contexts/authContext';
+// ...existing code...
 
 export default function Header() {
     const announcements = [
@@ -13,15 +15,10 @@ export default function Header() {
         "ĐỒ MẶC CẢ NHÀ",
         "ÊM ÁI CẢ NGÀY"
     ];
-
     const [currentAnnouncementIndex, setCurrentAnnouncementIndex] = useState(0);
     const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
-
-    // Sử dụng AuthContext
     const { isAuthenticated, user, logout } = useAuth();
-
-    // Lấy display name từ user data
     const getDisplayName = () => {
         if (user) {
             if (user.firstName && user.lastName) {
@@ -31,13 +28,12 @@ export default function Header() {
         }
         return null;
     };
+    const displayName = getDisplayName();
 
-    const displayName = getDisplayName(); const showPreviousAnnouncement = () => {
+    const showPreviousAnnouncement = () => {
         if (isTransitioning) return;
-
         setSlideDirection('left');
         setIsTransitioning(true);
-
         setTimeout(() => {
             setCurrentAnnouncementIndex((prevIndex) =>
                 prevIndex === 0 ? announcements.length - 1 : prevIndex - 1
@@ -51,10 +47,8 @@ export default function Header() {
 
     const showNextAnnouncement = () => {
         if (isTransitioning) return;
-
         setSlideDirection('right');
         setIsTransitioning(true);
-
         setTimeout(() => {
             setCurrentAnnouncementIndex((prevIndex) =>
                 (prevIndex + 1) % announcements.length

@@ -4,7 +4,7 @@ import './style.css';
 import { FaFacebook, FaGoogle } from 'react-icons/fa';
 import { AiOutlineMail } from 'react-icons/ai';
 import { userService } from "../../services/user/index"
-import type { UserRegistrationRequest } from '../../services/authentication';
+import type { CreateUserRequest } from '../../services/user';
 import { toast } from 'react-toastify';
 
 
@@ -60,8 +60,8 @@ export default function Register() {
             return;
         }
 
-        // Tạo dữ liệu theo format UserRegistrationRequest
-        const registrationData: UserRegistrationRequest = {
+        // Tạo dữ liệu theo format CreateUserRequest
+        const registrationData: CreateUserRequest = {
             username: finalUsername,
             email,
             password,
@@ -95,6 +95,7 @@ export default function Register() {
         } finally {
             setIsLoading(false);
         }
+
     };
 
     const handleFacebookRegister = () => {
@@ -104,6 +105,7 @@ export default function Register() {
         // window.location.href = 'https://www.facebook.com/v13.0/dialog/oauth?...'
     };
 
+
     const handleGoogleRegister = () => {
         setRegisterMethod('google');
         console.log('Google registration initiated');
@@ -111,15 +113,14 @@ export default function Register() {
         // window.location.href = 'https://accounts.google.com/oauth/authorize?...'
     };
 
+
     return (
         <div className="register-page">
             <div className="register-container">
                 <div className="register-header">
-                    <h1>Đăng ký tài khoản</h1>
-                    <p>Tạo tài khoản để mua sắm dễ dàng hơn</p>
+                    <h1>Đăng ký</h1>
+                    <p>Tham gia ModaMint để nhận nhiều ưu đãi hấp dẫn!</p>
                 </div>
-
-                {/* Tabs */}
                 <div className="register-options">
                     <div
                         className={`register-option ${registerMethod === 'email' ? 'active' : ''}`}
@@ -144,7 +145,7 @@ export default function Register() {
                     </div>
                 </div>
 
-                {registerMethod === 'email' ? (
+                {registerMethod === 'email' && (
                     <form className="register-form" onSubmit={handleSubmit}>
                         {/* Basic Required Fields */}
                         <div className="form-row">
@@ -159,7 +160,6 @@ export default function Register() {
                                     required
                                 />
                             </div>
-
                             <div className="form-group">
                                 <label htmlFor="lastName">Tên *</label>
                                 <input
@@ -172,7 +172,6 @@ export default function Register() {
                                 />
                             </div>
                         </div>
-
                         <div className="form-group">
                             <label htmlFor="email">Email *</label>
                             <input
@@ -184,7 +183,6 @@ export default function Register() {
                                 required
                             />
                         </div>
-
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="password">Mật khẩu *</label>
@@ -198,7 +196,6 @@ export default function Register() {
                                     required
                                 />
                             </div>
-
                             <div className="form-group">
                                 <label htmlFor="confirmPassword">Xác nhận mật khẩu *</label>
                                 <input
@@ -212,7 +209,6 @@ export default function Register() {
                                 />
                             </div>
                         </div>
-
                         {/* Advanced Fields Toggle */}
                         <div className="advanced-fields-toggle">
                             <button
@@ -223,7 +219,6 @@ export default function Register() {
                                 {showAdvancedFields ? '▼ Ẩn thông tin bổ sung' : '▶ Thêm thông tin (tùy chọn)'}
                             </button>
                         </div>
-
                         {/* Advanced Optional Fields */}
                         {showAdvancedFields && (
                             <div className="advanced-fields">
@@ -239,7 +234,6 @@ export default function Register() {
                                     />
                                     <small className="field-hint">Nếu để trống, tên đăng nhập sẽ được tạo từ email của bạn</small>
                                 </div>
-
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label htmlFor="phone">Số điện thoại</label>
@@ -251,7 +245,6 @@ export default function Register() {
                                             placeholder="Nhập số điện thoại"
                                         />
                                     </div>
-
                                     <div className="form-group">
                                         <label htmlFor="dob">Ngày sinh</label>
                                         <input
@@ -265,7 +258,6 @@ export default function Register() {
                                 </div>
                             </div>
                         )}
-
                         <div className="terms-agreement">
                             <input
                                 type="checkbox"
@@ -285,7 +277,6 @@ export default function Register() {
                                 </Link>
                             </label>
                         </div>
-
                         <button
                             type="submit"
                             className="register-button"
@@ -294,7 +285,9 @@ export default function Register() {
                             {isLoading ? 'Đang đăng ký...' : 'Đăng ký'}
                         </button>
                     </form>
-                ) : registerMethod === 'facebook' ? (
+                )}
+
+                {registerMethod === 'facebook' && (
                     <div className="social-register-container">
                         <div className="social-register-info">
                             <FaFacebook className="social-register-icon facebook-color" />
@@ -309,7 +302,9 @@ export default function Register() {
                             Tiếp tục với Facebook
                         </button>
                     </div>
-                ) : (
+                )}
+
+                {registerMethod === 'google' && (
                     <div className="social-register-container">
                         <div className="social-register-info">
                             <FaGoogle className="social-register-icon google-color" />
@@ -337,4 +332,5 @@ export default function Register() {
             </div>
         </div>
     );
+
 }

@@ -113,10 +113,12 @@ export default function Login() {
         } finally {
             setIsLoading(false);
         }
+
     };
 
     const handleFacebookLogin = () => {
         setLoginMethod('facebook');
+
         toast.info('Chức năng đăng nhập Facebook đang được phát triển!');
         // TODO: Implement Facebook OAuth login
         // window.location.href = 'https://www.facebook.com/v13.0/dialog/oauth?...'
@@ -161,7 +163,7 @@ export default function Login() {
                     </div>
                 </div>
 
-                {loginMethod === 'username' ? (
+                {loginMethod === 'username' && (
                     <form className="login-form" onSubmit={handleSubmit}>
                         <div className="form-group">
                             <label htmlFor="username">Username</label>
@@ -175,7 +177,6 @@ export default function Login() {
                                 required
                             />
                         </div>
-
                         <div className="form-group">
                             <label htmlFor="password">Mật khẩu</label>
                             <input
@@ -188,7 +189,6 @@ export default function Login() {
                                 required
                             />
                         </div>
-
                         <div className="form-options">
                             <div className="remember-me">
                                 <input
@@ -204,7 +204,6 @@ export default function Login() {
                                 Quên mật khẩu?
                             </Link>
                         </div>
-
                         <button
                             type="submit"
                             className="login-button"
@@ -213,7 +212,9 @@ export default function Login() {
                             {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập với Username'}
                         </button>
                     </form>
-                ) : loginMethod === 'facebook' ? (
+                )}
+
+                {loginMethod === 'facebook' && (
                     <div className="facebook-login-container">
                         <p className="facebook-login-info">
                             Bạn sẽ được chuyển đến trang Facebook để đăng nhập an toàn.
@@ -226,7 +227,9 @@ export default function Login() {
                             Đăng nhập với Facebook
                         </button>
                     </div>
-                ) : (
+                )}
+
+                {loginMethod === 'google' && (
                     <div className="google-login-container">
                         <p className="google-login-info">
                             Bạn sẽ được chuyển đến trang Google để đăng nhập an toàn.

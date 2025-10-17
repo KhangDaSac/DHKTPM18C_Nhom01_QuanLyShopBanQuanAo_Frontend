@@ -5,6 +5,7 @@ interface Product {
   image: string;
   name: string;
   discount?: string;
+
   originalPrice: string;
   currentPrice: string;
   soldCount?: number;
@@ -21,7 +22,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   return (
     <>
-      <div 
+      <div
         className="product-card"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -45,7 +46,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 {product.soldCount === 0 ? (
                   <span className="sold-text">0 sản phẩm đã bán</span>
                 ) : (
-                  <div 
+                  <div
                     className="sold-progress"
                     style={{ width: `${progressWidth}%` }}
                   >

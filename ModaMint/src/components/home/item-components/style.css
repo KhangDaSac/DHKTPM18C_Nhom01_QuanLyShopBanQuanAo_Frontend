@@ -199,6 +199,10 @@
 
 /* Product Card */
 .product-card {
+<<<<<<< HEAD
+=======
+  height: fit-content;
+>>>>>>> Khoa
   width: 100%;
   max-width: 220px;
   background: white;
