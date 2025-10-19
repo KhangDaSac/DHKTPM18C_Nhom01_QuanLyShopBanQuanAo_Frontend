@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import './style.css';
+import styles from './style.module.css';
 import { FaFacebook, FaGoogle } from 'react-icons/fa';
 import { AiOutlineMail } from 'react-icons/ai';
 import { toast } from 'react-toastify';
 import { authenticationService } from '../../services/authentication';
 import { useAuth } from '../../contexts/authContext';
+import { getRolesFromToken } from '../../utils/apiAuthUtils';
 
 export default function Login() {
     const [username, setUsername] = useState('');
@@ -17,8 +18,8 @@ export default function Login() {
     const location = useLocation();
     const { login } = useAuth();
 
-    // Lấy trang trước đó từ state (nếu có)
-    const from = (location.state as any)?.from?.pathname || '/';
+    // Lấy trang trước đó từ state (nếu có) - không dùng nữa vì redirect theo role
+    const from = (location.state as any)?.from?.pathname;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -100,10 +101,23 @@ export default function Login() {
                         accessToken: result.data.accessToken,
                         refreshToken: result.data.refreshToken
                     }, userData);
-                }                // Chuyển hướng về trang trước đó hoặc trang chủ sau 1.5 giây
-                setTimeout(() => {
-                    navigate(from, { replace: true });
-                }, 1500);
+
+                    // Lấy roles từ token để redirect đúng trang
+                    const roles = getRolesFromToken(result.data.accessToken);
+                    const isAdmin = roles.includes('ADMIN');
+                    
+                    // Redirect dựa trên role
+                    setTimeout(() => {
+                        if (isAdmin) {
+                            // Admin → Dashboard
+                            navigate('/dashboard', { replace: true });
+                        } else {
+                            // User → Trang chủ hoặc trang trước đó (nếu không phải dashboard)
+                            const redirectPath = from && !from.includes('/dashboard') ? from : '/';
+                            navigate(redirectPath, { replace: true });
+                        }
+                    }, 1500);
+                }
             } else {
                 toast.error(result.message || 'Tên đăng nhập hoặc mật khẩu không chính xác!');
             }
@@ -132,41 +146,41 @@ export default function Login() {
     };
 
     return (
-        <div className="login-page">
-            <div className="login-container">
-                <div className="login-header">
-                    <h1>Đăng nhập</h1>
-                    <p>Vui lòng đăng nhập để tiếp tục</p>
+        <div className={styles.login}>
+            <div className={styles.login__container}>
+                <div className={styles.login__header}>
+                    <h1 className={styles.login__title}>Đăng nhập</h1>
+                    <p className={styles.login__subtitle}>Vui lòng đăng nhập để tiếp tục</p>
                 </div>
 
-                <div className="login-options">
+                <div className={styles.login__options}>
                     <div
-                        className={`login-option ${loginMethod === 'username' ? 'active' : ''}`}
+                        className={`${styles.login__option} ${loginMethod === 'username' ? styles['login__option--active'] : ''}`}
                         onClick={() => setLoginMethod('username')}
                     >
-                        <AiOutlineMail className="login-option-icon" />
+                        <AiOutlineMail className={styles['login__option-icon']} />
                         <span>Username</span>
                     </div>
                     <div
-                        className={`login-option ${loginMethod === 'facebook' ? 'active' : ''}`}
+                        className={`${styles.login__option} ${loginMethod === 'facebook' ? styles['login__option--active'] : ''}`}
                         onClick={() => setLoginMethod('facebook')}
                     >
-                        <FaFacebook className="login-option-icon" />
+                        <FaFacebook className={styles['login__option-icon']} />
                         <span>Facebook</span>
                     </div>
                     <div
-                        className={`login-option ${loginMethod === 'google' ? 'active' : ''}`}
+                        className={`${styles.login__option} ${loginMethod === 'google' ? styles['login__option--active'] : ''}`}
                         onClick={() => setLoginMethod('google')}
                     >
-                        <FaGoogle className="login-option-icon" />
+                        <FaGoogle className={styles['login__option-icon']} />
                         <span>Google</span>
                     </div>
                 </div>
 
                 {loginMethod === 'username' && (
-                    <form className="login-form" onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label htmlFor="username">Username</label>
+                    <form className={styles.login__form} onSubmit={handleSubmit}>
+                        <div className={styles['login__form-group']}>
+                            <label htmlFor="username" className={styles.login__label}>Username</label>
                             <input
                                 type="text"
                                 id="username"
@@ -175,10 +189,11 @@ export default function Login() {
                                 placeholder="Nhập username của bạn"
                                 disabled={isLoading}
                                 required
+                                className={styles.login__input}
                             />
                         </div>
-                        <div className="form-group">
-                            <label htmlFor="password">Mật khẩu</label>
+                        <div className={styles['login__form-group']}>
+                            <label htmlFor="password" className={styles.login__label}>Mật khẩu</label>
                             <input
                                 type="password"
                                 id="password"
@@ -187,26 +202,28 @@ export default function Login() {
                                 placeholder="Nhập mật khẩu của bạn"
                                 disabled={isLoading}
                                 required
+                                className={styles.login__input}
                             />
                         </div>
-                        <div className="form-options">
-                            <div className="remember-me">
+                        <div className={styles['login__form-options']}>
+                            <div className={styles.login__remember}>
                                 <input
                                     type="checkbox"
                                     id="rememberMe"
                                     checked={rememberMe}
                                     onChange={(e) => setRememberMe(e.target.checked)}
                                     disabled={isLoading}
+                                    className={styles.login__checkbox}
                                 />
                                 <label htmlFor="rememberMe">Ghi nhớ đăng nhập</label>
                             </div>
-                            <Link to="/quen-mat-khau" className="forgot-password">
+                            <Link to="/quen-mat-khau" className={styles['login__forgot-link']}>
                                 Quên mật khẩu?
                             </Link>
                         </div>
                         <button
                             type="submit"
-                            className="login-button"
+                            className={styles.login__button}
                             disabled={isLoading}
                         >
                             {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập với Username'}
@@ -215,39 +232,39 @@ export default function Login() {
                 )}
 
                 {loginMethod === 'facebook' && (
-                    <div className="facebook-login-container">
-                        <p className="facebook-login-info">
+                    <div className={styles['login__facebook-container']}>
+                        <p className={styles['login__facebook-info']}>
                             Bạn sẽ được chuyển đến trang Facebook để đăng nhập an toàn.
                         </p>
                         <button
                             onClick={handleFacebookLogin}
-                            className="facebook-login-button"
+                            className={styles['login__facebook-button']}
                         >
-                            <FaFacebook className="facebook-icon" />
+                            <FaFacebook className={styles['login__facebook-icon']} />
                             Đăng nhập với Facebook
                         </button>
                     </div>
                 )}
 
                 {loginMethod === 'google' && (
-                    <div className="google-login-container">
-                        <p className="google-login-info">
+                    <div className={styles['login__google-container']}>
+                        <p className={styles['login__google-info']}>
                             Bạn sẽ được chuyển đến trang Google để đăng nhập an toàn.
                         </p>
                         <button
                             onClick={handleGoogleLogin}
-                            className="google-login-button"
+                            className={styles['login__google-button']}
                         >
-                            <FaGoogle className="google-icon" />
+                            <FaGoogle className={styles['login__google-icon']} />
                             Đăng nhập với Google
                         </button>
                     </div>
                 )}
 
-                <div className="login-footer">
+                <div className={styles.login__footer}>
                     <p>
                         Bạn chưa có tài khoản?{' '}
-                        <Link to="/register" className="register-link">
+                        <Link to="/register" className={styles['login__register-link']}>
                             Đăng ký ngay
                         </Link>
                     </p>

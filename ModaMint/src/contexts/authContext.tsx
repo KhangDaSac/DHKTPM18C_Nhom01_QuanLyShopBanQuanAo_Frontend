@@ -3,17 +3,22 @@ import type { ReactNode } from "react";
 import { authenticationService } from "../services/authentication";
 import type { UserResponse } from "../services/authentication";
 import { toast } from 'react-toastify';
+import { getRolesFromToken, isTokenExpired } from "../utils/apiAuthUtils";
 
 // Định nghĩa interface cho AuthContext
 interface AuthContextType {
     accessToken: string | null;
     refreshToken: string | null;
     user: UserResponse | null;
+    roles: string[]; // Computed từ accessToken
     isAuthenticated: boolean;
     login: (authData: { accessToken: string; refreshToken?: string }, userData?: UserResponse) => void;
     logout: () => void;
     updateUser: (userData: UserResponse) => void;
     refreshUser: () => Promise<void>;
+    hasRole: (role: string) => boolean;
+    hasAnyRole: (roles: string[]) => boolean;
+    hasAllRoles: (roles: string[]) => boolean;
 }
 
 // Định nghĩa interface cho AuthProvider props
@@ -77,7 +82,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return null;
     });
 
-    const isAuthenticated = Boolean(accessToken);
+    // Computed roles từ accessToken - không lưu trong state
+    const roles = accessToken ? getRolesFromToken(accessToken) : [];
+
+    const isAuthenticated = Boolean(accessToken && !isTokenExpired(accessToken || ''));
 
     // Hàm refresh user data từ server
     const refreshUser = async () => {
@@ -105,7 +113,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     };
 
-    // Hàm login - lưu token và user data
+    // Hàm login - chỉ lưu token và user data (không lưu roles)
     const login = (authData: { accessToken: string; refreshToken?: string }, userData?: UserResponse) => {
         setAccessToken(authData.accessToken);
         if (authData.refreshToken) {
@@ -115,14 +123,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(userData);
         }
 
-        // Lưu vào localStorage
+        // Lưu vào localStorage - KHÔNG lưu roles
         const dataToSave = {
             accessToken: authData.accessToken,
             refreshToken: authData.refreshToken,
             user: userData || user
         };
         localStorage.setItem("authData", JSON.stringify(dataToSave));
-    };    // Hàm logout - xóa tất cả data
+    };
+
+    // Hàm logout - xóa tất cả data
     const logout = async () => {
         try {
             await authenticationService.logout();
@@ -197,16 +207,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return () => clearInterval(interval);
     }, [accessToken, refreshToken, user]);
 
+    // Role helper functions
+    const hasRole = (role: string): boolean => {
+        return roles.includes(role);
+    };
+
+    const hasAnyRole = (requiredRoles: string[]): boolean => {
+        return requiredRoles.some(role => roles.includes(role));
+    };
+
+    const hasAllRoles = (requiredRoles: string[]): boolean => {
+        return requiredRoles.every(role => roles.includes(role));
+    };
+
     // Context value
     const contextValue: AuthContextType = {
         accessToken,
         refreshToken,
         user,
+        roles,
         isAuthenticated,
         login,
         logout,
         updateUser,
-        refreshUser
+        refreshUser,
+        hasRole,
+        hasAnyRole,
+        hasAllRoles
     };
 
     return (

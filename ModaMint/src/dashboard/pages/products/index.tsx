@@ -19,7 +19,9 @@ import {
     Typography,
     Popconfirm,
     Checkbox,
-    Slider
+    Slider,
+    Spin,
+    Alert
 } from 'antd';
 import {
     PlusOutlined,
@@ -37,6 +39,7 @@ import {
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import '../../components/common-styles.css';
+import { useProducts } from '../../../hooks/useProducts';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -70,262 +73,16 @@ interface Product {
     variants?: ProductVariant[];
 }
 
-// Mock data - 40 sản phẩm với hình ảnh thật
-const initialProductsRaw = [
-    {
-        id: 1, name: 'Áo Thun Nam Cổ Tròn Basic', sku: 'ATN001', category: 'Áo Nam', price: 199000, salePrice: 179000, stock: 150,
-        status: 'active', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop',
-        description: 'Áo thun nam chất liệu cotton 100%, form regular fit, phù hợp mọi dáng người',
-        tags: ['Nam', 'Cotton', 'Basic'], createdAt: '2024-01-15'
-    },
-    {
-        id: 2, name: 'Váy Maxi Hoa Nhí Nữ', sku: 'VMN002', category: 'Váy Nữ', price: 350000, salePrice: 315000, stock: 75,
-        status: 'active', image: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=300&h=300&fit=crop',
-        description: 'Váy maxi họa tiết hoa nhí, chất liệu voan mềm mại, phong cách thanh lịch',
-        tags: ['Nữ', 'Maxi', 'Hoa'], createdAt: '2024-01-16'
-    },
-    {
-        id: 3, name: 'Quần Jeans Slim Fit Nam', sku: 'QJN003', category: 'Quần Nam', price: 450000, salePrice: 0, stock: 89,
-        status: 'active', image: 'https://images.unsplash.com/photo-1542272454315-7ad9f6620c3c?w=300&h=300&fit=crop',
-        description: 'Quần jeans nam form slim fit, chất liệu denim cao cấp, bền đẹp',
-        tags: ['Nam', 'Jeans', 'Slim'], createdAt: '2024-01-17'
-    },
-    {
-        id: 4, name: 'Áo Blouse Nữ Tay Dài', sku: 'ABN004', category: 'Áo Nữ', price: 280000, salePrice: 0, stock: 120,
-        status: 'active', image: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=300&h=300&fit=crop',
-        description: 'Áo blouse nữ tay dài, chất liệu silk cao cấp, thiết kế thanh lịch',
-        tags: ['Nữ', 'Blouse', 'Silk'], createdAt: '2024-01-18'
-    },
-    {
-        id: 5, name: 'Giày Sneaker Nam Trắng', sku: 'GSN005', category: 'Giày Nam', price: 850000, salePrice: 765000, stock: 45,
-        status: 'active', image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=300&h=300&fit=crop',
-        description: 'Giày sneaker nam màu trắng, chất liệu da cao cấp, đế cao su chống trượt',
-        tags: ['Nam', 'Sneaker', 'Da'], createdAt: '2024-01-19'
-    },
-    {
-        id: 6, name: 'Túi Xách Nữ Da Thật', sku: 'TXN006', category: 'Phụ Kiện', price: 1200000, salePrice: 0, stock: 25,
-        status: 'active', image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=300&h=300&fit=crop',
-        description: 'Túi xách nữ chất liệu da thật 100%, thiết kế sang trọng, đựng được laptop',
-        tags: ['Nữ', 'Túi', 'Da'], createdAt: '2024-01-20'
-    },
-    {
-        id: 7, name: 'Áo Khoác Hoodie Unisex', sku: 'AKH007', category: 'Áo Khoác', price: 380000, salePrice: 342000, stock: 95,
-        status: 'active', image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=300&h=300&fit=crop',
-        description: 'Áo khoác hoodie unisex, chất liệu nỉ cotton ấm áp, form oversized',
-        tags: ['Unisex', 'Hoodie', 'Cotton'], createdAt: '2024-01-21'
-    },
-    {
-        id: 8, name: 'Chân Váy Chữ A Nữ', sku: 'CVA008', category: 'Váy Nữ', price: 220000, salePrice: 0, stock: 110,
-        status: 'active', image: 'https://images.unsplash.com/photo-1583496661160-fb5886a13d77?w=300&h=300&fit=crop',
-        description: 'Chân váy chữ A, chất liệu kaki cao cấp, dáng đẹp tôn vóc dáng',
-        tags: ['Nữ', 'Váy', 'Kaki'], createdAt: '2024-01-22'
-    },
-    {
-        id: 9, name: 'Áo Polo Nam Cao Cấp', sku: 'APN009', category: 'Áo Nam', price: 320000, salePrice: 288000, stock: 85,
-        status: 'active', image: 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=300&h=300&fit=crop',
-        description: 'Áo polo nam chất liệu pique cotton, form regular fit, màu sắc đa dạng',
-        tags: ['Nam', 'Polo', 'Cotton'], createdAt: '2024-01-23'
-    },
-    {
-        id: 10, name: 'Giày Cao Gót Nữ 7cm', sku: 'GCG010', category: 'Giày Nữ', price: 650000, salePrice: 0, stock: 35,
-        status: 'active', image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=300&h=300&fit=crop',
-        description: 'Giày cao gót nữ 7cm, chất liệu da bóng, thiết kế thanh lịch phù hợp công sở',
-        tags: ['Nữ', 'Cao gót', 'Da'], createdAt: '2024-01-24'
-    },
-    {
-        id: 11, name: 'Quần Short Nam Thể Thao', sku: 'QSN011', category: 'Quần Nam', price: 180000, salePrice: 162000, stock: 200,
-        status: 'active', image: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=300&h=300&fit=crop',
-        description: 'Quần short nam thể thao, chất liệu polyester thoáng mát, có túi zip',
-        tags: ['Nam', 'Short', 'Thể thao'], createdAt: '2024-01-25'
-    },
-    {
-        id: 12, name: 'Áo Sơ Mi Nữ Sọc', sku: 'ASM012', category: 'Áo Nữ', price: 250000, salePrice: 0, stock: 70,
-        status: 'active', image: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=300&h=300&fit=crop',
-        description: 'Áo sơ mi nữ họa tiết sọc, chất liệu cotton mềm mại, phong cách công sở',
-        tags: ['Nữ', 'Sơ mi', 'Sọc'], createdAt: '2024-01-26'
-    },
-    {
-        id: 13, name: 'Đồng Hồ Nam Thể Thao', sku: 'DHN013', category: 'Phụ Kiện', price: 890000, salePrice: 0, stock: 40,
-        status: 'active', image: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=300&h=300&fit=crop',
-        description: 'Đồng hồ nam thể thao, chống nước 50m, màn hình LED đa chức năng',
-        tags: ['Nam', 'Đồng hồ', 'Thể thao'], createdAt: '2024-01-27'
-    },
-    {
-        id: 14, name: 'Áo Len Nữ Cổ Lọ', sku: 'ALN014', category: 'Áo Nữ', price: 420000, salePrice: 378000, stock: 60,
-        status: 'active', image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop',
-        description: 'Áo len nữ cổ lọ, chất liệu wool cao cấp, form fitted tôn dáng',
-        tags: ['Nữ', 'Len', 'Wool'], createdAt: '2024-01-28'
-    },
-    {
-        id: 15, name: 'Quần Jogger Nam', sku: 'QJN015', category: 'Quần Nam', price: 290000, salePrice: 0, stock: 130,
-        status: 'active', image: 'https://images.unsplash.com/photo-1506629905607-9b61e7e5b88b?w=300&h=300&fit=crop',
-        description: 'Quần jogger nam, chất liệu cotton blend, dáng slim fit hiện đại',
-        tags: ['Nam', 'Jogger', 'Cotton'], createdAt: '2024-01-29'
-    },
-    {
-        id: 16, name: 'Sandal Nữ Đi Biển', sku: 'SND016', category: 'Giày Nữ', price: 320000, salePrice: 288000, stock: 80,
-        status: 'active', image: 'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=300&h=300&fit=crop',
-        description: 'Sandal nữ đi biển, chất liệu cao su chống trượt, thiết kế nhẹ nhàng',
-        tags: ['Nữ', 'Sandal', 'Biển'], createdAt: '2024-01-30'
-    },
-    {
-        id: 17, name: 'Áo Tank Top Nữ', sku: 'ATT017', category: 'Áo Nữ', price: 150000, salePrice: 135000, stock: 180,
-        status: 'active', image: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=300&h=300&fit=crop',
-        description: 'Áo tank top nữ, chất liệu modal mềm mịn, form body fit',
-        tags: ['Nữ', 'Tank top', 'Modal'], createdAt: '2024-02-01'
-    },
-    {
-        id: 18, name: 'Quần Âu Nam Công Sở', sku: 'QAN018', category: 'Quần Nam', price: 520000, salePrice: 0, stock: 55,
-        status: 'active', image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=300&h=300&fit=crop',
-        description: 'Quần âu nam công sở, chất liệu wool blend, dáng straight fit',
-        tags: ['Nam', 'Âu', 'Công sở'], createdAt: '2024-02-02'
-    },
-    {
-        id: 19, name: 'Mũ Lưỡi Trai Unisex', sku: 'MLT019', category: 'Phụ Kiện', price: 120000, salePrice: 108000, stock: 160,
-        status: 'active', image: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=300&h=300&fit=crop',
-        description: 'Mũ lưỡi trai unisex, chất liệu cotton twill, có thể điều chỉnh size',
-        tags: ['Unisex', 'Mũ', 'Cotton'], createdAt: '2024-02-03'
-    },
-    {
-        id: 20, name: 'Váy Ôm Body Nữ', sku: 'VOB020', category: 'Váy Nữ', price: 380000, salePrice: 0, stock: 45,
-        status: 'active', image: 'https://images.unsplash.com/photo-1566479179817-c2b90a032f2b?w=300&h=300&fit=crop',
-        description: 'Váy ôm body nữ, chất liệu spandex co giãn, form fitted quyến rũ',
-        tags: ['Nữ', 'Ôm', 'Spandex'], createdAt: '2024-02-04'
-    },
-    {
-        id: 21, name: 'Áo Thun Polo Nữ', sku: 'ATP021', category: 'Áo Nữ', price: 280000, salePrice: 252000, stock: 90,
-        status: 'active', image: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=300&h=300&fit=crop',
-        description: 'Áo thun polo nữ, chất liệu pique cotton, phong cách thể thao thanh lịch',
-        tags: ['Nữ', 'Polo', 'Cotton'], createdAt: '2024-02-05'
-    },
-    {
-        id: 22, name: 'Giày Lười Nam Da', sku: 'GLN022', category: 'Giày Nam', price: 750000, salePrice: 0, stock: 30,
-        status: 'active', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=300&h=300&fit=crop',
-        description: 'Giày lười nam da thật, thiết kế lịch lãm, phù hợp đi làm và dạo phố',
-        tags: ['Nam', 'Lười', 'Da'], createdAt: '2024-02-06'
-    },
-    {
-        id: 23, name: 'Balo Laptop 15 inch', sku: 'BLL023', category: 'Phụ Kiện', price: 680000, salePrice: 612000, stock: 70,
-        status: 'active', image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&h=300&fit=crop',
-        description: 'Balo laptop 15 inch, chất liệu vải Oxford chống nước, nhiều ngăn tiện dụng',
-        tags: ['Unisex', 'Balo', 'Laptop'], createdAt: '2024-02-07'
-    },
-    {
-        id: 24, name: 'Quần Legging Nữ', sku: 'QLN024', category: 'Quần Nữ', price: 180000, salePrice: 0, stock: 140,
-        status: 'active', image: 'https://images.unsplash.com/photo-1506629905607-9b61e7e5b88b?w=300&h=300&fit=crop',
-        description: 'Quần legging nữ, chất liệu spandex co giãn 4 chiều, tập gym và yoga',
-        tags: ['Nữ', 'Legging', 'Yoga'], createdAt: '2024-02-08'
-    },
-    {
-        id: 25, name: 'Áo Vest Nam Slim', sku: 'AVN025', category: 'Áo Khoác', price: 890000, salePrice: 0, stock: 25,
-        status: 'active', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop',
-        description: 'Áo vest nam slim fit, chất liệu wool cao cấp, phong cách doanh nhân',
-        tags: ['Nam', 'Vest', 'Wool'], createdAt: '2024-02-09'
-    },
-    {
-        id: 26, name: 'Dép Tông Nữ Đi Trong Nhà', sku: 'DTN026', category: 'Giày Nữ', price: 95000, salePrice: 85500, stock: 200,
-        status: 'active', image: 'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=300&h=300&fit=crop',
-        description: 'Dép tông nữ đi trong nhà, chất liệu EVA mềm nhẹ, đế chống trượt',
-        tags: ['Nữ', 'Dép', 'EVA'], createdAt: '2024-02-10'
-    },
-    {
-        id: 27, name: 'Áo Croptop Nữ', sku: 'ACT027', category: 'Áo Nữ', price: 190000, salePrice: 0, stock: 110,
-        status: 'active', image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop',
-        description: 'Áo croptop nữ, chất liệu cotton co giãn, phong cách trẻ trung năng động',
-        tags: ['Nữ', 'Croptop', 'Cotton'], createdAt: '2024-02-11'
-    },
-    {
-        id: 28, name: 'Thắt Lưng Nam Da', sku: 'TLN028', category: 'Phụ Kiện', price: 380000, salePrice: 342000, stock: 85,
-        status: 'active', image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&h=300&fit=crop',
-        description: 'Thắt lưng nam da thật, khóa kim loại cao cấp, độ rộng 3.5cm',
-        tags: ['Nam', 'Thắt lưng', 'Da'], createdAt: '2024-02-12'
-    },
-    {
-        id: 29, name: 'Quần Culotte Nữ', sku: 'QCN029', category: 'Quần Nữ', price: 320000, salePrice: 0, stock: 75,
-        status: 'active', image: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=300&h=300&fit=crop',
-        description: 'Quần culotte nữ, chất liệu voan mềm mại, dáng ống rộng thanh lịch',
-        tags: ['Nữ', 'Culotte', 'Voan'], createdAt: '2024-02-13'
-    },
-    {
-        id: 30, name: 'Áo Khoác Jeans Nam', sku: 'AKJ030', category: 'Áo Khoác', price: 450000, salePrice: 405000, stock: 60,
-        status: 'active', image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=300&h=300&fit=crop',
-        description: 'Áo khoác jeans nam, chất liệu denim wash vintage, form regular fit',
-        tags: ['Nam', 'Jeans', 'Vintage'], createdAt: '2024-02-14'
-    },
-    {
-        id: 31, name: 'Túi Đeo Chéo Nữ Mini', sku: 'TDC031', category: 'Phụ Kiện', price: 280000, salePrice: 0, stock: 95,
-        status: 'active', image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=300&h=300&fit=crop',
-        description: 'Túi đeo chéo nữ mini, chất liệu PU cao cấp, thiết kế nhỏ gọn tiện lợi',
-        tags: ['Nữ', 'Túi', 'Mini'], createdAt: '2024-02-15'
-    },
-    {
-        id: 32, name: 'Quần Tây Nữ Ống Suông', sku: 'QTN032', category: 'Quần Nữ', price: 420000, salePrice: 0, stock: 50,
-        status: 'active', image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=300&h=300&fit=crop',
-        description: 'Quần tây nữ ống suông, chất liệu polyester cao cấp, phong cách công sở',
-        tags: ['Nữ', 'Tây', 'Công sở'], createdAt: '2024-02-16'
-    },
-    {
-        id: 33, name: 'Giày Thể Thao Nữ Trắng', sku: 'GTT033', category: 'Giày Nữ', price: 690000, salePrice: 621000, stock: 40,
-        status: 'active', image: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=300&h=300&fit=crop',
-        description: 'Giày thể thao nữ màu trắng, chất liệu canvas và da, đế cao su chống trượt',
-        tags: ['Nữ', 'Thể thao', 'Canvas'], createdAt: '2024-02-17'
-    },
-    {
-        id: 34, name: 'Áo Kiểu Nữ Họa Tiết', sku: 'AKN034', category: 'Áo Nữ', price: 350000, salePrice: 0, stock: 65,
-        status: 'active', image: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=300&h=300&fit=crop',
-        description: 'Áo kiểu nữ họa tiết hoa lá, chất liệu chiffon nhẹ nhàng, phong cách nữ tính',
-        tags: ['Nữ', 'Kiểu', 'Chiffon'], createdAt: '2024-02-18'
-    },
-    {
-        id: 35, name: 'Quần Kaki Nam Chinos', sku: 'QKN035', category: 'Quần Nam', price: 380000, salePrice: 342000, stock: 80,
-        status: 'active', image: 'https://images.unsplash.com/photo-1542272454315-7ad9f6620c3c?w=300&h=300&fit=crop',
-        description: 'Quần kaki nam chinos, chất liệu cotton twill, form slim fit hiện đại',
-        tags: ['Nam', 'Kaki', 'Chinos'], createdAt: '2024-02-19'
-    },
-    {
-        id: 36, name: 'Kính Mát Nam Pilot', sku: 'KMN036', category: 'Phụ Kiện', price: 450000, salePrice: 0, stock: 35,
-        status: 'active', image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=300&h=300&fit=crop',
-        description: 'Kính mát nam kiểu pilot, tròng polarized chống UV, gọng kim loại cao cấp',
-        tags: ['Nam', 'Kính', 'Pilot'], createdAt: '2024-02-20'
-    },
-    {
-        id: 37, name: 'Váy Sơ Mi Nữ Dài', sku: 'VSM037', category: 'Váy Nữ', price: 390000, salePrice: 351000, stock: 55,
-        status: 'active', image: 'https://images.unsplash.com/photo-1566479179817-c2b90a032f2b?w=300&h=300&fit=crop',
-        description: 'Váy sơ mi nữ dài, chất liệu cotton mềm mại, phong cách thanh lịch',
-        tags: ['Nữ', 'Sơ mi', 'Cotton'], createdAt: '2024-02-21'
-    },
-    {
-        id: 38, name: 'Áo Phông Nam In Hình', sku: 'APN038', category: 'Áo Nam', price: 220000, salePrice: 0, stock: 120,
-        status: 'active', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop',
-        description: 'Áo phông nam in hình độc đáo, chất liệu cotton 100%, form oversize',
-        tags: ['Nam', 'Phông', 'In hình'], createdAt: '2024-02-22'
-    },
-    {
-        id: 39, name: 'Giày Boot Nữ Cổ Cao', sku: 'GBN039', category: 'Giày Nữ', price: 850000, salePrice: 0, stock: 20,
-        status: 'active', image: 'https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?w=300&h=300&fit=crop',
-        description: 'Giày boot nữ cổ cao, chất liệu da lộn, gót vuông 5cm, phong cách cá tính',
-        tags: ['Nữ', 'Boot', 'Da lộn'], createdAt: '2024-02-23'
-    },
-    {
-        id: 40, name: 'Áo Blazer Nữ Công Sở', sku: 'ABN040', category: 'Áo Khoác', price: 680000, salePrice: 612000, stock: 30,
-        status: 'active', image: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=300&h=300&fit=crop',
-        description: 'Áo blazer nữ công sở, chất liệu polyester cao cấp, form fitted thanh lịch',
-        tags: ['Nữ', 'Blazer', 'Công sở'], createdAt: '2024-02-24'
-    }
-];
-
-// Convert raw data to proper Product type
-const initialProducts: Product[] = initialProductsRaw.map(product => ({
-    ...product,
-    status: product.status as 'active' | 'inactive' | 'deleted'
-}));
-
 const categories = [
     'Áo Nam', 'Áo Nữ', 'Quần Nam', 'Quần Nữ', 'Váy Nữ', 'Giày Nam', 'Giày Nữ', 'Áo Khoác', 'Phụ Kiện'
 ];
 
 const Products: React.FC = () => {
-    const [products, setProducts] = useState<Product[]>(initialProducts);
+    // Sử dụng hook để lấy dữ liệu từ API
+    const { products: apiProducts, loading: apiLoading, error: apiError, refetch } = useProducts();
+    
+    // State cho local products (để thêm/sửa/xóa)
+    const [localProducts, setLocalProducts] = useState<Product[]>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isViewModalVisible, setIsViewModalVisible] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -343,20 +100,40 @@ const Products: React.FC = () => {
     const [isVariantModalVisible, setIsVariantModalVisible] = useState(false);
     const [editingVariants, setEditingVariants] = useState<ProductVariant[]>([]);
 
+    // Kết hợp dữ liệu từ API và local
+    const allProducts = [
+        ...apiProducts.map(apiProduct => ({
+            id: apiProduct.id,
+            name: apiProduct.name,
+            sku: `API_${apiProduct.id}`,
+            category: apiProduct.categoryName || 'API Product',
+            price: apiProduct.price,
+            salePrice: 0,
+            stock: 100, // Mock stock cho API products
+            status: apiProduct.active ? 'active' as const : 'inactive' as const,
+            image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop',
+            description: apiProduct.description,
+            tags: [apiProduct.brandName || 'API'],
+            createdAt: new Date().toISOString().split('T')[0],
+            variants: []
+        })),
+        ...localProducts
+    ];
+
     // Filtered products (excluding deleted unless showDeleted is true)
-    const filteredProducts = products.filter(p => {
+    const filteredProducts = allProducts.filter(p => {
         if (!showDeleted && p.status === 'deleted') return false;
         if (filterCategory !== 'all' && p.category !== filterCategory) return false;
         if (p.price < priceRange[0] || p.price > priceRange[1]) return false;
         return true;
     });
 
-    // Statistics
-    const totalProducts = products.filter(p => p.status !== 'deleted').length;
-    const activeProducts = products.filter(p => p.status === 'active').length;
-    const outOfStockProducts = products.filter(p => p.stock === 0 && p.status !== 'deleted').length;
-    const totalValue = products.filter(p => p.status !== 'deleted').reduce((sum, p) => sum + (p.price * p.stock), 0);
-    const deletedProducts = products.filter(p => p.status === 'deleted').length;
+    // Statistics từ dữ liệu thực
+    const totalProducts = allProducts.filter(p => p.status !== 'deleted').length;
+    const activeProducts = allProducts.filter(p => p.status === 'active').length;
+    const outOfStockProducts = allProducts.filter(p => p.stock === 0 && p.status !== 'deleted').length;
+    const totalValue = allProducts.filter(p => p.status !== 'deleted').reduce((sum, p) => sum + (p.price * p.stock), 0);
+    const deletedProducts = allProducts.filter(p => p.status === 'deleted').length;
 
     const columns = [
         {
@@ -611,7 +388,7 @@ const Products: React.FC = () => {
 
     // Soft delete - đánh dấu là deleted
     const handleSoftDelete = (id: number) => {
-        setProducts(products.map(p =>
+        setLocalProducts(localProducts.map(p =>
             p.id === id ? { ...p, status: 'deleted' as const } : p
         ));
         message.success('Đã xóa sản phẩm (có thể khôi phục)');
@@ -619,13 +396,13 @@ const Products: React.FC = () => {
 
     // Hard delete - xóa vĩnh viễn
     const handleHardDelete = (id: number) => {
-        setProducts(products.filter(p => p.id !== id));
+        setLocalProducts(localProducts.filter(p => p.id !== id));
         message.success('Đã xóa vĩnh viễn sản phẩm');
     };
 
     // Khôi phục sản phẩm đã xóa
     const handleRestore = (id: number) => {
-        setProducts(products.map(p =>
+        setLocalProducts(localProducts.map(p =>
             p.id === id ? { ...p, status: 'active' as const } : p
         ));
         message.success('Đã khôi phục sản phẩm');
@@ -635,12 +412,12 @@ const Products: React.FC = () => {
     const handleCopy = (product: Product) => {
         const newProduct: Product = {
             ...product,
-            id: Math.max(...products.map(p => p.id)) + 1,
+            id: Math.max(...allProducts.map(p => p.id)) + 1,
             name: `${product.name} (Copy)`,
             sku: `${product.sku}_COPY_${Date.now().toString().slice(-4)}`,
             createdAt: new Date().toISOString().split('T')[0]
         };
-        setProducts([...products, newProduct]);
+        setLocalProducts([...localProducts, newProduct]);
         message.success('Đã sao chép sản phẩm');
     };
 
@@ -652,7 +429,7 @@ const Products: React.FC = () => {
         }
 
         const newStatus = currentStatus === 'active' ? 'inactive' as const : 'active' as const;
-        setProducts(products.map(p =>
+        setLocalProducts(localProducts.map(p =>
             p.id === id ? { ...p, status: newStatus } : p
         ));
         message.success(`Đã ${newStatus === 'active' ? 'kích hoạt' : 'vô hiệu hóa'} sản phẩm`);
@@ -669,28 +446,30 @@ const Products: React.FC = () => {
 
         switch (action) {
             case 'delete':
-                setProducts(products.map(p =>
+                setLocalProducts(localProducts.map(p =>
                     selectedIds.includes(p.id) ? { ...p, status: 'deleted' as const } : p
                 ));
                 message.success(`Đã xóa ${selectedIds.length} sản phẩm`);
                 break;
             case 'activate':
-                setProducts(products.map(p =>
+                setLocalProducts(localProducts.map(p =>
                     selectedIds.includes(p.id) ? { ...p, status: 'active' as const } : p
                 ));
                 message.success(`Đã kích hoạt ${selectedIds.length} sản phẩm`);
                 break;
             case 'deactivate':
-                setProducts(products.map(p =>
+                setLocalProducts(localProducts.map(p =>
                     selectedIds.includes(p.id) ? { ...p, status: 'inactive' as const } : p
                 ));
                 message.success(`Đã vô hiệu hóa ${selectedIds.length} sản phẩm`);
                 break;
         }
         setSelectedRowKeys([]);
-    };    // Chức năng xuất Excel
+    };
+
+    // Chức năng xuất Excel
     const handleExportExcel = () => {
-        const worksheet = XLSX.utils.json_to_sheet(products.map(product => ({
+        const worksheet = XLSX.utils.json_to_sheet(allProducts.map(product => ({
             'ID': product.id,
             'Tên sản phẩm': product.name,
             'SKU': product.sku,
@@ -722,7 +501,7 @@ const Products: React.FC = () => {
                 const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
 
                 const importedProducts = jsonData.map((row, index) => ({
-                    id: Math.max(...products.map(p => p.id)) + index + 1,
+                    id: Math.max(...allProducts.map(p => p.id)) + index + 1,
                     name: row['Tên sản phẩm'] || '',
                     sku: row['SKU'] || `SKU${Date.now()}${index}`,
                     category: row['Danh mục'] || 'Khác',
@@ -736,7 +515,7 @@ const Products: React.FC = () => {
                     createdAt: row['Ngày tạo'] || new Date().toISOString().split('T')[0]
                 }));
 
-                setProducts([...products, ...importedProducts]);
+                setLocalProducts([...localProducts, ...importedProducts]);
                 message.success(`Đã nhập ${importedProducts.length} sản phẩm từ Excel!`);
             } catch (error) {
                 message.error('Lỗi khi đọc file Excel. Vui lòng kiểm tra định dạng file.');
@@ -752,17 +531,17 @@ const Products: React.FC = () => {
             const productData = {
                 ...values,
                 tags: values.tags ? values.tags.split(',').map((tag: string) => tag.trim()) : [],
-                id: editingProduct ? editingProduct.id : Date.now(),
+                id: editingProduct ? editingProduct.id : Math.max(...allProducts.map(p => p.id)) + 1,
                 createdAt: editingProduct?.createdAt || new Date().toISOString().split('T')[0]
             };
 
             if (editingProduct) {
-                setProducts(products.map(p =>
+                setLocalProducts(localProducts.map(p =>
                     p.id === editingProduct.id ? { ...p, ...productData } : p
                 ));
                 message.success('Đã cập nhật sản phẩm thành công');
             } else {
-                setProducts([...products, productData]);
+                setLocalProducts([...localProducts, productData]);
                 message.success('Đã thêm sản phẩm thành công');
             }
 
@@ -781,61 +560,91 @@ const Products: React.FC = () => {
                 Quản lý Sản phẩm
             </Title>
 
-            {/* Statistics */}
-            <Row gutter={16} style={{ marginBottom: '24px' }}>
-                <Col xs={24} sm={12} lg={5}>
-                    <Card>
-                        <Statistic
-                            title="Tổng sản phẩm"
-                            value={totalProducts}
-                            prefix={<InboxOutlined />}
-                            valueStyle={{ color: '#1890ff' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={5}>
-                    <Card>
-                        <Statistic
-                            title="Đang bán"
-                            value={activeProducts}
-                            prefix={<ShoppingCartOutlined />}
-                            valueStyle={{ color: '#52c41a' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={4}>
-                    <Card>
-                        <Statistic
-                            title="Hết hàng"
-                            value={outOfStockProducts}
-                            prefix={<TagOutlined />}
-                            valueStyle={{ color: '#ff4d4f' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={4}>
-                    <Card>
-                        <Statistic
-                            title="Đã xóa"
-                            value={deletedProducts}
-                            prefix={<DeleteOutlined />}
-                            valueStyle={{ color: '#8c8c8c' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={24} lg={6}>
-                    <Card>
-                        <Statistic
-                            title="Giá trị kho"
-                            value={totalValue}
-                            prefix={<DollarOutlined />}
-                            suffix="đ"
-                            valueStyle={{ color: '#722ed1' }}
-                            formatter={(value) => `${Number(value).toLocaleString()}`}
-                        />
-                    </Card>
-                </Col>
-            </Row>
+            {/* API Error Alert */}
+            {apiError && (
+                <Alert
+                    message="Lỗi tải dữ liệu từ API"
+                    description={apiError}
+                    type="error"
+                    showIcon
+                    action={
+                        <Button size="small" onClick={refetch}>
+                            Thử lại
+                        </Button>
+                    }
+                    style={{ marginBottom: '24px' }}
+                />
+            )}
+
+            {/* Loading State */}
+            {apiLoading && (
+                <div style={{ textAlign: 'center', padding: '50px' }}>
+                    <Spin size="large" />
+                    <p style={{ marginTop: '16px' }}>Đang tải dữ liệu sản phẩm từ API...</p>
+                </div>
+            )}
+
+            {/* Content */}
+            {!apiLoading && (
+                <>
+                    {/* Statistics */}
+                    <Row gutter={16} style={{ marginBottom: '24px' }}>
+                        <Col xs={24} sm={12} lg={5}>
+                            <Card>
+                                <Statistic
+                                    title="Tổng sản phẩm"
+                                    value={totalProducts}
+                                    prefix={<InboxOutlined />}
+                                    valueStyle={{ color: '#1890ff' }}
+                                />
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    {apiProducts.length} từ API, {localProducts.length} local
+                                </Text>
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} lg={5}>
+                            <Card>
+                                <Statistic
+                                    title="Đang bán"
+                                    value={activeProducts}
+                                    prefix={<ShoppingCartOutlined />}
+                                    valueStyle={{ color: '#52c41a' }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} lg={4}>
+                            <Card>
+                                <Statistic
+                                    title="Hết hàng"
+                                    value={outOfStockProducts}
+                                    prefix={<TagOutlined />}
+                                    valueStyle={{ color: '#ff4d4f' }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} lg={4}>
+                            <Card>
+                                <Statistic
+                                    title="Đã xóa"
+                                    value={deletedProducts}
+                                    prefix={<DeleteOutlined />}
+                                    valueStyle={{ color: '#8c8c8c' }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={24} lg={6}>
+                            <Card>
+                                <Statistic
+                                    title="Giá trị kho"
+                                    value={totalValue}
+                                    prefix={<DollarOutlined />}
+                                    suffix="đ"
+                                    valueStyle={{ color: '#722ed1' }}
+                                    formatter={(value) => `${Number(value).toLocaleString()}`}
+                                />
+                            </Card>
+                        </Col>
+                    </Row>
 
             {/* Action Bar */}
             <Card style={{ marginBottom: '16px' }}>
@@ -881,6 +690,14 @@ const Products: React.FC = () => {
                     </Col>
                     <Col>
                         <Space>
+                            <Button
+                                type="default"
+                                icon={<ReloadOutlined />}
+                                onClick={refetch}
+                                loading={apiLoading}
+                            >
+                                Làm mới API
+                            </Button>
                             <Button
                                 type="default"
                                 icon={<DownloadOutlined />}
@@ -1303,6 +1120,8 @@ const Products: React.FC = () => {
                     </div>
                 )}
             </Modal>
+                </>
+            )}
         </div>
     );
 };

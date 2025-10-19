@@ -1,0 +1,119 @@
+/* Dashboard Common Styles - BEM Structure */
+
+/* ============================================
+   STATUS BUTTON BLOCK
+============================================ */
+.status-button {
+    font-weight: bold !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+    min-width: 80px !important;
+}
+
+.status-button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ============================================
+   STATUS BUTTON MODIFIERS
+============================================ */
+.status-button--active {
+    background-color: #52c41a !important;
+    border-color: #52c41a !important;
+    color: white !important;
+}
+
+.status-button--inactive {
+    background-color: #d9d9d9 !important;
+    border-color: #d9d9d9 !important;
+    color: #666 !important;
+}
+
+.status-button--blocked {
+    background-color: #ff4d4f !important;
+    border-color: #ff4d4f !important;
+    color: white !important;
+}
+
+.status-button--deleted {
+    background-color: #f5222d !important;
+    border-color: #f5222d !important;
+    color: white !important;
+    cursor: not-allowed !important;
+}
+
+.status-button--changing {
+    animation: statusChange 0.3s ease;
+}
+
+/* ============================================
+   STATUS BUTTON CONTAINER
+============================================ */
+.status-button__container {
+    padding: 8px 0;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ============================================
+   STATUS TAG BLOCK
+============================================ */
+.status-tag__container {
+    padding: 8px 0;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ============================================
+   TABLE CELL BLOCK
+============================================ */
+.table-cell__container {
+    padding: 8px 0;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-cell__container--left {
+    justify-content: flex-start;
+}
+
+.table-cell__container--right {
+    justify-content: flex-end;
+}
+
+/* ============================================
+   ANIMATIONS
+============================================ */
+@keyframes statusChange {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* ============================================
+   CSS VARIABLES
+============================================ */
+:root {
+    --status-active-color: #52c41a;
+    --status-inactive-color: #d9d9d9;
+    --status-blocked-color: #ff4d4f;
+    --status-deleted-color: #f5222d;
+    --status-text-primary: #333333;
+    --status-text-secondary: #666666;
+    --status-text-white: #ffffff;
+    --status-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --status-transition: all 0.2s ease;
+}

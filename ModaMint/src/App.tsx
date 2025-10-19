@@ -11,6 +11,10 @@ import StoresPage from "./pages/stores";
 import ContactPage from "./pages/contact";
 import NotFoundPage from "./pages/not-found";
 import ProfilePage from "./pages/profile";
+import ProfileAddress from "./pages/profile/ProfileAddress";
+import ProfileOrders from "./pages/profile/ProfileOrders";
+import ProfileChangePassword from "./pages/profile/ProfileChangePassword";
+import AuthTestPage from "./pages/auth-test";
 
 // Import protected routes
 import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
@@ -25,6 +29,8 @@ import CheckoutPage from './pages/checkout/CheckoutPage';
 import { CartProvider } from '../src/components/contexts/CartContext';
 // Import dashboard routes
 import dashboardRoutes from './dashboard/routes';
+// Import Error Boundary
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Import React Toastify
 import { ToastContainer } from 'react-toastify';
@@ -72,6 +78,38 @@ function App() {
             </ProtectedRoute>
           )
         },
+        {
+          path: "profile/address",
+          element: (
+            <ProtectedRoute>
+              <ProfileAddress />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: "profile/order",
+          element: (
+            <ProtectedRoute>
+              <ProfileOrders />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: "profile/changepassword",
+          element: (
+            <ProtectedRoute>
+              <ProfileChangePassword />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: "auth-test",
+          element: (
+            <ProtectedRoute>
+              <AuthTestPage />
+            </ProtectedRoute>
+          )
+        },
 
 
         { path: "products", element: <ProductList /> },
@@ -97,7 +135,7 @@ function App() {
 
 
   return (
-    <>
+    <ErrorBoundary>
       <CartProvider>
         <RouterProvider router={router} />
         <ToastContainer
@@ -113,9 +151,7 @@ function App() {
           theme="light"
         />
       </CartProvider>
-
-
-    </>
+    </ErrorBoundary>
   )
 }
 

@@ -1,4 +1,5 @@
 import axios from "axios"
+import { CLOUDINARY_CONFIG, getCloudinaryUploadUrl } from '../../config/cloudinary';
 
 export interface AuthenticationRequest {
     username: string,
@@ -22,6 +23,7 @@ export interface UserResponse {
     lastName: string,
     phone: string,
     dob: string,
+    image?: string, // URL hình ảnh từ Cloudinary
     createdDate?: string,
     lastModifiedDate?: string,
 }
@@ -50,6 +52,9 @@ const apiClient = axios.create({
     }
 })
 
+// Debug: Log baseURL để kiểm tra
+console.log('🌐 API Base URL:', apiClient.defaults.baseURL);
+
 // Biến để theo dõi việc refresh token đang diễn ra
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -74,16 +79,22 @@ apiClient.interceptors.request.use(
     (config) => {
         // Lấy token từ authData
         const authDataStr = localStorage.getItem("authData");
+        
         if (authDataStr) {
             try {
                 const authData = JSON.parse(authDataStr);
                 if (authData && authData.accessToken) {
                     // Thêm token vào header Authorization để server biết user đã đăng nhập
                     config.headers.Authorization = `Bearer ${authData.accessToken}`;
+                    console.log('🔑 Token added to header');
+                } else {
+                    console.log('⚠️ No accessToken found in authData');
                 }
             } catch (error) {
                 console.error('Error parsing authData:', error);
             }
+        } else {
+            console.log('⚠️ No authData found in localStorage');
         }
         return config; // Trả về config đã được modify
     },
@@ -211,6 +222,74 @@ class AuthenticationService {
         }
     }
 
+    // Method upload hình ảnh lên Cloudinary
+    async uploadImage(file: File): Promise<{ success: boolean; imageUrl?: string; message?: string }> {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+            formData.append('folder', CLOUDINARY_CONFIG.folder);
+            
+            // Thêm timestamp để tránh cache
+            formData.append('timestamp', Date.now().toString());
+
+            const response = await fetch(getCloudinaryUploadUrl(), {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Cloudinary upload error:', errorData);
+                throw new Error(`Upload failed: ${errorData.error?.message || 'Unknown error'}`);
+            }
+
+            const data = await response.json();
+            return {
+                success: true,
+                imageUrl: data.secure_url
+            };
+        } catch (error) {
+            console.error('Upload error:', error);
+            return {
+                success: false,
+                message: error instanceof Error ? error.message : 'Lỗi khi upload hình ảnh'
+            };
+        }
+    }
+
+    // Method cập nhật thông tin user bao gồm hình ảnh
+    async updateUserProfile(userData: Partial<UserResponse>): Promise<{ success: boolean; data?: UserResponse; message?: string }> {
+        try {
+            const response = await apiClient.put<ApiResponse<UserResponse>>('/auth/profile', userData);
+            const apiResponse = response.data;
+
+            if (apiResponse.code !== 1000) {
+                return {
+                    success: false,
+                    message: apiResponse.message || 'Không thể cập nhật thông tin',
+                };
+            }
+
+            return {
+                success: true,
+                data: apiResponse.result,
+            };
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return {
+                    success: false,
+                    message: errorResponse?.message || 'Lỗi khi cập nhật thông tin',
+                };
+            }
+            return {
+                success: false,
+                message: 'Lỗi không xác định',
+            };
+        }
+    }
+
     // Method lấy thông tin user hiện tại từ server
     async getCurrentUser(): Promise<{ success: boolean; data?: UserResponse; message?: string }> {
         try {
@@ -331,16 +410,22 @@ class AuthenticationService {
     }
 
     // Method đăng xuất
-    async logout(): Promise<void> {
+    async logout(): Promise<{ success: boolean; message?: string }> {
         try {
-            // Gửi request đến server để invalidate token
+            // Gọi API logout để invalidate token trên server
             await apiClient.post('/auth/logout');
+
+            return {
+                success: true,
+                message: 'Đăng xuất thành công'
+            };
         } catch (error) {
-            // Log lỗi nhưng vẫn tiếp tục cleanup
-            console.error('Logout error:', error);
-        } finally {
-            // Dù có lỗi hay không, vẫn xóa authData khỏi localStorage
-            localStorage.removeItem('authData');
+            // Ngay cả khi API logout lỗi, chúng ta vẫn trả success
+            console.error('Logout API error:', error);
+            return {
+                success: true, // Vẫn trả success vì sẽ xóa local data ở AuthContext
+                message: 'Đăng xuất thành công'
+            };
         }
     }
 
@@ -419,6 +504,8 @@ class AuthenticationService {
         }
         return null;
     }
+
+
 
 }
 

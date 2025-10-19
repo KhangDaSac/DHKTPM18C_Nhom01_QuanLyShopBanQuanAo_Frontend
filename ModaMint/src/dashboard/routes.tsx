@@ -1,10 +1,9 @@
 import { type RouteObject } from 'react-router-dom';
 import DashboardLayout from './layout';
-
-// Import dashboard main page
-import Dashboard from './index';
+import { DashboardRoute } from '../routes/ProtectedRoute';
 
 // Import dashboard pages
+import Dashboard from './index';
 import Settings from './pages/settings';
 import Products from './pages/products';
 import Customers from './pages/customers';
@@ -18,7 +17,11 @@ import ProductDetail from "../pages/detail";
 
 const dashboardRoutes: RouteObject = {
     path: 'dashboard',
-    element: <DashboardLayout />,
+    element: (
+        <DashboardRoute>
+            <DashboardLayout />
+        </DashboardRoute>
+    ),
     children: [
         { index: true, element: <Dashboard /> },
         { path: 'products', element: <Products /> },

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import './style.css';
+import styles from './style.module.css';
 import { FaFacebook, FaGoogle } from 'react-icons/fa';
 import { AiOutlineMail } from 'react-icons/ai';
 import { userService } from "../../services/user/index"
@@ -115,38 +115,38 @@ export default function Register() {
 
 
     return (
-        <div className="register-page">
-            <div className="register-container">
-                <div className="register-header">
+        <div className={styles["register__page"]}>
+            <div className={styles["register__container"]}>
+                <div className={styles["register__header"]}>
                     <h1>Đăng ký</h1>
                     <p>Tham gia ModaMint để nhận nhiều ưu đãi hấp dẫn!</p>
                 </div>
-                <div className="register-options">
+                <div className={styles["register__options"]}>
                     <div
                         className={`register-option ${registerMethod === 'email' ? 'active' : ''}`}
                         onClick={() => setRegisterMethod('email')}
                     >
-                        <AiOutlineMail className="register-option-icon" />
+                        <AiOutlineMail className={styles["register__option-icon"]} />
                         <span>Email</span>
                     </div>
                     <div
                         className={`register-option ${registerMethod === 'facebook' ? 'active' : ''}`}
                         onClick={() => setRegisterMethod('facebook')}
                     >
-                        <FaFacebook className="register-option-icon" />
+                        <FaFacebook className={styles["register__option-icon"]} />
                         <span>Facebook</span>
                     </div>
                     <div
                         className={`register-option ${registerMethod === 'google' ? 'active' : ''}`}
                         onClick={() => setRegisterMethod('google')}
                     >
-                        <FaGoogle className="register-option-icon" />
+                        <FaGoogle className={styles["register__option-icon"]} />
                         <span>Google</span>
                     </div>
                 </div>
 
                 {registerMethod === 'email' && (
-                    <form className="register-form" onSubmit={handleSubmit}>
+                    <form className={styles["register__form"]} onSubmit={handleSubmit}>
                         {/* Basic Required Fields */}
                         <div className="form-row">
                             <div className="form-group">
@@ -279,7 +279,7 @@ export default function Register() {
                         </div>
                         <button
                             type="submit"
-                            className="register-button"
+                            className={styles["register__button"]}
                             disabled={!agreeTerms || isLoading}
                         >
                             {isLoading ? 'Đang đăng ký...' : 'Đăng ký'}
@@ -321,10 +321,10 @@ export default function Register() {
                     </div>
                 )}
 
-                <div className="register-footer">
+                <div className={styles["register__footer"]}>
                     <p>
                         Bạn đã có tài khoản?{' '}
-                        <Link to="/login" className="login-link">
+                        <Link to="/login" className={styles["register__link"]}>
                             Đăng nhập
                         </Link>
                     </p>

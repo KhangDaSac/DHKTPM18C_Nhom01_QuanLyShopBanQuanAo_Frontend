@@ -1,7 +1,7 @@
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import "./style.css"
+import styles from "./style.module.css"
 import { AiOutlineLeft, AiOutlineRight, AiOutlineSearch, AiOutlineHeart, AiOutlineUser, AiOutlineShoppingCart, AiFillCaretDown } from "react-icons/ai";
 
 import { useAuth } from '../../contexts/authContext';
@@ -64,66 +64,66 @@ export default function Header() {
 
     return (
         <>
-            <div className='header'>
-                <div className='header__topbar'>
-                    <div className='container'>
+            <div className={styles.header}>
+                <div className={styles.header__topbar}>
+                    <div className={styles.header__container}>
                         <button
-                            className='btn-outline rounded-3xl bg-white text-orange-400 text-xs cursor-pointer'
+                            className={`${styles['header__btn-outline']} rounded-3xl bg-white text-orange-400 text-xs cursor-pointer`}
                             onClick={showPreviousAnnouncement}
                         >
                             <AiOutlineLeft />
                         </button>
-                        <div className="announcement-container">
-                            <p className={`text-white text-2xl ${slideDirection === 'left'
-                                ? 'slide-left'
+                        <div className={styles['header__announcement-container']}>
+                            <p className={`text-white text-2xl ${styles[slideDirection === 'left'
+                                ? 'header__slide-left'
                                 : slideDirection === 'right'
-                                    ? 'slide-right'
-                                    : 'slide-active'}`}>
+                                    ? 'header__slide-right'
+                                    : 'header__slide-active']}`}>
                                 {announcements[currentAnnouncementIndex]}
                             </p>
                         </div>
                         <button
-                            className='btn-outline rounded-3xl bg-white text-orange-400 text-xs cursor-pointer'
+                            className={`${styles['header__btn-outline']} rounded-3xl bg-white text-orange-400 text-xs cursor-pointer`}
                             onClick={showNextAnnouncement}
                         >
                             <AiOutlineRight />
                         </button>
                     </div>
                 </div>
-                <div className='header__middle'>
-                    <div className="container">
-                        <div className="logo-container">
+                <div className={styles.header__middle}>
+                    <div className={styles.header__container}>
+                        <div className={styles['header__logo-container']}>
                             <Link to="/">
-                                <img src="/header/logo.webp" alt="ND Style" className='header-logo' />
+                                <img src="/header/logo.webp" alt="ND Style" className={styles.header__logo} />
                             </Link>
                         </div>
-                        <div className='search-container'>
-                            <div className='search-box'>
+                        <div className={styles['header__search-container']}>
+                            <div className={styles['header__search-box']}>
                                 <input type="text"
-                                    className='search-input'
+                                    className={styles['header__search-input']}
                                     placeholder='Tìm kiếm...'
                                 />
-                                <button className='search-button'>
+                                <button className={styles['header__search-button']}>
                                     <AiOutlineSearch />
                                 </button>
                             </div>
                         </div>
-                        <div className='header-actions'>
-                            <div className='action-item'>
-                                <AiOutlineHeart className='action-icon' />
-                                <span className='action-text'>Yêu thích</span>
+                        <div className={styles.header__actions}>
+                            <div className={styles.header__action}>
+                                <AiOutlineHeart className={styles['header__action-icon']} />
+                                <span className={styles['header__action-text']}>Yêu thích</span>
                             </div>
-                            <div className='action-item has-account-submenu'>
-                                <AiOutlineUser className='action-icon' />
-                                <span className='action-text'>
+                            <div className={`${styles.header__action} ${styles['header__action--account']}`}>
+                                <AiOutlineUser className={styles['header__action-icon']} />
+                                <span className={styles['header__action-text']}>
                                     {isAuthenticated && displayName ? displayName : 'Tài khoản'}
                                 </span>
-                                <div className="account-submenu">
+                                <div className={styles['header__account-submenu']}>
                                     <ul>
                                         {isAuthenticated ? (
                                             <>
                                                 <li><Link to="/profile">Thông tin cá nhân</Link></li>
-                                                <li><button onClick={logout} className="logout-button">Đăng xuất</button></li>
+                                                <li><button onClick={logout} className={styles['header__logout-button']}>Đăng xuất</button></li>
                                             </>
                                         ) : (
                                             <>
@@ -134,24 +134,24 @@ export default function Header() {
                                     </ul>
                                 </div>
                             </div>
-                            <div className='action-item'>
-                                <div className='cart-icon-wrapper'>
-                                    <AiOutlineShoppingCart className='action-icon' />
-                                    <span className='cart-count'>1</span>
+                            <div className={styles.header__action}>
+                                <div className={styles['header__cart-wrapper']}>
+                                    <AiOutlineShoppingCart className={styles['header__action-icon']} />
+                                    <span className={styles['header__cart-count']}>1</span>
                                 </div>
-                                <span className='action-text'>Giỏ hàng</span>
+                                <span className={styles['header__action-text']}>Giỏ hàng</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className='header__menu'>
-                    <div className="container">
-                        <ul className='menu-list'>
-                            <li className='menu-item active'><Link to="/">Trang chủ</Link></li>
-                            <li className='menu-item has-submenu'>
-                                <Link to="/nam">Nam <AiFillCaretDown className="menu-arrow" /></Link>
-                                <div className="submenu">
-                                    <div className="submenu-column">
+                <div className={styles.header__menu}>
+                    <div className={styles.header__container}>
+                        <ul className={styles.header__nav}>
+                            <li className={`${styles.header__item} ${styles['header__item--active']}`}><Link to="/">Trang chủ</Link></li>
+                            <li className={`${styles.header__item} ${styles['header__item--dropdown']}`}>
+                                <Link to="/nam">Nam <AiFillCaretDown className={styles['header__menu-arrow']} /></Link>
+                                <div className={styles.header__submenu}>
+                                    <div className={styles['header__submenu-column']}>
                                         <h3>Danh mục</h3>
                                         <ul>
                                             <li><Link to="/nam/ao">Áo</Link></li>
@@ -162,10 +162,10 @@ export default function Header() {
                                     </div>
                                 </div>
                             </li>
-                            <li className='menu-item has-submenu'>
-                                <Link to="/nu">Nữ <AiFillCaretDown className="menu-arrow" /></Link>
-                                <div className="submenu">
-                                    <div className="submenu-column">
+                            <li className={`${styles.header__item} ${styles['header__item--dropdown']}`}>
+                                <Link to="/nu">Nữ <AiFillCaretDown className={styles['header__menu-arrow']} /></Link>
+                                <div className={styles.header__submenu}>
+                                    <div className={styles['header__submenu-column']}>
                                         <h3>Danh mục</h3>
                                         <ul>
                                             <li><Link to="/nu/ao">Áo</Link></li>
@@ -177,11 +177,11 @@ export default function Header() {
                                     </div>
                                 </div>
                             </li>
-                            <li className='menu-item'><Link to="/news">Tin tức</Link></li>
-                            <li className='menu-item'><Link to="/contact">Liên hệ</Link></li>
-                            <li className='menu-item'><Link to="/stores">Hệ thống cửa hàng</Link></li>
-                            <li className='menu-item'><Link to="/kiem-tra-don-hang">Kiểm tra đơn hàng</Link></li>
-                            <li className='menu-item'><Link to="/chi-tiet-san-pham">Chi tiết sản phẩm</Link></li>
+                            <li className={styles.header__item}><Link to="/news">Tin tức</Link></li>
+                            <li className={styles.header__item}><Link to="/contact">Liên hệ</Link></li>
+                            <li className={styles.header__item}><Link to="/stores">Hệ thống cửa hàng</Link></li>
+                            <li className={styles.header__item}><Link to="/kiem-tra-don-hang">Kiểm tra đơn hàng</Link></li>
+                            <li className={styles.header__item}><Link to="/chi-tiet-san-pham">Chi tiết sản phẩm</Link></li>
                         </ul>
                     </div>
                 </div>

@@ -1,0 +1,165 @@
+/* Dashboard Header Component - BEM Structure */
+
+/* ============================================
+   HEADER BLOCK
+============================================ */
+.header {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 999;
+    padding: 0 24px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: left 0.2s;
+    height: 64px;
+}
+
+.header--sidebar-collapsed {
+    left: 80px;
+}
+
+.header--sidebar-expanded {
+    left: 240px;
+}
+
+/* ============================================
+   HEADER ELEMENTS
+============================================ */
+.header__search-section {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    max-width: 600px;
+}
+
+.header__search-container {
+    width: 100%;
+    max-width: 400px;
+}
+
+.header__actions-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.header__notification-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
+
+.header__user-menu-container {
+    cursor: pointer;
+    padding: 8px;
+}
+
+.header__user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.header__user-name {
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: bold;
+}
+
+.header__user-role {
+    font-size: 11px;
+    color: #666;
+    line-height: 1.2;
+}
+
+.header__user-avatar {
+    background-color: #1677ff;
+}
+
+/* ============================================
+   HEADER MODIFIERS
+============================================ */
+.header__notification-button--active {
+    background-color: rgba(255, 99, 71, 0.1);
+}
+
+/* ============================================
+   NOTIFICATION POPOVER
+============================================ */
+.header__notification-popover {
+    width: 320px;
+    max-height: 400px;
+    overflow: auto;
+}
+
+.header__notification-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.header__notification-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.header__notification-item:hover {
+    background-color: #f5f5f5;
+}
+
+.header__notification-item:not(:hover) {
+    background-color: transparent;
+}
+
+.header__notification-avatar {
+    background-color: #52c41a;
+}
+
+.header__notification-avatar--warning {
+    background-color: #faad14;
+}
+
+.header__notification-avatar--review {
+    background-color: #1677ff;
+}
+
+.header__notification-title {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.header__notification-message {
+    font-size: 12px;
+    color: #666;
+}
+
+.header__notification-time {
+    font-size: 11px;
+    color: #999;
+}
+
+.header__notification-footer {
+    padding: 8px 16px;
+    text-align: center;
+}
+
+/* ============================================
+   CSS VARIABLES
+============================================ */
+:root {
+    --header-bg-color: #ffffff;
+    --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    --header-text-primary: #333333;
+    --header-text-secondary: #666666;
+    --header-text-muted: #999999;
+    --header-border-color: #f0f0f0;
+    --header-hover-bg: #f5f5f5;
+    --header-primary-color: #ff6347;
+    --header-transition: all 0.2s ease;
+}

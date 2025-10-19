@@ -25,7 +25,6 @@ export interface CreateUserRequest {
 
 // Interface cho UpdateUserRequest (giống UserUpdateRequest backend)
 export interface UpdateUserRequest {
-    username?: string;
     email?: string;
     password?: string;
     phone?: string;
