@@ -1,4 +1,4 @@
-
+import styles from './styles.module.css'
 import React from 'react';
 
 interface PersonalDiscountProps {
@@ -8,12 +8,12 @@ interface PersonalDiscountProps {
 }
 export const PersonalDisCount: React.FC<PersonalDiscountProps> = ({ discount, price, buttonText }) => {
     return (
-        <div className="discount-item">
-            <div className="coupon">
-                <div className="discount">{discount}</div>
-                <div className="cashback">Giảm {price}</div>
-            </div>
-            <button className="view-button">{buttonText}</button>
+        <div className={styles.discount_item}>
+        <div className={styles.coupon}>
+            <div className={styles.discount}>{discount}</div>
+            <div className={styles.cashback}>Giảm {price}</div>
+        </div>
+        <button className={styles.view_button}>{buttonText}</button>
         </div>
     );
 };

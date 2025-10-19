@@ -1,8 +1,10 @@
-import React from 'react'
+// import React from 'react' // Not needed in modern React
 import { Outlet } from 'react-router-dom'
 import Header from '../header'
 import Footer from '../footer'
 import FloatingButton from "../floating-button/index"
+
+import Chatbox from '../chatbox';
 
 export default function RootLayout() {
     return (
@@ -13,6 +15,7 @@ export default function RootLayout() {
             </main>
             <Footer />
             <FloatingButton />
+            <Chatbox />
         </div>
     )
 }

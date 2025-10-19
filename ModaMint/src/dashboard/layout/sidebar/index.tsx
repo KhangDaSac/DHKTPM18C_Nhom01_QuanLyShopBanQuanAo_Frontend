@@ -3,7 +3,9 @@ import { Layout, Menu, Button, Avatar, Typography } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { DASHBOARD_SIDEBAR_LINKS, DASHBOARD_SIDEBAR_BOTTOM_LINKS } from '../../navigation';
-import './style.css';
+import { useAuth } from '../../../contexts/authContext';
+import { toast } from 'react-toastify';
+import styles from './style.module.css';
 
 const { Sider } = Layout;
 const { Text } = Typography;
@@ -16,12 +18,17 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
-    const handleMenuClick = (path: string) => {
+    const handleMenuClick = async (path: string) => {
         if (path === '/logout') {
-            // Handle logout logic
-            localStorage.removeItem('token');
-            navigate('/login');
+            try {
+                await logout();
+                navigate('/login', { replace: true });
+            } catch (error) {
+                console.error('Logout error:', error);
+                toast.error('Có lỗi xảy ra khi đăng xuất!');
+            }
         } else {
             navigate(path);
         }
@@ -44,20 +51,62 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
 
     const getSelectedKey = () => {
         const path = location.pathname;
-        // Chỉ highlight menu item khi đang ở đúng trang đó
         if (path === '/dashboard') return 'dashboard';
-        if (path === '/dashboard/products') return 'products';
-        if (path === '/dashboard/categories') return 'categories';
-        if (path === '/dashboard/orders') return 'orders';
-        if (path === '/dashboard/promotions') return 'promotions';
-        if (path === '/dashboard/permissions') return 'permissions';
-        if (path === '/dashboard/settings') return 'settings';
-        // Không trả về gì khi không ở trang nào cụ thể
+        if (path.startsWith('/dashboard/products')) return 'products';
+        if (path.startsWith('/dashboard/categories')) return 'categories';
+        if (path.startsWith('/dashboard/orders')) return 'orders';
+        if (path.startsWith('/dashboard/promotions')) return 'promotions';
+        if (path.startsWith('/dashboard/roles')) return 'roles';
+        if (path.startsWith('/dashboard/stores')) return 'stores';
+        if (path.startsWith('/dashboard/settings')) return 'settings';
+        if (path.startsWith('/dashboard/customers')) return 'customers';
         return '';
     };
 
     return (
-        <div className="modamint-sidebar bg-primary">
+        <>
+            <style>
+                {`
+                    .sidebar-menu .ant-menu-item {
+                        color: rgba(255, 255, 255, 0.85) !important;
+                        transition: background-color 0.15s ease !important;
+                        border-radius: 6px !important;
+                        margin: 2px 8px !important;
+                    }
+                    
+                    .sidebar-menu .ant-menu-item:hover {
+                        color: #ffffff !important;
+                        background-color: rgba(255, 255, 255, 0.1) !important;
+                    }
+                    
+                    .sidebar-menu .ant-menu-item-selected {
+                        color: #ffffff !important;
+                        background-color: rgba(255, 255, 255, 0.2) !important;
+                        font-weight: 600 !important;
+                    }
+                    
+                    .sidebar-menu .ant-menu-item-selected::after {
+                        border-right: 3px solid #ffffff !important;
+                    }
+                    
+                    .sidebar-menu .ant-menu-item-icon {
+                        color: rgba(255, 255, 255, 0.85) !important;
+                    }
+                    
+                    .sidebar-menu .ant-menu-item-selected .ant-menu-item-icon {
+                        color: #ffffff !important;
+                    }
+                    
+                    .sidebar-menu .ant-menu-item-danger {
+                        color: rgba(255, 255, 255, 0.85) !important;
+                    }
+                    
+                    .sidebar-menu .ant-menu-item-danger:hover {
+                        color: #ff4d4f !important;
+                        background-color: rgba(255, 77, 79, 0.1) !important;
+                    }
+                `}
+            </style>
             <Sider
                 trigger={null}
                 collapsible
@@ -70,108 +119,82 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
                     left: 0,
                     top: 0,
                     bottom: 0,
-                    zIndex: 1000,
                     background: 'linear-gradient(135deg, #ff6347 0%, #ff7f50 100%)',
-                    boxShadow: '2px 0 8px rgba(0,0,0,0.15)',
                 }}
             >
-                {/* Logo Section */}
-                <div style={{
-                    height: 64,
-                    padding: collapsed ? '16px 8px' : '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: collapsed ? 'center' : 'space-between',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
-                    flexDirection: collapsed ? 'column' : 'row',
-                    gap: collapsed ? '8px' : '0',
-                }}>
-                    {collapsed ? (
-                        // Logo khi collapsed - chỉ hiển thị avatar và button toggle theo chiều dọc
-                        <>
-                            <Avatar
-                                size={24}
-                                style={{
-                                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                                    fontSize: '12px',
-                                    fontWeight: 'bold'
-                                }}
-                            >
+            {/* Logo Section */}
+            <div style={{
+                height: '64px',
+                padding: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+            }}>
+                {collapsed ? (
+                    <>
+                        <Avatar size={24} style={{ background: 'rgba(255, 255, 255, 0.2)' }}>
+                            MM
+                        </Avatar>
+                        <Button
+                            type="text"
+                            icon={<MenuUnfoldOutlined />}
+                            onClick={toggleSidebar}
+                            size="small"
+                            style={{ color: 'white' }}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Avatar size={32} style={{ background: 'rgba(255, 255, 255, 0.2)' }}>
                                 MM
                             </Avatar>
-                            <Button
-                                type="text"
-                                icon={<MenuUnfoldOutlined />}
-                                onClick={toggleSidebar}
-                                size="small"
-                                style={{
-                                    fontSize: '14px',
-                                    width: 24,
-                                    height: 24,
-                                    color: 'white',
-                                    padding: 0,
-                                    minWidth: 'auto',
-                                }}
-                            />
-                        </>
-                    ) : (
-                        // Logo khi expanded - hiển thị đầy đủ
-                        <>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Avatar
-                                    size={32}
-                                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-                                >
-                                    MM
-                                </Avatar>
-                                <Text strong style={{ color: 'white', fontSize: '16px' }}>
-                                    ModaMint
-                                </Text>
-                            </div>
-                            <Button
-                                type="text"
-                                icon={<MenuFoldOutlined />}
-                                onClick={toggleSidebar}
-                                style={{
-                                    fontSize: '16px',
-                                    width: 32,
-                                    height: 32,
-                                    color: 'white',
-                                }}
-                            />
-                        </>
-                    )}
-                </div>
+                            <Text strong style={{ color: 'white', fontSize: '16px' }}>
+                                ModaMint
+                            </Text>
+                        </div>
+                        <Button
+                            type="text"
+                            icon={<MenuFoldOutlined />}
+                            onClick={toggleSidebar}
+                            style={{ color: 'white' }}
+                        />
+                    </>
+                )}
+            </div>
 
-                {/* Top Menu */}
-                <div style={{ flex: 1, paddingTop: '16px' }}>
-                    <Menu
-                        mode="inline"
-                        selectedKeys={[getSelectedKey()]}
-                        items={topMenuItems}
-                        style={{
-                            border: 'none',
-                            backgroundColor: 'transparent',
-                            color: 'white'
-                        }}
-                    />
-                </div>
+            {/* Top Menu */}
+            <div style={{ flex: 1, paddingTop: '16px' }}>
+                <Menu
+                    mode="inline"
+                    selectedKeys={[getSelectedKey()]}
+                    items={topMenuItems}
+                    className="sidebar-menu"
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                    }}
+                    theme="dark"
+                />
+            </div>
 
-                {/* Bottom Menu */}
-                <div style={{ marginTop: 'auto', paddingBottom: '16px' }}>
-                    <Menu
-                        mode="inline"
-                        selectedKeys={[getSelectedKey()]}
-                        items={bottomMenuItems}
-                        style={{
-                            border: 'none',
-                            backgroundColor: 'transparent',
-                            color: 'white'
-                        }}
-                    />
-                </div>
-            </Sider>
-        </div>
+            {/* Bottom Menu */}
+            <div style={{ marginTop: 'auto', paddingBottom: '16px' }}>
+                <Menu
+                    mode="inline"
+                    selectedKeys={[getSelectedKey()]}
+                    items={bottomMenuItems}
+                    className="sidebar-menu"
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                    }}
+                    theme="dark"
+                />
+            </div>
+        </Sider>
+        </>
     );
 };
 

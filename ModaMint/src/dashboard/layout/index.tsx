@@ -19,23 +19,43 @@ const DashboardLayout: React.FC = () => {
     };
 
     return (
-        <Layout style={{ minHeight: '100vh' }} className="debug-theme-info" data-testid="dashboard-container">
-            <Sidebar collapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
-            <Layout style={{ marginLeft: sidebarCollapsed ? 80 : 240, transition: 'margin-left 0.2s' }}>
-                <Header sidebarCollapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
-                <Content
-                    style={{
-                        marginTop: 64,
-                        padding: '24px',
-                        background: '#f5f5f5',
-                        minHeight: 'calc(100vh - 64px)',
-                        overflow: 'auto',
-                    }}
-                >
-                    <Outlet />
-                </Content>
+        <>
+            <style>
+                {`
+                    .dashboard-layout {
+                        min-height: 100vh;
+                        transition: margin-left 0.2s ease;
+                    }
+                    
+                    .dashboard-content {
+                        background: #f5f5f5;
+                        min-height: calc(100vh - 64px);
+                        overflow: auto;
+                        position: relative;
+                    }
+                    
+                    .dashboard-content-wrapper {
+                        position: relative;
+                        z-index: 1;
+                        padding: 24px;
+                    }
+                `}
+            </style>
+            <Layout className="dashboard-layout" data-testid="dashboard-container">
+                <Sidebar collapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
+                <Layout style={{ 
+                    marginLeft: sidebarCollapsed ? 80 : 240, 
+                    transition: 'margin-left 0.2s ease' 
+                }}>
+                    <Header sidebarCollapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
+                    <Content className="dashboard-content">
+                        <div className="dashboard-content-wrapper">
+                            <Outlet />
+                        </div>
+                    </Content>
+                </Layout>
             </Layout>
-        </Layout>
+        </>
     );
 };
 

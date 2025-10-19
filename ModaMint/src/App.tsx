@@ -1,10 +1,6 @@
 
 import './App.css'
-import { BrowserRouter, createBrowserRouter, Link, Route, RouterProvider, Routes } from 'react-router-dom';
-import Header from './components/header';
-import Footer from './components/footer';
-import Login from './pages/login';
-import Register from './pages/register';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import RootLayout from './components/layout';
 import HomePage from "./pages/home"
 import NewsPage from "./pages/news"
@@ -13,10 +9,33 @@ import LoginPage from "./pages/login"
 import RegisterPage from './pages/register';
 import StoresPage from "./pages/stores";
 import ContactPage from "./pages/contact";
-import NotFoundPage from "./pages/not-found"
+import NotFoundPage from "./pages/not-found";
+import ProfilePage from "./pages/profile";
+import ProfileAddress from "./pages/profile/ProfileAddress";
+import ProfileOrders from "./pages/profile/ProfileOrders";
+import ProfileChangePassword from "./pages/profile/ProfileChangePassword";
+import AuthTestPage from "./pages/auth-test";
 
+// Import protected routes
+import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
+
+import Detail from "./pages/detail"
+
+// Trang sản phẩm
+import ProductList from './pages/products/ProductList';
+import Cart from './components/cart';
+import CheckoutPage from './pages/checkout/CheckoutPage';
+// Context
+import { CartProvider } from '../src/components/contexts/CartContext';
 // Import dashboard routes
 import dashboardRoutes from './dashboard/routes';
+// Import Error Boundary
+import ErrorBoundary from './components/ErrorBoundary';
+
+// Import React Toastify
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 
 function App() {
@@ -31,8 +50,77 @@ function App() {
         { path: "about", element: <AboutPage /> },
         { path: "stores", element: <StoresPage /> },
         { path: "contact", element: <ContactPage /> },
-        { path: "login", element: <LoginPage /> },
-        { path: "register", element: <RegisterPage /> },
+
+        // Routes chỉ cho phép user CHƯA đăng nhập
+        {
+          path: "login",
+          element: (
+            <AuthRoute>
+              <LoginPage />
+            </AuthRoute>
+          )
+        },
+        {
+          path: "register",
+          element: (
+            <AuthRoute>
+              <RegisterPage />
+            </AuthRoute>
+          )
+        },
+
+        // Routes chỉ cho phép user ĐÃ đăng nhập
+        {
+          path: "profile",
+          element: (
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: "profile/address",
+          element: (
+            <ProtectedRoute>
+              <ProfileAddress />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: "profile/order",
+          element: (
+            <ProtectedRoute>
+              <ProfileOrders />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: "profile/changepassword",
+          element: (
+            <ProtectedRoute>
+              <ProfileChangePassword />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: "auth-test",
+          element: (
+            <ProtectedRoute>
+              <AuthTestPage />
+            </ProtectedRoute>
+          )
+        },
+
+
+        { path: "products", element: <ProductList /> },
+
+
+        { path: "detail/:id", element: <Detail /> },
+
+        // Phần sản phẩm
+        { path: "ProductList", element: <ProductList /> },
+        { path: "carts", element: <Cart /> },
+        { path: 'checkoutpage', element: <CheckoutPage /> },
       ]
     },
 
@@ -47,9 +135,23 @@ function App() {
 
 
   return (
-    <>
-      <RouterProvider router={router} />
-    </>
+    <ErrorBoundary>
+      <CartProvider>
+        <RouterProvider router={router} />
+        <ToastContainer
+          position="top-right"
+          autoClose={3500}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+      </CartProvider>
+    </ErrorBoundary>
   )
 }
 
