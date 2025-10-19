@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import styles from './styles.module.css'
+
 interface ProductCardData {
   id: number;
   image: string;
@@ -22,31 +24,36 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <>
       <div
-        className="product-card"
+
+        className={styles.product_card}
+
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="product-image">
+        <div className={styles.product_image}>
           <img src={product.image} alt={product.name} />
           {product.discount && (
-            <div className="discount-badge">{product.discount}</div>
+            <div className={styles.discount_badge}>{product.discount}</div>
           )}
-          <button className={`heart-icon ${isHovered ? 'visible' : ''}`}>
+          <button
+            className={`${styles.heart_icon} ${isHovered ? styles.visible : ''}`}
+          >
             ♥
           </button>
         </div>
-        <div className="product-details">
-          <div className="user-info">
+        <div className={styles.product_details}>
+          <div className={styles.user_info}>
             <span>{product.name}</span>
           </div>
-          <div className="price-section">
+          <div className={styles.price_section}>
             {product.soldCount !== undefined && (
-              <div className="sold-bar">
+              <div className={styles.sold_bar}>
                 {product.soldCount === 0 ? (
-                  <span className="sold-text">0 sản phẩm đã bán</span>
+                  <span className={styles.sold_text}>0 sản phẩm đã bán</span>
                 ) : (
                   <div
-                    className="sold-progress"
+                    className={styles.sold_progress}
+
                     style={{ width: `${progressWidth}%` }}
                   >
                     {product.soldCount} sản phẩm đã bán
@@ -54,12 +61,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 )}
               </div>
             )}
-            <div className="price">
-              <span className="current-price">{product.currentPrice}</span>
-              <span className="original-price">{product.originalPrice}</span>
+            <div className={styles.price}>
+              <span className={styles.current_price}>{product.currentPrice}</span>
+              <span className={styles.original_price}>{product.originalPrice}</span>
             </div>
           </div>
-          <button className={`option-button ${isHovered ? 'hovered' : ''}`}>
+          <button
+            className={`${styles.option_button} ${
+              isHovered ? styles.hovered : ''
+            }`}
+          >
             Tùy chọn
           </button>
         </div>

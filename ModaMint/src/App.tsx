@@ -21,6 +21,7 @@ import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
 
 import Detail from "./pages/detail"
 
+import ProductList from './pages/products/ProductList';
 
 import Cart from './components/cart';
 import CheckoutPage from './pages/checkout/CheckoutPage';
@@ -112,11 +113,14 @@ function App() {
 
 
 
+        { path: "products", element: <ProductList /> },
+
+
 
         { path: "detail/:id", element: <Detail /> },
 
         // Phần sản phẩm
-        // { path: "ProductList", element: <ProductList /> },
+
         { path: "carts", element: <Cart /> },
         { path: 'checkoutpage', element: <CheckoutPage /> },
       ]

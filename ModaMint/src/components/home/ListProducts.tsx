@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import './style.css';
 import { ProductCard } from './item-components/ProductCard';
 import {CircleChevronRight, CircleChevronLeft} from 'lucide-react';
+import styles from './styles.module.css'
+
 
 interface Product {
   id: number;
@@ -38,30 +39,33 @@ const ListProducts: React.FC<ListProductsProps> = ({ products, itemsPerPage}) =>
   const visibleProducts = products.slice(currentIndex * itemsPerPage, (currentIndex + 1) * itemsPerPage);
 
   return (
-      <div>
-        <div className='container-product-list'>
-          <button 
-          className="nav-button left" 
+    <div>
+      <div className={styles.product_list__container}>
+        <button
+          className={styles.product_list__nav_button}
           onClick={() => scroll('left')}
           disabled={currentIndex === 0}
         >
-          <CircleChevronLeft/>
+          <CircleChevronLeft />
         </button>
-        <div className="product-list" ref={scrollRef}>
+
+        <div className={styles.product_list} ref={scrollRef}>
           {visibleProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
-        <button 
-          className="nav-button right" 
+
+        <button
+          className={styles.product_list__nav_button}
           onClick={() => scroll('right')}
           disabled={currentIndex >= Math.floor((products.length - 1) / itemsPerPage)}
         >
-          <CircleChevronRight/>
+          <CircleChevronRight />
         </button>
-        </div>
-        <button className="view-all">Xem tất cả &gt;</button>
       </div>
+
+      <button className={styles.product_list__view_all}>Xem tất cả &gt;</button>
+    </div>
   );
 };
 

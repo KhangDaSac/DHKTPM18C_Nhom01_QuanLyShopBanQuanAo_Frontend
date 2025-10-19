@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {ProductCard} from '../home/item-components/ProductCard';
-import './style.css';
+import styles from './styles.module.css';
 
 interface Product {
   id: number;
@@ -25,7 +25,8 @@ const SuggestionToday: React.FC<SuggestionTodayProps> = ({ products, tabs }) => 
   const filterProducts = (tab: string) => {
     switch (tab) {
       case 'Hàng mới về':
-        return products.filter(p => !p.discount);
+        return products;
+        // return products.filter(p => !p.discount);
       case 'Giá tốt':
         return products.filter(p => parseInt(p.currentPrice.replace(/[^\d]/g, '')) < 600000);
       case 'Tiết kiệm nhiều nhất':
@@ -40,19 +41,19 @@ const SuggestionToday: React.FC<SuggestionTodayProps> = ({ products, tabs }) => 
   const filteredProducts = filterProducts(activeTab);
 
   return (
-    <div className="suggestion-today">
-      <div className="suggestion-tabs">
+    <div className={styles.suggestion_today}>
+      <div className={styles.suggestion_today__tabs}>
         {tabs.map((tab) => (
           <button
             key={tab}
-            className={`tab-button ${activeTab === tab ? 'active' : ''}`}
+            className={`${styles.suggestion_today__tab_button} ${activeTab === tab ? styles["suggestion_today__tab_button--active"] : ""}`}
             onClick={() => setActiveTab(tab)}
           >
             {tab}
           </button>
         ))}
       </div>
-      <div className="product-grid">
+      <div className={styles.suggestion_today__product_grid}>
         {filteredProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}

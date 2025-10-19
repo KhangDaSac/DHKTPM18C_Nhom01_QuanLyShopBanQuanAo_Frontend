@@ -6,7 +6,7 @@ import ListProducts from "../../components/home/ListProducts";
 import { ReviewCarousel } from "../../components/home/ReviewCarousel";
 import SaleBanner from "../../components/home/SaleBanner";
 import SuggestionToday from "../../components/home/SuggestionToday";
-import './style.css'
+import styles from './styles.module.css'
 
 interface Promotion {
   id: number;
@@ -133,105 +133,106 @@ export default function Home() {
     ];
 
   return (
-    <div className="home-container">
-      <SaleBanner benefits={benefits} />
+    <div className={styles.home_container}>
+  <SaleBanner benefits={benefits} />
 
-      <CategoryList categories={categories} />
+  <CategoryList categories={categories} />
 
-        <TitleLine title={"Dành riêng cho bạn"}/>
-      <CarouselDiscount promotions={promotions} />
+  <TitleLine title={"Dành riêng cho bạn"} />
+  <CarouselDiscount promotions={promotions} />
 
-      <div className="list-products-container">
-        <div className="list-header">
-          <span className="preferential-timer">Ưu đãi đặc biệt</span>
-          <h2 className='preferential-text'>00:00:00</h2>
-          <ListProducts products={sampleProducts} itemsPerPage={4}/>
-        </div>
+  <div className={styles.list_products_container}>
+    <div className={styles.list_header}>
+      <span className={styles.preferential_timer}>Ưu đãi đặc biệt</span>
+      <h2 className={styles.preferential_text}>00:00:00</h2>
+      <ListProducts products={sampleProducts} itemsPerPage={4} />
+    </div>
+  </div>
+
+  <TitleLine title={"Gợi ý hôm nay"} />
+  <SuggestionToday products={sampleProducts} tabs={tabs1} />
+
+  <div className={styles.container_img_banner}>
+    <div className={styles.banner_large}>
+      <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760249412/img_banner_1_gkumu3.png" alt="Banner lớn" />
+    </div>
+    <div className={styles.right_column}>
+      <div className={styles.banner_medium}>
+        <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760249412/img_banner_2_f5bqdo.png" alt="Banner trung bình" />
       </div>
-
-      <TitleLine title={"Gợi ý hôm nay"}/>
-      <SuggestionToday products={sampleProducts} tabs={tabs1}/>
-
-      <div className="container-img-banner">
-        <div className="banner-large">
-            <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760249412/img_banner_1_gkumu3.png" alt="Banner lớn" />
+      <div className={styles.bottom_row}>
+        <div className={styles.banner_small}>
+          <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760249412/img_banner_3_vq6xjz.png" alt="Banner nhỏ 1" />
         </div>
-        <div className="right-column">
-            <div className="banner-medium">
-                <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760249412/img_banner_2_f5bqdo.png" alt="Banner trung bình" />
-            </div>
-            <div className="bottom-row">
-                <div className="banner-small">
-                    <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760249412/img_banner_3_vq6xjz.png" alt="Banner nhỏ 1" />
-                </div>
-                <div className="banner-small">
-                    <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760249412/img_banner_4_csi2jw.png" alt="Banner nhỏ 2" />
-                </div>
-            </div>
+        <div className={styles.banner_small}>
+          <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760249412/img_banner_4_csi2jw.png" alt="Banner nhỏ 2" />
         </div>
-      </div>
-
-      <TitleLine title={"Bộ sưu tập nam"}/>
-      <div className="male-collection">
-          <ListProducts products={sampleProducts} itemsPerPage={2}/>
-          <div className="container-male-img">
-            <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760258514/img_product_banner_1_swjimu.webp" alt="" />
-          </div>
-      </div>
-
-      <div className="event-home">
-        <div className="">
-          <img className="event-img-home" src="https://res.cloudinary.com/dkokkltme/image/upload/v1760261081/image_lookbook_1_ghrqxl.webp" alt="" />
-        </div>
-        <div className="text-event-container">
-          <h1 className="event-title-home">ENCHANTING DRESS 2024</h1>
-          <div className="event-content-home">
-            <p>Khám phá bộ sưu tập mới nhất trong 20 ngày qua với những thiết kế thanh thoát và mềm mại. Nhũng hoa tiết hoa tươi sáng và chất liệu mịn màng sẽ mang đến sự quyến rũ và thoái mái cho mọi dịp.</p>
-            <p>Tạo sự tươi mới bằng cách phối đồ cùng giày cao gót hoặc khăn lụa! Tùy thuộc vào sở thích của bạn.</p>
-            <p>Trình bày buổi dạo phố một cách thanh lịch với những chiếc váy điệu đà được thiết kế tỉ mỉ, chất vải nhẹ nhàng, tạo cảm giác thoải mái, dễ chịu khi vận động, phù hợp với mọi lứa tuổi.</p>
-            <p>Hãy để bộ sưu tập này làm nổi bật phong cách của bạn trong những dịp đặc biệt, tạo ấn tượng mạnh mẽ với mọi người.</p>
-          </div>
-          <button className="event-view-btn">Xem thêm</button>
-        </div>
-      </div>
-
-      <TitleLine title={"Bộ sưu tập nữ"}/>
-      <div className="male-collection">
-          <ListProducts products={sampleProducts} itemsPerPage={2}/>
-          <div className="container-male-img">
-            <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760258514/img_product_banner_1_swjimu.webp" alt="" />
-          </div>
-      </div>
-
-      <div className="blacfriday-event-home">
-        <div className="containet-blackfriday">
-          <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760262983/logo_ajhylk.png" alt="" />
-        </div>
-        <div>
-        </div>
-      </div>
-
-      <TitleLine title={"Phụ kiện"}/>
-      <SuggestionToday products={sampleProducts} tabs={tabs2}/>
-
-      <div className="estimate-home">
-        <div className="estimate-container">
-          <div className="estimate-img">
-            <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760263866/img_mini_review_t8drmo.webp" alt="" />
-            <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760263866/img_mini_review_t8drmo.webp" alt="" />
-          </div>
-          <ReviewCarousel reviews={reviews}/>
-        </div>
-      </div>
-
-      <TitleLine title={"Sản phẩm nổi bậc"}/>
-      <div className="outstanding-container">
-        {
-          outstandingProducts.map(
-            p => <ProductImgCard key={p.id} imageUrl={p.image}/>
-          )
-        }
       </div>
     </div>
+  </div>
+
+  <TitleLine title={"Bộ sưu tập nam"} />
+  <div className={styles.male_collection}>
+    <ListProducts products={sampleProducts} itemsPerPage={2} />
+    <div className={styles.container_male_img}>
+      <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760258514/img_product_banner_1_swjimu.webp" alt="" />
+    </div>
+  </div>
+
+  <div className={styles.event_home}>
+    <div>
+      <img
+        className={styles.event_img_home}
+        src="https://res.cloudinary.com/dkokkltme/image/upload/v1760261081/image_lookbook_1_ghrqxl.webp"
+        alt=""
+      />
+    </div>
+    <div className={styles.text_event_container}>
+      <h1 className={styles.event_title_home}>ENCHANTING DRESS 2024</h1>
+      <div className={styles.event_content_home}>
+        <p>Khám phá bộ sưu tập mới nhất trong 20 ngày qua với những thiết kế thanh thoát và mềm mại...</p>
+        <p>Tạo sự tươi mới bằng cách phối đồ cùng giày cao gót hoặc khăn lụa!...</p>
+        <p>Trình bày buổi dạo phố một cách thanh lịch với những chiếc váy điệu đà...</p>
+        <p>Hãy để bộ sưu tập này làm nổi bật phong cách của bạn...</p>
+      </div>
+      <button className={styles.event_view_btn}>Xem thêm</button>
+    </div>
+  </div>
+
+  <TitleLine title={"Bộ sưu tập nữ"} />
+  <div className={styles.male_collection}>
+    <ListProducts products={sampleProducts} itemsPerPage={2} />
+    <div className={styles.container_male_img}>
+      <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760258514/img_product_banner_1_swjimu.webp" alt="" />
+    </div>
+  </div>
+
+  <div className={styles.blacfriday_event_home}>
+    <div className={styles.containet_blackfriday}>
+      <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760262983/logo_ajhylk.png" alt="" />
+    </div>
+  </div>
+
+  <TitleLine title={"Phụ kiện"} />
+  <SuggestionToday products={sampleProducts} tabs={tabs2} />
+
+  <div className={styles.estimate_home}>
+    <div className={styles.estimate_container}>
+      <div className={styles.estimate_img}>
+        <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760263866/img_mini_review_t8drmo.webp" alt="" />
+        <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760263866/img_mini_review_t8drmo.webp" alt="" />
+      </div>
+      <ReviewCarousel reviews={reviews} />
+    </div>
+  </div>
+
+  <TitleLine title={"Sản phẩm nổi bật"} />
+  <div className={styles.outstanding_container}>
+    {outstandingProducts.map((p) => (
+      <ProductImgCard key={p.id} imageUrl={p.image} />
+    ))}
+  </div>
+</div>
+
   );
 }

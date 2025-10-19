@@ -42,6 +42,7 @@ import * as XLSX from 'xlsx';
 import '../../components/common-styles.css';
 import { productService, type ProductRequest } from '../../../services/product';
 import { categoryService, type Category } from '../../../services/category';
+import { useProducts } from '../../../hooks/useProducts';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -64,10 +65,11 @@ interface Product {
 }
 
 const Products: React.FC = () => {
-    // State cho products từ API
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    // Sử dụng hook để lấy dữ liệu từ API
+    const { products: apiProducts, loading: apiLoading, error: apiError, refetch } = useProducts();
+    
+    // State cho local products (để thêm/sửa/xóa)
+    const [localProducts, setLocalProducts] = useState<Product[]>([]);
     
     // State cho categories từ API
     const [categories, setCategories] = useState<Category[]>([]);
@@ -94,6 +96,10 @@ const Products: React.FC = () => {
         total: 0
     });
 
+    // State cho variant modal
+    const [isVariantModalVisible, setIsVariantModalVisible] = useState(false);
+    const [editingVariants, setEditingVariants] = useState<any[]>([]);
+
     // Load categories từ API
     const loadCategories = async () => {
         setCategoriesLoading(true);
@@ -112,70 +118,31 @@ const Products: React.FC = () => {
         }
     };
 
-    // Load products từ API - Logic mới: Load tất cả sản phẩm rồi phân trang ở frontend
-    const loadProducts = async (page?: number, forceReload: boolean = false) => {
-        setLoading(true);
-        setError(null);
-        try {
-            // Load tất cả sản phẩm từ API (không phân trang ở backend)
-            const result = await productService.getAllProducts();
-            
-            if (result.success && result.data) {
-                const allProductsWithImages = result.data.map(product => ({
-                    ...product,
-                    image: `https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop&random=${product.id}`,
-                    stock: Math.floor(Math.random() * 100) + 1 // Mock stock
-                }));
-                
-                setProducts(allProductsWithImages);
-                
-                // Tính toán pagination mới
-                const totalProducts = allProductsWithImages.length;
-                const maxPage = Math.ceil(totalProducts / pagination.pageSize);
-                
-                // Điều chỉnh trang hiện tại nếu cần
-                let currentPage = page !== undefined ? page : pagination.current;
-                if (forceReload) {
-                    currentPage = 1;
-                }
-                if (currentPage > maxPage && maxPage > 0) {
-                    currentPage = maxPage;
-                }
-                
-                setPagination(prev => ({
-                    ...prev,
-                    current: currentPage,
-                    total: totalProducts
-                }));
-                
-                console.log(`Loaded ${totalProducts} products, page ${currentPage}/${maxPage}`);
-                console.log('All products from API:', result.data);
-                console.log('Active products:', allProductsWithImages.filter(p => p.active).length);
-                console.log('Inactive products:', allProductsWithImages.filter(p => !p.active).length);
-            } else {
-                setError(result.message || 'Không thể tải danh sách sản phẩm');
-            }
-        } catch (err) {
-            setError('Lỗi kết nối đến server');
-            console.error('Error loading products:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Refresh toàn bộ dữ liệu
-    const refreshData = () => {
-        loadProducts(1, true);
-    };
-
-    // Load products và categories khi component mount
+    // Load categories khi component mount
     useEffect(() => {
-        loadProducts();
         loadCategories();
-    }, []); // Chỉ load một lần khi component mount
+    }, []); // Chỉ load categories khi component mount
+
+    // Kết hợp dữ liệu từ API và local
+    const allProducts = [
+        ...apiProducts.map(apiProduct => ({
+            id: apiProduct.id,
+            name: apiProduct.name,
+            price: apiProduct.price,
+            active: apiProduct.active,
+            description: apiProduct.description,
+            brandName: apiProduct.brandName,
+            categoryName: apiProduct.categoryName,
+            createAt: apiProduct.createAt,
+            updateAt: apiProduct.updateAt,
+            image: `https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop&random=${apiProduct.id}`,
+            stock: Math.floor(Math.random() * 100) + 1 // Mock stock
+        })),
+        ...localProducts
+    ];
 
     // Filtered products - Logic mới: hiển thị hoặc sản phẩm hoạt động hoặc sản phẩm ngừng hoạt động
-    const filteredProducts = products.filter(p => {
+    const filteredProducts = allProducts.filter(p => {
         // Nếu showDeleted = true: chỉ hiển thị sản phẩm ngừng hoạt động (!p.active)
         // Nếu showDeleted = false: chỉ hiển thị sản phẩm hoạt động (p.active)
         const activeCheck = showDeleted ? !p.active : p.active;
@@ -196,9 +163,9 @@ const Products: React.FC = () => {
 
     // Debug filtered products
     console.log('=== FILTERING DEBUG ===');
-    console.log('All products:', products.length);
-    console.log('Active products:', products.filter(p => p.active).length);
-    console.log('Inactive products:', products.filter(p => !p.active).length);
+    console.log('All products:', allProducts.length);
+    console.log('Active products:', allProducts.filter(p => p.active).length);
+    console.log('Inactive products:', allProducts.filter(p => !p.active).length);
     console.log('Filtered products:', filteredProducts.length);
     console.log('Show deleted (inactive):', showDeleted);
     console.log('Filter category:', filterCategory);
@@ -206,10 +173,10 @@ const Products: React.FC = () => {
     console.log('Price range:', priceRange);
 
     // Statistics từ dữ liệu thực
-    const totalProducts = products.length;
-    const activeProducts = products.filter(p => p.active).length;
-    const inactiveProducts = products.filter(p => !p.active).length;
-    const totalValue = products.reduce((sum, p) => sum + p.price, 0);
+    const totalProducts = allProducts.length;
+    const activeProducts = allProducts.filter(p => p.active).length;
+    const inactiveProducts = allProducts.filter(p => !p.active).length;
+    const totalValue = allProducts.reduce((sum, p) => sum + p.price, 0);
 
     const columns = [
         {
@@ -446,7 +413,7 @@ const Products: React.FC = () => {
                 message.success('Đã vô hiệu hóa sản phẩm thành công');
                 
                 // Cập nhật local state ngay lập tức
-                setProducts(prevProducts => 
+                setLocalProducts(prevProducts => 
                     prevProducts.map(product => 
                         product.id === id ? { ...product, active: false } : product
                     )
@@ -478,10 +445,10 @@ const Products: React.FC = () => {
                 message.success('Đã xóa vĩnh viễn sản phẩm thành công');
                 
                 // Xóa sản phẩm khỏi local state ngay lập tức
-                setProducts(prevProducts => prevProducts.filter(product => product.id !== id));
+                setLocalProducts(prevProducts => prevProducts.filter(product => product.id !== id));
                 
                 // Tính toán lại pagination sau khi xóa
-                const remainingProducts = products.filter(p => p.id !== id);
+                const remainingProducts = allProducts.filter(p => p.id !== id);
                 const remainingFilteredProducts = remainingProducts.filter(p => {
                     const activeCheck = showDeleted ? !p.active : p.active;
                     const categoryCheck = filterCategory === 'all' || p.categoryName === filterCategory;
@@ -522,7 +489,7 @@ const Products: React.FC = () => {
                 message.success('Đã khôi phục sản phẩm thành công');
                 
                 // Cập nhật local state ngay lập tức
-                setProducts(prevProducts => 
+                setLocalProducts(prevProducts => 
                     prevProducts.map(product => 
                         product.id === id ? { ...product, active: true } : product
                     )
@@ -567,7 +534,7 @@ const Products: React.FC = () => {
                         result = await productService.deleteProduct(id);
                         if (result.success) {
                             // Cập nhật local state ngay lập tức
-                            setProducts(prevProducts => 
+                            setLocalProducts(prevProducts => 
                                 prevProducts.map(product => 
                                     product.id === id ? { ...product, active: false } : product
                                 )
@@ -578,7 +545,7 @@ const Products: React.FC = () => {
                         result = await productService.restoreProduct(id);
                         if (result.success) {
                             // Cập nhật local state ngay lập tức
-                            setProducts(prevProducts => 
+                            setLocalProducts(prevProducts => 
                                 prevProducts.map(product => 
                                     product.id === id ? { ...product, active: true } : product
                                 )
@@ -615,7 +582,7 @@ const Products: React.FC = () => {
 
     // Chức năng xuất Excel
     const handleExportExcel = () => {
-        const worksheet = XLSX.utils.json_to_sheet(products.map(product => ({
+        const worksheet = XLSX.utils.json_to_sheet(allProducts.map(product => ({
             'ID': product.id,
             'Tên sản phẩm': product.name,
             'Thương hiệu': product.brandName,
@@ -633,34 +600,27 @@ const Products: React.FC = () => {
         message.success('Đã xuất file Excel thành công!');
     };
 
-
     const handleSave = async (values: any) => {
-        setLoading(true);
         try {
             // Validate required fields
             if (!values.name?.trim()) {
                 message.error('Tên sản phẩm không được để trống');
-                setLoading(false);
                 return;
             }
             if (!values.description?.trim()) {
                 message.error('Mô tả sản phẩm không được để trống');
-                setLoading(false);
                 return;
             }
             if (!values.price || values.price <= 0) {
                 message.error('Giá sản phẩm phải lớn hơn 0');
-                setLoading(false);
                 return;
             }
             if (!values.brandId) {
                 message.error('Vui lòng chọn thương hiệu');
-                setLoading(false);
                 return;
             }
             if (!values.categoryId) {
                 message.error('Vui lòng chọn danh mục');
-                setLoading(false);
                 return;
             }
 
@@ -697,13 +657,12 @@ const Products: React.FC = () => {
                 form.resetFields();
                 
                 // Reload toàn bộ dữ liệu sau khi thêm/sửa để đảm bảo dữ liệu chính xác
-                loadProducts(1, true);
+                refetch();
+                loadCategories();
             }
         } catch (error) {
             message.error('Có lỗi xảy ra, vui lòng thử lại');
             console.error('Error saving product:', error);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -755,14 +714,14 @@ const Products: React.FC = () => {
             </Title>
 
             {/* API Error Alert */}
-            {error && (
+            {apiError && (
                 <Alert
                     message="Lỗi tải dữ liệu từ API"
-                    description={error}
+                    description={apiError}
                     type="error"
                     showIcon
                     action={
-                        <Button size="small" onClick={() => loadProducts()}>
+                        <Button size="small" onClick={refetch}>
                             Thử lại
                         </Button>
                     }
@@ -771,7 +730,7 @@ const Products: React.FC = () => {
             )}
 
             {/* Loading State */}
-            {loading && (
+            {apiLoading && (
                 <div style={{ textAlign: 'center', padding: '50px' }}>
                     <Spin size="large" />
                     <p style={{ marginTop: '16px' }}>Đang tải dữ liệu sản phẩm từ API...</p>
@@ -779,7 +738,7 @@ const Products: React.FC = () => {
             )}
 
             {/* Content */}
-            {!loading && (
+            {!apiLoading && (
                 <>
                     {/* Statistics */}
                     <Row gutter={16} style={{ marginBottom: '16px', marginTop: 0 }}>
@@ -791,6 +750,9 @@ const Products: React.FC = () => {
                                     prefix={<InboxOutlined />}
                                     valueStyle={{ color: '#1890ff' }}
                                 />
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    {apiProducts.length} từ API, {localProducts.length} local
+                                </Text>
                             </Card>
                         </Col>
                         <Col xs={24} sm={12} lg={6}>
@@ -877,22 +839,10 @@ const Products: React.FC = () => {
                             <Button
                                 type="default"
                                 icon={<ReloadOutlined />}
-                                onClick={refreshData}
-                                loading={loading}
+                                onClick={refetch}
+                                loading={apiLoading}
                             >
-                                Làm mới
-                            </Button>
-                            <Button
-                                type="default"
-                                onClick={() => {
-                                    console.log('=== DEBUG INFO ===');
-                                    console.log('Current pagination:', pagination);
-                                    console.log('All products:', products);
-                                    console.log('Filtered products:', filteredProducts);
-                                    console.log('API URL:', `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/products/paginated?page=${pagination.current - 1}&size=${pagination.pageSize}&sortBy=id&sortDirection=desc`);
-                                }}
-                            >
-                                Debug
+                                Làm mới API
                             </Button>
                             <Button
                                 type="default"
@@ -990,7 +940,7 @@ const Products: React.FC = () => {
                     columns={columns}
                     dataSource={currentPageProducts}
                     rowKey="id"
-                    loading={loading}
+                    loading={apiLoading}
                     rowSelection={{
                         selectedRowKeys,
                         onChange: setSelectedRowKeys,
@@ -1040,7 +990,6 @@ const Products: React.FC = () => {
                 open={isModalVisible}
                 onOk={() => form.submit()}
                 onCancel={() => setIsModalVisible(false)}
-                confirmLoading={loading}
                 width={600}
                 okText={editingProduct ? 'Cập nhật' : 'Thêm mới'}
                 cancelText="Hủy"
