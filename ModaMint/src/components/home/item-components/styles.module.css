@@ -1,9 +1,5 @@
-/* Category Component */
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.category-item {
-=======
+
 .category_item {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -12,15 +8,10 @@
   margin: 10px;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.category-image {
-  width: 250px;
-  height: 250px;
-=======
+
 .category_image {
   width: 220px;
   height: 220px;
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   border-radius: 50%;
   overflow: hidden;
   display: flex;
@@ -30,20 +21,14 @@
   margin-bottom: 30px;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.category-image img {
-=======
+
 .category_image img {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   width: 100%;
   height: auto;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.category-item:hover .category-image {
-=======
+
 .category_item:hover .category_image {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   animation: shake 0.5s;
   animation-iteration-count: 1;
 }
@@ -52,21 +37,7 @@
   0% {
     transform: translate(0, 0);
   }
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
 
-  25% {
-    transform: translate(5px, 0);
-  }
-
-  50% {
-    transform: translate(-5px, 0);
-  }
-
-  75% {
-    transform: translate(5px, 0);
-  }
-
-=======
   25% {
     transform: translate(5px, 0);
   }
@@ -76,17 +47,13 @@
   75% {
     transform: translate(5px, 0);
   }
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   100% {
     transform: translate(0, 0);
   }
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.category-name {
-=======
+
 .category_name {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   position: absolute;
   bottom: 0;
   background: rgba(255, 255, 255, 0.8);
@@ -99,11 +66,7 @@
   font-family: Arial, sans-serif;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.category-name:hover {
-=======
 .category_name:hover {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   color: #ff6347;
 }
 
@@ -219,11 +182,7 @@
   color: #ff6347;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.container-line {
-=======
 .container_line {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   flex: 1;
   display: flex;
   align-items: center;
@@ -231,11 +190,7 @@
   margin: 0px 20px;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.square-title {
-=======
 .square_title {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   width: 15px;
   height: 15px;
   background-color: #ff6347;
@@ -249,23 +204,14 @@
   position: relative;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.text-title-home {
-=======
 .text_title_home {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   text-transform: uppercase;
   margin: auto;
   font-size: 200%;
 }
 
 /* Product Card */
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.product-card {
-  height: fit-content;
-=======
 .product_card {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   width: 100%;
   height: 450px;
   display: flex;
@@ -449,11 +395,7 @@
 }
 
 /* Review Card */
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.review-card {
-=======
 .review_card {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   max-width: 500px;
   margin: 40px auto;
   padding: 30px;
@@ -463,11 +405,7 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.review-text {
-=======
 .review_text {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   color: #4a5568;
   font-size: 15px;
   line-height: 1.8;
@@ -475,30 +413,18 @@
   margin-bottom: 24px;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.star-rating {
-=======
 .star_rating {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   display: flex;
   justify-content: center;
   gap: 8px;
   margin-bottom: 28px;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.reviewer-info {
-  text-align: center;
-}
-
-.avatar-container {
-=======
 .reviewer_info {
   text-align: center;
 }
 
 .avatar_container {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   margin-bottom: 16px;
 }
 
@@ -512,22 +438,14 @@
   object-fit: cover;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.reviewer-name {
-=======
 .reviewer_name {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   font-size: 18px;
   font-weight: 600;
   color: #2d3748;
   margin-bottom: 4px;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.reviewer-role {
-=======
 .reviewer_role {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   font-size: 14px;
   color: #718096;
 }
@@ -622,11 +540,7 @@
   background: #ff6b6b;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/item-components/style.css
-.icon-btn:active {
-=======
 .icon_btn:active {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/item-components/styles.module.css
   transform: scale(0.95);
 }
 
