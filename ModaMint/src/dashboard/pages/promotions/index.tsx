@@ -70,103 +70,10 @@ interface Promotion {
     updatedAt: string;
 }
 
-// Mock data cho promotions
-const initialPromotions: Promotion[] = [
-    {
-        id: 1,
-        name: 'Giảm giá mùa hè',
-        code: 'SUMMER2024',
-        description: 'Giảm 20% cho tất cả sản phẩm thời trang mùa hè',
-        type: 'percentage',
-        value: 20,
-        minimumOrderValue: 500000,
-        maximumDiscountAmount: 200000,
-        startDate: '2024-06-01',
-        endDate: '2024-08-31',
-        usageLimit: 1000,
-        usageCount: 245,
-        userLimit: 1,
-        isActive: true,
-        isPublic: true,
-        createdAt: '2024-05-15',
-        updatedAt: '2024-06-01'
-    },
-    {
-        id: 2,
-        name: 'Miễn phí vận chuyển',
-        code: 'FREESHIP',
-        description: 'Miễn phí vận chuyển cho đơn hàng từ 300k',
-        type: 'free_shipping',
-        value: 0,
-        minimumOrderValue: 300000,
-        startDate: '2024-01-01',
-        endDate: '2024-12-31',
-        usageCount: 1250,
-        isActive: true,
-        isPublic: true,
-        createdAt: '2024-01-01',
-        updatedAt: '2024-01-01'
-    },
-    {
-        id: 3,
-        name: 'Mua 2 tặng 1',
-        code: 'BUY2GET1',
-        description: 'Mua 2 áo thun bất kỳ tặng 1 áo thun cùng loại',
-        type: 'buy_x_get_y',
-        value: 0,
-        buyQuantity: 2,
-        getQuantity: 1,
-        applicableCategories: ['Áo Nam', 'Áo Nữ'],
-        startDate: '2024-07-01',
-        endDate: '2024-07-31',
-        usageLimit: 500,
-        usageCount: 89,
-        userLimit: 2,
-        isActive: true,
-        isPublic: false,
-        createdAt: '2024-06-20',
-        updatedAt: '2024-07-01'
-    },
-    {
-        id: 4,
-        name: 'Giảm 100k đơn đầu tiên',
-        code: 'NEWBIE100',
-        description: 'Giảm 100,000đ cho khách hàng mới, đơn hàng đầu tiên',
-        type: 'fixed_amount',
-        value: 100000,
-        minimumOrderValue: 500000,
-        startDate: '2024-01-01',
-        endDate: '2024-12-31',
-        usageCount: 156,
-        userLimit: 1,
-        isActive: true,
-        isPublic: false,
-        createdAt: '2024-01-01',
-        updatedAt: '2024-01-01'
-    },
-    {
-        id: 5,
-        name: 'Flash Sale cuối tuần',
-        code: 'WEEKEND50',
-        description: 'Giảm 50% tối đa 500k cho các sản phẩm sale cuối tuần',
-        type: 'percentage',
-        value: 50,
-        minimumOrderValue: 200000,
-        maximumDiscountAmount: 500000,
-        startDate: '2024-12-07',
-        endDate: '2024-12-08',
-        usageLimit: 200,
-        usageCount: 67,
-        userLimit: 1,
-        isActive: false,
-        isPublic: true,
-        createdAt: '2024-12-01',
-        updatedAt: '2024-12-07'
-    }
-];
+// Data sẽ được load từ API
 
 const Promotions: React.FC = () => {
-    const [promotions, setPromotions] = useState<Promotion[]>(initialPromotions);
+    const [promotions, setPromotions] = useState<Promotion[]>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isViewModalVisible, setIsViewModalVisible] = useState(false);
     const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Table,
     Button,
@@ -10,7 +10,6 @@ import {
     Input,
     InputNumber,
     Select,
-    Upload,
     message,
     Card,
     Row,
@@ -21,119 +20,196 @@ import {
     Checkbox,
     Slider,
     Spin,
-    Alert
+    Alert,
+    Descriptions,
+    Divider
 } from 'antd';
 import {
     PlusOutlined,
     EditOutlined,
     DeleteOutlined,
     EyeOutlined,
-    UploadOutlined,
     DownloadOutlined,
     ShoppingCartOutlined,
     DollarOutlined,
     InboxOutlined,
     TagOutlined,
-    CopyOutlined,
-    ReloadOutlined
+    ReloadOutlined,
+    RestOutlined,
+    ExclamationCircleOutlined
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import '../../components/common-styles.css';
-import { useProducts } from '../../../hooks/useProducts';
+import { productService, type ProductRequest } from '../../../services/product';
+import { categoryService, type Category } from '../../../services/category';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
-// Interface cho variant sản phẩm  
-interface ProductVariant {
-    id: string;
-    color?: string;
-    size?: string;
-    material?: string;
-    price?: number;
-    stock: number;
-    sku: string;
-}
-
-// Interface cho Product với variants
+// Interface cho Product với thông tin đầy đủ từ API
 interface Product {
     id: number;
     name: string;
-    sku: string;
-    category: string;
     price: number;
-    salePrice?: number;
-    stock: number;
-    status: 'active' | 'inactive' | 'deleted';
-    image: string;
+    active: boolean;
     description: string;
-    tags: string[];
-    createdAt: string;
-    variants?: ProductVariant[];
+    brandName: string;
+    categoryName: string;
+    createAt?: string;
+    updateAt?: string;
+    // Thêm các trường để hiển thị
+    image?: string;
+    stock?: number;
 }
 
-const categories = [
-    'Áo Nam', 'Áo Nữ', 'Quần Nam', 'Quần Nữ', 'Váy Nữ', 'Giày Nam', 'Giày Nữ', 'Áo Khoác', 'Phụ Kiện'
-];
-
 const Products: React.FC = () => {
-    // Sử dụng hook để lấy dữ liệu từ API
-    const { products: apiProducts, loading: apiLoading, error: apiError, refetch } = useProducts();
+    // State cho products từ API
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     
-    // State cho local products (để thêm/sửa/xóa)
-    const [localProducts, setLocalProducts] = useState<Product[]>([]);
+    // State cho categories từ API
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [categoriesLoading, setCategoriesLoading] = useState(false);
+    
+    // State cho modals
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isViewModalVisible, setIsViewModalVisible] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
 
     // States cho bulk actions và filtering  
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [showDeleted, setShowDeleted] = useState(false);
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000000]);
     const [filterCategory, setFilterCategory] = useState<string>('all');
+    const [searchText, setSearchText] = useState<string>('');
 
-    // State cho variant modal
-    const [isVariantModalVisible, setIsVariantModalVisible] = useState(false);
-    const [editingVariants, setEditingVariants] = useState<ProductVariant[]>([]);
-
-    // Kết hợp dữ liệu từ API và local
-    const allProducts = [
-        ...apiProducts.map(apiProduct => ({
-            id: apiProduct.id,
-            name: apiProduct.name,
-            sku: `API_${apiProduct.id}`,
-            category: apiProduct.categoryName || 'API Product',
-            price: apiProduct.price,
-            salePrice: 0,
-            stock: 100, // Mock stock cho API products
-            status: apiProduct.active ? 'active' as const : 'inactive' as const,
-            image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop',
-            description: apiProduct.description,
-            tags: [apiProduct.brandName || 'API'],
-            createdAt: new Date().toISOString().split('T')[0],
-            variants: []
-        })),
-        ...localProducts
-    ];
-
-    // Filtered products (excluding deleted unless showDeleted is true)
-    const filteredProducts = allProducts.filter(p => {
-        if (!showDeleted && p.status === 'deleted') return false;
-        if (filterCategory !== 'all' && p.category !== filterCategory) return false;
-        if (p.price < priceRange[0] || p.price > priceRange[1]) return false;
-        return true;
+    // State cho pagination
+    const [pagination, setPagination] = useState({
+        current: 1,
+        pageSize: 10,
+        total: 0
     });
 
+    // Load categories từ API
+    const loadCategories = async () => {
+        setCategoriesLoading(true);
+        try {
+            const result = await categoryService.getAllCategories();
+            if (result.code === 1000 && result.result) {
+                setCategories(result.result);
+                console.log('Loaded categories:', result.result);
+            } else {
+                console.error('Failed to load categories:', result.message);
+            }
+        } catch (error) {
+            console.error('Error loading categories:', error);
+        } finally {
+            setCategoriesLoading(false);
+        }
+    };
+
+    // Load products từ API - Logic mới: Load tất cả sản phẩm rồi phân trang ở frontend
+    const loadProducts = async (page?: number, forceReload: boolean = false) => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Load tất cả sản phẩm từ API (không phân trang ở backend)
+            const result = await productService.getAllProducts();
+            
+            if (result.success && result.data) {
+                const allProductsWithImages = result.data.map(product => ({
+                    ...product,
+                    image: `https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop&random=${product.id}`,
+                    stock: Math.floor(Math.random() * 100) + 1 // Mock stock
+                }));
+                
+                setProducts(allProductsWithImages);
+                
+                // Tính toán pagination mới
+                const totalProducts = allProductsWithImages.length;
+                const maxPage = Math.ceil(totalProducts / pagination.pageSize);
+                
+                // Điều chỉnh trang hiện tại nếu cần
+                let currentPage = page !== undefined ? page : pagination.current;
+                if (forceReload) {
+                    currentPage = 1;
+                }
+                if (currentPage > maxPage && maxPage > 0) {
+                    currentPage = maxPage;
+                }
+                
+                setPagination(prev => ({
+                    ...prev,
+                    current: currentPage,
+                    total: totalProducts
+                }));
+                
+                console.log(`Loaded ${totalProducts} products, page ${currentPage}/${maxPage}`);
+                console.log('All products from API:', result.data);
+                console.log('Active products:', allProductsWithImages.filter(p => p.active).length);
+                console.log('Inactive products:', allProductsWithImages.filter(p => !p.active).length);
+            } else {
+                setError(result.message || 'Không thể tải danh sách sản phẩm');
+            }
+        } catch (err) {
+            setError('Lỗi kết nối đến server');
+            console.error('Error loading products:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Refresh toàn bộ dữ liệu
+    const refreshData = () => {
+        loadProducts(1, true);
+    };
+
+    // Load products và categories khi component mount
+    useEffect(() => {
+        loadProducts();
+        loadCategories();
+    }, []); // Chỉ load một lần khi component mount
+
+    // Filtered products - Logic mới: hiển thị hoặc sản phẩm hoạt động hoặc sản phẩm ngừng hoạt động
+    const filteredProducts = products.filter(p => {
+        // Nếu showDeleted = true: chỉ hiển thị sản phẩm ngừng hoạt động (!p.active)
+        // Nếu showDeleted = false: chỉ hiển thị sản phẩm hoạt động (p.active)
+        const activeCheck = showDeleted ? !p.active : p.active;
+        const categoryCheck = filterCategory === 'all' || p.categoryName === filterCategory;
+        const priceCheck = p.price >= priceRange[0] && p.price <= priceRange[1];
+        const searchCheck = !searchText || p.name.toLowerCase().includes(searchText.toLowerCase());
+        
+        return activeCheck && categoryCheck && priceCheck && searchCheck;
+    });
+
+    // Logic phân trang mới: Tính toán products hiển thị trên trang hiện tại
+    const startIndex = (pagination.current - 1) * pagination.pageSize;
+    const endIndex = startIndex + pagination.pageSize;
+    const currentPageProducts = filteredProducts.slice(startIndex, endIndex);
+    
+    // Cập nhật total cho pagination dựa trên filtered products
+    const filteredTotal = filteredProducts.length;
+
+    // Debug filtered products
+    console.log('=== FILTERING DEBUG ===');
+    console.log('All products:', products.length);
+    console.log('Active products:', products.filter(p => p.active).length);
+    console.log('Inactive products:', products.filter(p => !p.active).length);
+    console.log('Filtered products:', filteredProducts.length);
+    console.log('Show deleted (inactive):', showDeleted);
+    console.log('Filter category:', filterCategory);
+    console.log('Search text:', searchText);
+    console.log('Price range:', priceRange);
+
     // Statistics từ dữ liệu thực
-    const totalProducts = allProducts.filter(p => p.status !== 'deleted').length;
-    const activeProducts = allProducts.filter(p => p.status === 'active').length;
-    const outOfStockProducts = allProducts.filter(p => p.stock === 0 && p.status !== 'deleted').length;
-    const totalValue = allProducts.filter(p => p.status !== 'deleted').reduce((sum, p) => sum + (p.price * p.stock), 0);
-    const deletedProducts = allProducts.filter(p => p.status === 'deleted').length;
+    const totalProducts = products.length;
+    const activeProducts = products.filter(p => p.active).length;
+    const inactiveProducts = products.filter(p => !p.active).length;
+    const totalValue = products.reduce((sum, p) => sum + p.price, 0);
 
     const columns = [
         {
@@ -141,29 +217,54 @@ const Products: React.FC = () => {
             dataIndex: 'image',
             key: 'image',
             width: 80,
+            align: 'center' as const,
             render: (image: string) => (
-                <Image
-                    width={50}
-                    height={50}
-                    src={image}
-                    fallback="/api/placeholder/50/50"
-                    style={{ borderRadius: '4px' }}
-                />
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    height: '70px',
+                    padding: '8px 0'
+                }}>
+                    <Image
+                        width={45}
+                        height={45}
+                        src={image}
+                        fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+                        style={{ 
+                            borderRadius: '4px',
+                            objectFit: 'cover',
+                            border: '1px solid #f0f0f0'
+                        }}
+                        preview={{
+                            mask: <div style={{ color: 'white', fontSize: '12px' }}>Xem</div>
+                        }}
+                    />
+                </div>
             ),
         },
         {
             title: 'Thông tin sản phẩm',
             key: 'product_info',
-            render: (record: any) => (
-                <div>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+            render: (record: Product) => (
+                <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'center',
+                    height: '70px',
+                    padding: '8px 0'
+                }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '3px', fontSize: '14px', lineHeight: '1.3' }}>
                         {record.name}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
-                        SKU: {record.sku}
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '1px', lineHeight: '1.2' }}>
+                        ID: {record.id}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
-                        {record.category}
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '1px', lineHeight: '1.2' }}>
+                        Thương hiệu: {record.brandName}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.2' }}>
+                        Danh mục: {record.categoryName}
                     </div>
                 </div>
             ),
@@ -171,197 +272,142 @@ const Products: React.FC = () => {
         {
             title: 'Giá',
             key: 'price',
-            render: (record: any) => (
-                <div>
-                    <div style={{ fontWeight: 'bold' }}>
-                        {record.salePrice > 0 ? (
-                            <>
-                                <span style={{ color: '#ff4d4f', textDecoration: 'line-through' }}>
-                                    {record.price.toLocaleString()}đ
-                                </span>
-                                <br />
-                                <span className="text-primary">
-                                    {record.salePrice.toLocaleString()}đ
-                                </span>
-                            </>
-                        ) : (
-                            <span className="text-primary">
-                                {record.price.toLocaleString()}đ
-                            </span>
-                        )}
+            width: 120,
+            align: 'center' as const,
+            render: (record: Product) => (
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    height: '70px',
+                    padding: '8px 0'
+                }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                        <span className="text-primary">
+                            {record.price.toLocaleString()}đ
+                        </span>
                     </div>
                 </div>
             ),
         },
         {
-            title: 'Kho',
+            title: 'Tồn kho',
             dataIndex: 'stock',
             key: 'stock',
+            width: 80,
+            align: 'center' as const,
             render: (stock: number) => (
-                <span style={{
-                    color: stock === 0 ? '#ff4d4f' : stock < 20 ? '#faad14' : '#52c41a',
-                    fontWeight: 'bold'
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    height: '70px',
+                    padding: '8px 0'
                 }}>
-                    {stock}
-                </span>
+                    <span style={{
+                        color: stock === 0 ? '#ff4d4f' : stock < 20 ? '#faad14' : '#52c41a',
+                        fontWeight: 'bold',
+                        fontSize: '14px'
+                    }}>
+                        {stock}
+                    </span>
+                </div>
             ),
         },
         {
             title: 'Trạng thái',
-            dataIndex: 'status',
-            key: 'status',
+            dataIndex: 'active',
+            key: 'active',
             width: 120,
-            render: (status: string, record: Product) => {
-                if (status === 'deleted') {
-                    return (
-                        <div className="status-tag-container">
-                            <Tag color="red">Đã xóa</Tag>
-                        </div>
-                    );
-                }
-
-                const handleToggleStatusClick = () => {
-                    handleToggleStatus(record.id, status);
-                };
-
-                const getText = () => {
-                    switch (status) {
-                        case 'active': return 'Đang bán';
-                        case 'inactive': return 'Ngừng bán';
-                        default: return status;
-                    }
-                };
-
-                return (
-                    <div className="status-button-container">
-                        <Button
-                            size="small"
-                            onClick={handleToggleStatusClick}
-                            className={`status-button ${status}`}
-                        >
-                            {getText()}
-                        </Button>
-                    </div>
-                );
-            },
-        },
-        {
-            title: 'Tags',
-            dataIndex: 'tags',
-            key: 'tags',
-            render: (tags: string[]) => (
-                <div>
-                    {tags.map(tag => (
-                        <Tag key={tag} style={{ marginBottom: '2px', fontSize: '12px' }}>
-                            {tag}
-                        </Tag>
-                    ))}
-                </div>
-            ),
-        },
-        {
-            title: 'Biến thể',
-            key: 'variants',
-            width: 120,
-            render: (record: Product) => (
-                <div>
-                    {record.variants && record.variants.length > 0 ? (
-                        <>
-                            <Text style={{ fontSize: '12px', color: '#1890ff' }}>
-                                {record.variants.length} biến thể
-                            </Text>
-                            <br />
-                            <Button
-                                type="link"
-                                size="small"
-                                onClick={() => {
-                                    setEditingVariants(record.variants || []);
-                                    setIsVariantModalVisible(true);
-                                }}
-                            >
-                                Quản lý
-                            </Button>
-                        </>
-                    ) : (
-                        <Button
-                            type="link"
-                            size="small"
-                            onClick={() => {
-                                setEditingVariants([]);
-                                setIsVariantModalVisible(true);
-                            }}
-                        >
-                            Thêm biến thể
-                        </Button>
-                    )}
+            align: 'center' as const,
+            render: (active: boolean) => (
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    height: '70px',
+                    padding: '8px 0'
+                }}>
+                    <Tag color={active ? 'green' : 'red'} style={{ fontSize: '12px' }}>
+                        {active ? 'Đang bán' : 'Ngừng bán'}
+                    </Tag>
                 </div>
             ),
         },
         {
             title: 'Thao tác',
             key: 'actions',
-            width: 150,
+            width: 180,
+            align: 'center' as const,
             render: (record: Product) => (
-                <Space size="small">
-                    <Button
-                        type="text"
-                        icon={<EyeOutlined />}
-                        onClick={() => handleView(record)}
-                        title="Xem chi tiết"
-                    />
-                    {record.status !== 'deleted' && (
-                        <>
-                            <Button
-                                type="text"
-                                icon={<EditOutlined />}
-                                onClick={() => handleEdit(record)}
-                                title="Chỉnh sửa"
-                            />
-                            <Button
-                                type="text"
-                                icon={<CopyOutlined />}
-                                onClick={() => handleCopy(record)}
-                                title="Sao chép"
-                            />
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    height: '70px',
+                    padding: '8px 0'
+                }}>
+                    <Space size="small">
+                        <Button
+                            type="text"
+                            icon={<EyeOutlined />}
+                            onClick={() => handleView(record)}
+                            title="Xem chi tiết"
+                            size="small"
+                        />
+                        <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            onClick={() => handleEdit(record)}
+                            title="Chỉnh sửa"
+                            size="small"
+                        />
+                        {record.active ? (
                             <Popconfirm
-                                title="Bạn có chắc muốn xóa sản phẩm này?"
+                                title="Bạn có chắc muốn vô hiệu hóa sản phẩm này?"
+                                description="Sản phẩm sẽ không hiển thị trên website nhưng vẫn có thể khôi phục."
                                 onConfirm={() => handleSoftDelete(record.id)}
-                                okText="Xóa"
+                                okText="Vô hiệu hóa"
                                 cancelText="Hủy"
+                                icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
                             >
                                 <Button
                                     type="text"
                                     danger
                                     icon={<DeleteOutlined />}
-                                    title="Xóa mềm"
+                                    title="Vô hiệu hóa"
+                                    size="small"
                                 />
                             </Popconfirm>
-                        </>
-                    )}
-                    {record.status === 'deleted' && (
-                        <>
-                            <Button
-                                type="text"
-                                icon={<ReloadOutlined />}
-                                onClick={() => handleRestore(record.id)}
-                                title="Khôi phục"
-                            />
+                        ) : (
                             <Popconfirm
                                 title="Bạn có chắc muốn xóa vĩnh viễn sản phẩm này?"
+                                description="Hành động này không thể hoàn tác!"
                                 onConfirm={() => handleHardDelete(record.id)}
                                 okText="Xóa vĩnh viễn"
                                 cancelText="Hủy"
+                                icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
                             >
                                 <Button
                                     type="text"
                                     danger
                                     icon={<DeleteOutlined />}
                                     title="Xóa vĩnh viễn"
+                                    size="small"
                                 />
                             </Popconfirm>
-                        </>
-                    )}
-                </Space>
+                        )}
+                        {!record.active && (
+                            <Button
+                                type="text"
+                                icon={<RestOutlined />}
+                                onClick={() => handleRestore(record.id)}
+                                title="Khôi phục"
+                                size="small"
+                            />
+                        )}
+                    </Space>
+                </div>
             ),
         },
     ];
@@ -372,115 +418,213 @@ const Products: React.FC = () => {
         setIsModalVisible(true);
     };
 
-    const handleEdit = (product: any) => {
+    const handleEdit = (product: Product) => {
         setEditingProduct(product);
+        // Tìm categoryId từ categoryName
+        const category = categories.find(cat => cat.name === product.categoryName);
         form.setFieldsValue({
-            ...product,
-            tags: product.tags.join(', ')
+            name: product.name,
+            price: product.price,
+            description: product.description,
+            brandId: product.brandName, // Mock brandId
+            categoryId: category?.id, // Sử dụng categoryId thực từ API
+            active: product.active
         });
         setIsModalVisible(true);
     };
 
-    const handleView = (product: any) => {
+    const handleView = (product: Product) => {
         setViewingProduct(product);
         setIsViewModalVisible(true);
     };
 
-    // Soft delete - đánh dấu là deleted
-    const handleSoftDelete = (id: number) => {
-        setLocalProducts(localProducts.map(p =>
-            p.id === id ? { ...p, status: 'deleted' as const } : p
-        ));
-        message.success('Đã xóa sản phẩm (có thể khôi phục)');
+    // Soft delete - vô hiệu hóa sản phẩm
+    const handleSoftDelete = async (id: number) => {
+        try {
+            const result = await productService.deleteProduct(id);
+            if (result.success) {
+                message.success('Đã vô hiệu hóa sản phẩm thành công');
+                
+                // Cập nhật local state ngay lập tức
+                setProducts(prevProducts => 
+                    prevProducts.map(product => 
+                        product.id === id ? { ...product, active: false } : product
+                    )
+                );
+                
+                // Nếu đang ở trang cuối và trang đó trống sau khi xóa, chuyển về trang trước
+                const remainingFilteredProducts = filteredProducts.filter(p => p.id !== id);
+                const maxPage = Math.ceil(remainingFilteredProducts.length / pagination.pageSize);
+                if (pagination.current > maxPage && maxPage > 0) {
+                    setPagination(prev => ({
+                        ...prev,
+                        current: maxPage
+                    }));
+                }
+            } else {
+                message.error(result.message || 'Không thể vô hiệu hóa sản phẩm');
+            }
+        } catch (error) {
+            message.error('Lỗi khi vô hiệu hóa sản phẩm');
+            console.error('Error soft deleting product:', error);
+        }
     };
 
-    // Hard delete - xóa vĩnh viễn
-    const handleHardDelete = (id: number) => {
-        setLocalProducts(localProducts.filter(p => p.id !== id));
-        message.success('Đã xóa vĩnh viễn sản phẩm');
+    // Hard delete - xóa vĩnh viễn sản phẩm
+    const handleHardDelete = async (id: number) => {
+        try {
+            const result = await productService.permanentDeleteProduct(id);
+            if (result.success) {
+                message.success('Đã xóa vĩnh viễn sản phẩm thành công');
+                
+                // Xóa sản phẩm khỏi local state ngay lập tức
+                setProducts(prevProducts => prevProducts.filter(product => product.id !== id));
+                
+                // Tính toán lại pagination sau khi xóa
+                const remainingProducts = products.filter(p => p.id !== id);
+                const remainingFilteredProducts = remainingProducts.filter(p => {
+                    const activeCheck = showDeleted ? !p.active : p.active;
+                    const categoryCheck = filterCategory === 'all' || p.categoryName === filterCategory;
+                    const priceCheck = p.price >= priceRange[0] && p.price <= priceRange[1];
+                    const searchCheck = !searchText || p.name.toLowerCase().includes(searchText.toLowerCase());
+                    return activeCheck && categoryCheck && priceCheck && searchCheck;
+                });
+                
+                const maxPage = Math.ceil(remainingFilteredProducts.length / pagination.pageSize);
+                
+                // Nếu đang ở trang cuối và trang đó trống sau khi xóa, chuyển về trang trước
+                if (pagination.current > maxPage && maxPage > 0) {
+                    setPagination(prev => ({
+                        ...prev,
+                        current: maxPage,
+                        total: remainingProducts.length
+                    }));
+                } else {
+                    setPagination(prev => ({
+                        ...prev,
+                        total: remainingProducts.length
+                    }));
+                }
+            } else {
+                message.error(result.message || 'Không thể xóa vĩnh viễn sản phẩm');
+            }
+        } catch (error) {
+            message.error('Lỗi khi xóa vĩnh viễn sản phẩm');
+            console.error('Error hard deleting product:', error);
+        }
     };
 
     // Khôi phục sản phẩm đã xóa
-    const handleRestore = (id: number) => {
-        setLocalProducts(localProducts.map(p =>
-            p.id === id ? { ...p, status: 'active' as const } : p
-        ));
-        message.success('Đã khôi phục sản phẩm');
-    };
-
-    // Sao chép sản phẩm
-    const handleCopy = (product: Product) => {
-        const newProduct: Product = {
-            ...product,
-            id: Math.max(...allProducts.map(p => p.id)) + 1,
-            name: `${product.name} (Copy)`,
-            sku: `${product.sku}_COPY_${Date.now().toString().slice(-4)}`,
-            createdAt: new Date().toISOString().split('T')[0]
-        };
-        setLocalProducts([...localProducts, newProduct]);
-        message.success('Đã sao chép sản phẩm');
-    };
-
-    // Toggle status function
-    const handleToggleStatus = (id: number, currentStatus: string) => {
-        if (currentStatus === 'deleted') {
-            message.warning('Không thể thay đổi trạng thái sản phẩm đã xóa');
-            return;
+    const handleRestore = async (id: number) => {
+        try {
+            const result = await productService.restoreProduct(id);
+            if (result.success) {
+                message.success('Đã khôi phục sản phẩm thành công');
+                
+                // Cập nhật local state ngay lập tức
+                setProducts(prevProducts => 
+                    prevProducts.map(product => 
+                        product.id === id ? { ...product, active: true } : product
+                    )
+                );
+                
+                // Nếu đang xem danh sách sản phẩm vô hiệu và khôi phục sản phẩm,
+                // sản phẩm sẽ biến mất khỏi danh sách hiện tại
+                if (showDeleted) {
+                    const remainingFilteredProducts = filteredProducts.filter(p => p.id !== id);
+                    const maxPage = Math.ceil(remainingFilteredProducts.length / pagination.pageSize);
+                    if (pagination.current > maxPage && maxPage > 0) {
+                        setPagination(prev => ({
+                            ...prev,
+                            current: maxPage
+                        }));
+                    }
+                }
+            } else {
+                message.error(result.message || 'Không thể khôi phục sản phẩm');
+            }
+        } catch (error) {
+            message.error('Lỗi khi khôi phục sản phẩm');
+            console.error('Error restoring product:', error);
         }
-
-        const newStatus = currentStatus === 'active' ? 'inactive' as const : 'active' as const;
-        setLocalProducts(localProducts.map(p =>
-            p.id === id ? { ...p, status: newStatus } : p
-        ));
-        message.success(`Đã ${newStatus === 'active' ? 'kích hoạt' : 'vô hiệu hóa'} sản phẩm`);
     };
 
     // Bulk actions
-    const handleBulkAction = (action: string) => {
+    const handleBulkAction = async (action: string) => {
         if (selectedRowKeys.length === 0) {
             message.warning('Vui lòng chọn ít nhất một sản phẩm');
             return;
         }
 
         const selectedIds = selectedRowKeys as number[];
+        let successCount = 0;
 
-        switch (action) {
-            case 'delete':
-                setLocalProducts(localProducts.map(p =>
-                    selectedIds.includes(p.id) ? { ...p, status: 'deleted' as const } : p
-                ));
-                message.success(`Đã xóa ${selectedIds.length} sản phẩm`);
-                break;
-            case 'activate':
-                setLocalProducts(localProducts.map(p =>
-                    selectedIds.includes(p.id) ? { ...p, status: 'active' as const } : p
-                ));
-                message.success(`Đã kích hoạt ${selectedIds.length} sản phẩm`);
-                break;
-            case 'deactivate':
-                setLocalProducts(localProducts.map(p =>
-                    selectedIds.includes(p.id) ? { ...p, status: 'inactive' as const } : p
-                ));
-                message.success(`Đã vô hiệu hóa ${selectedIds.length} sản phẩm`);
-                break;
+        try {
+            for (const id of selectedIds) {
+                let result;
+                switch (action) {
+                    case 'delete':
+                        result = await productService.deleteProduct(id);
+                        if (result.success) {
+                            // Cập nhật local state ngay lập tức
+                            setProducts(prevProducts => 
+                                prevProducts.map(product => 
+                                    product.id === id ? { ...product, active: false } : product
+                                )
+                            );
+                        }
+                        break;
+                    case 'restore':
+                        result = await productService.restoreProduct(id);
+                        if (result.success) {
+                            // Cập nhật local state ngay lập tức
+                            setProducts(prevProducts => 
+                                prevProducts.map(product => 
+                                    product.id === id ? { ...product, active: true } : product
+                                )
+                            );
+                        }
+                        break;
+                    default:
+                        continue;
+                }
+                if (result.success) {
+                    successCount++;
+                }
+            }
+            
+            if (successCount > 0) {
+                message.success(`Đã ${action === 'delete' ? 'vô hiệu hóa' : 'khôi phục'} ${successCount}/${selectedIds.length} sản phẩm`);
+                
+                // Tính toán lại pagination nếu cần
+                const maxPage = Math.ceil(filteredProducts.length / pagination.pageSize);
+                if (pagination.current > maxPage && maxPage > 0) {
+                    setPagination(prev => ({
+                        ...prev,
+                        current: maxPage
+                    }));
+                }
+            }
+        } catch (error) {
+            message.error('Lỗi khi thực hiện hành động hàng loạt');
+            console.error('Error in bulk action:', error);
         }
+        
         setSelectedRowKeys([]);
     };
 
     // Chức năng xuất Excel
     const handleExportExcel = () => {
-        const worksheet = XLSX.utils.json_to_sheet(allProducts.map(product => ({
+        const worksheet = XLSX.utils.json_to_sheet(products.map(product => ({
             'ID': product.id,
             'Tên sản phẩm': product.name,
-            'SKU': product.sku,
-            'Danh mục': product.category,
-            'Giá gốc': product.price,
-            'Giá khuyến mãi': product.salePrice || '',
-            'Tồn kho': product.stock,
-            'Trạng thái': product.status === 'active' ? 'Hoạt động' : 'Ngừng bán',
+            'Thương hiệu': product.brandName,
+            'Danh mục': product.categoryName,
+            'Giá': product.price,
+            'Trạng thái': product.active ? 'Đang bán' : 'Ngừng bán',
             'Mô tả': product.description,
-            'Tags': product.tags.join(', '),
-            'Ngày tạo': product.createdAt
+            'Ngày tạo': product.createAt || '',
+            'Ngày cập nhật': product.updateAt || ''
         })));
 
         const workbook = XLSX.utils.book_new();
@@ -489,86 +633,136 @@ const Products: React.FC = () => {
         message.success('Đã xuất file Excel thành công!');
     };
 
-    // Chức năng nhập Excel
-    const handleImportExcel = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
-
-                const importedProducts = jsonData.map((row, index) => ({
-                    id: Math.max(...allProducts.map(p => p.id)) + index + 1,
-                    name: row['Tên sản phẩm'] || '',
-                    sku: row['SKU'] || `SKU${Date.now()}${index}`,
-                    category: row['Danh mục'] || 'Khác',
-                    price: parseInt(row['Giá gốc']) || 0,
-                    salePrice: parseInt(row['Giá khuyến mãi']) || 0,
-                    stock: parseInt(row['Tồn kho']) || 0,
-                    status: (row['Trạng thái'] === 'Hoạt động' ? 'active' : 'inactive') as 'active' | 'inactive',
-                    image: '/api/placeholder/150/150',
-                    description: row['Mô tả'] || '',
-                    tags: row['Tags'] ? row['Tags'].split(', ') : [],
-                    createdAt: row['Ngày tạo'] || new Date().toISOString().split('T')[0]
-                }));
-
-                setLocalProducts([...localProducts, ...importedProducts]);
-                message.success(`Đã nhập ${importedProducts.length} sản phẩm từ Excel!`);
-            } catch (error) {
-                message.error('Lỗi khi đọc file Excel. Vui lòng kiểm tra định dạng file.');
-            }
-        };
-        reader.readAsArrayBuffer(file);
-        return false; // Prevent default upload behavior
-    };
 
     const handleSave = async (values: any) => {
         setLoading(true);
         try {
-            const productData = {
-                ...values,
-                tags: values.tags ? values.tags.split(',').map((tag: string) => tag.trim()) : [],
-                id: editingProduct ? editingProduct.id : Math.max(...allProducts.map(p => p.id)) + 1,
-                createdAt: editingProduct?.createdAt || new Date().toISOString().split('T')[0]
-            };
-
-            if (editingProduct) {
-                setLocalProducts(localProducts.map(p =>
-                    p.id === editingProduct.id ? { ...p, ...productData } : p
-                ));
-                message.success('Đã cập nhật sản phẩm thành công');
-            } else {
-                setLocalProducts([...localProducts, productData]);
-                message.success('Đã thêm sản phẩm thành công');
+            // Validate required fields
+            if (!values.name?.trim()) {
+                message.error('Tên sản phẩm không được để trống');
+                setLoading(false);
+                return;
+            }
+            if (!values.description?.trim()) {
+                message.error('Mô tả sản phẩm không được để trống');
+                setLoading(false);
+                return;
+            }
+            if (!values.price || values.price <= 0) {
+                message.error('Giá sản phẩm phải lớn hơn 0');
+                setLoading(false);
+                return;
+            }
+            if (!values.brandId) {
+                message.error('Vui lòng chọn thương hiệu');
+                setLoading(false);
+                return;
+            }
+            if (!values.categoryId) {
+                message.error('Vui lòng chọn danh mục');
+                setLoading(false);
+                return;
             }
 
-            setIsModalVisible(false);
-            form.resetFields();
+            const productData: ProductRequest = {
+                name: values.name.trim(),
+                price: values.price, // Backend sẽ convert number thành BigDecimal
+                description: values.description.trim(),
+                brandId: values.brandId,
+                categoryId: values.categoryId,
+                active: values.active !== undefined ? values.active : true
+            };
+
+            console.log('Sending product data:', productData);
+
+            let result;
+            if (editingProduct) {
+                result = await productService.updateProduct(editingProduct.id, productData);
+                if (result.success) {
+                    message.success('Đã cập nhật sản phẩm thành công');
+                } else {
+                    message.error(result.message || 'Không thể cập nhật sản phẩm');
+                }
+            } else {
+                result = await productService.createProduct(productData);
+                if (result.success) {
+                    message.success('Đã thêm sản phẩm thành công');
+                } else {
+                    message.error(result.message || 'Không thể thêm sản phẩm');
+                }
+            }
+
+            if (result.success) {
+                setIsModalVisible(false);
+                form.resetFields();
+                
+                // Reload toàn bộ dữ liệu sau khi thêm/sửa để đảm bảo dữ liệu chính xác
+                loadProducts(1, true);
+            }
         } catch (error) {
             message.error('Có lỗi xảy ra, vui lòng thử lại');
+            console.error('Error saving product:', error);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div>
-            <Title level={2} className="text-primary" style={{ marginBottom: '24px' }}>
+        <div style={{ margin: 0, padding: 0 }}>
+            <style>{`
+                .ant-table-measure-row {
+                    display: none !important;
+                    height: 0 !important;
+                    visibility: hidden !important;
+                }
+                * {
+                    margin-top: 0 !important;
+                }
+                .ant-card {
+                    margin-top: 0 !important;
+                    margin-bottom: 16px !important;
+                }
+                .ant-card-body {
+                    padding: 16px !important;
+                }
+                .ant-table {
+                    margin-top: 0 !important;
+                }
+                .ant-table-container {
+                    margin-top: 0 !important;
+                }
+                .ant-table-thead > tr > th {
+                    padding: 8px 16px !important;
+                }
+                .ant-typography {
+                    margin-top: 0 !important;
+                }
+                .ant-row {
+                    margin-top: 0 !important;
+                }
+                .ant-col {
+                    margin-top: 0 !important;
+                }
+                .ant-statistic {
+                    margin-top: 0 !important;
+                }
+                .ant-statistic-title {
+                    margin-top: 0 !important;
+                }
+            `}</style>
+            <Title level={2} className="text-primary" style={{ marginBottom: '16px', marginTop: 0 }}>
                 Quản lý Sản phẩm
             </Title>
 
             {/* API Error Alert */}
-            {apiError && (
+            {error && (
                 <Alert
                     message="Lỗi tải dữ liệu từ API"
-                    description={apiError}
+                    description={error}
                     type="error"
                     showIcon
                     action={
-                        <Button size="small" onClick={refetch}>
+                        <Button size="small" onClick={() => loadProducts()}>
                             Thử lại
                         </Button>
                     }
@@ -577,7 +771,7 @@ const Products: React.FC = () => {
             )}
 
             {/* Loading State */}
-            {apiLoading && (
+            {loading && (
                 <div style={{ textAlign: 'center', padding: '50px' }}>
                     <Spin size="large" />
                     <p style={{ marginTop: '16px' }}>Đang tải dữ liệu sản phẩm từ API...</p>
@@ -585,11 +779,11 @@ const Products: React.FC = () => {
             )}
 
             {/* Content */}
-            {!apiLoading && (
+            {!loading && (
                 <>
                     {/* Statistics */}
-                    <Row gutter={16} style={{ marginBottom: '24px' }}>
-                        <Col xs={24} sm={12} lg={5}>
+                    <Row gutter={16} style={{ marginBottom: '16px', marginTop: 0 }}>
+                        <Col xs={24} sm={12} lg={6}>
                             <Card>
                                 <Statistic
                                     title="Tổng sản phẩm"
@@ -597,12 +791,9 @@ const Products: React.FC = () => {
                                     prefix={<InboxOutlined />}
                                     valueStyle={{ color: '#1890ff' }}
                                 />
-                                <Text type="secondary" style={{ fontSize: '12px' }}>
-                                    {apiProducts.length} từ API, {localProducts.length} local
-                                </Text>
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} lg={5}>
+                        <Col xs={24} sm={12} lg={6}>
                             <Card>
                                 <Statistic
                                     title="Đang bán"
@@ -612,30 +803,20 @@ const Products: React.FC = () => {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} lg={4}>
+                        <Col xs={24} sm={12} lg={6}>
                             <Card>
                                 <Statistic
-                                    title="Hết hàng"
-                                    value={outOfStockProducts}
+                                    title="Ngừng bán"
+                                    value={inactiveProducts}
                                     prefix={<TagOutlined />}
                                     valueStyle={{ color: '#ff4d4f' }}
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} lg={4}>
+                        <Col xs={24} sm={12} lg={6}>
                             <Card>
                                 <Statistic
-                                    title="Đã xóa"
-                                    value={deletedProducts}
-                                    prefix={<DeleteOutlined />}
-                                    valueStyle={{ color: '#8c8c8c' }}
-                                />
-                            </Card>
-                        </Col>
-                        <Col xs={24} sm={24} lg={6}>
-                            <Card>
-                                <Statistic
-                                    title="Giá trị kho"
+                                    title="Tổng giá trị"
                                     value={totalValue}
                                     prefix={<DollarOutlined />}
                                     suffix="đ"
@@ -647,7 +828,7 @@ const Products: React.FC = () => {
                     </Row>
 
             {/* Action Bar */}
-            <Card style={{ marginBottom: '16px' }}>
+            <Card style={{ marginBottom: '16px', marginTop: 0 }}>
                 <Row justify="space-between" align="middle">
                     <Col>
                         <Space wrap>
@@ -655,6 +836,8 @@ const Products: React.FC = () => {
                                 placeholder="Tìm kiếm sản phẩm..."
                                 style={{ width: 300 }}
                                 allowClear
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
                             />
                             <Select
                                 placeholder="Danh mục"
@@ -662,9 +845,10 @@ const Products: React.FC = () => {
                                 allowClear
                                 value={filterCategory === 'all' ? undefined : filterCategory}
                                 onChange={(value) => setFilterCategory(value || 'all')}
+                                loading={categoriesLoading}
                             >
                                 {categories.map(cat => (
-                                    <Option key={cat} value={cat}>{cat}</Option>
+                                    <Option key={cat.id} value={cat.name}>{cat.name}</Option>
                                 ))}
                             </Select>
                             <div style={{ width: 200 }}>
@@ -683,7 +867,7 @@ const Products: React.FC = () => {
                                     checked={showDeleted}
                                     onChange={(e) => setShowDeleted(e.target.checked)}
                                 >
-                                    Hiện sản phẩm đã xóa ({deletedProducts})
+                                    Hiện sản phẩm ngừng bán ({inactiveProducts})
                                 </Checkbox>
                             </div>
                         </Space>
@@ -693,10 +877,22 @@ const Products: React.FC = () => {
                             <Button
                                 type="default"
                                 icon={<ReloadOutlined />}
-                                onClick={refetch}
-                                loading={apiLoading}
+                                onClick={refreshData}
+                                loading={loading}
                             >
-                                Làm mới API
+                                Làm mới
+                            </Button>
+                            <Button
+                                type="default"
+                                onClick={() => {
+                                    console.log('=== DEBUG INFO ===');
+                                    console.log('Current pagination:', pagination);
+                                    console.log('All products:', products);
+                                    console.log('Filtered products:', filteredProducts);
+                                    console.log('API URL:', `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/products/paginated?page=${pagination.current - 1}&size=${pagination.pageSize}&sortBy=id&sortDirection=desc`);
+                                }}
+                            >
+                                Debug
                             </Button>
                             <Button
                                 type="default"
@@ -705,15 +901,6 @@ const Products: React.FC = () => {
                             >
                                 Xuất Excel
                             </Button>
-                            <Upload
-                                accept=".xlsx,.xls"
-                                beforeUpload={handleImportExcel}
-                                showUploadList={false}
-                            >
-                                <Button icon={<UploadOutlined />}>
-                                    Nhập Excel
-                                </Button>
-                            </Upload>
                             <Button
                                 type="primary"
                                 icon={<PlusOutlined />}
@@ -737,22 +924,18 @@ const Products: React.FC = () => {
                         <Col>
                             <Space>
                                 <Button
-                                    onClick={() => handleBulkAction('activate')}
+                                    onClick={() => handleBulkAction('restore')}
                                     type="default"
+                                    icon={<RestOutlined />}
                                 >
-                                    Kích hoạt
-                                </Button>
-                                <Button
-                                    onClick={() => handleBulkAction('deactivate')}
-                                    type="default"
-                                >
-                                    Vô hiệu hóa
+                                    Khôi phục
                                 </Button>
                                 <Button
                                     onClick={() => handleBulkAction('delete')}
                                     danger
+                                    icon={<DeleteOutlined />}
                                 >
-                                    Xóa tất cả
+                                    Vô hiệu hóa
                                 </Button>
                                 <Button
                                     onClick={() => setSelectedRowKeys([])}
@@ -766,25 +949,88 @@ const Products: React.FC = () => {
             )}
 
             {/* Products Table */}
-            <Card>
+            <Card style={{ marginTop: 0 }}>
+                <style>{`
+                    .ant-table-measure-row {
+                        display: none !important;
+                        height: 0 !important;
+                        visibility: hidden !important;
+                    }
+                    .ant-table-tbody > tr > td {
+                        height: 70px !important;
+                        vertical-align: middle !important;
+                        padding: 8px 16px !important;
+                    }
+                    .ant-table-tbody > tr {
+                        height: 70px !important;
+                    }
+                    .ant-table-tbody > tr:first-child > td {
+                        padding-top: 8px !important;
+                    }
+                    .ant-table-thead > tr > th {
+                        padding: 8px 16px !important;
+                    }
+                    .ant-table {
+                        margin-top: 0 !important;
+                    }
+                    .ant-table-container {
+                        margin-top: 0 !important;
+                    }
+                    .ant-card-body {
+                        padding: 16px !important;
+                    }
+                    .ant-table-thead {
+                        margin-top: 0 !important;
+                    }
+                    .ant-table-thead > tr {
+                        margin-top: 0 !important;
+                    }
+                `}</style>
                 <Table
                     columns={columns}
-                    dataSource={filteredProducts}
+                    dataSource={currentPageProducts}
                     rowKey="id"
+                    loading={loading}
                     rowSelection={{
                         selectedRowKeys,
                         onChange: setSelectedRowKeys,
                         getCheckboxProps: (record: Product) => ({
-                            disabled: record.status === 'deleted'
+                            disabled: !record.active
                         })
                     }}
                     pagination={{
-                        pageSize: 10,
+                        current: pagination.current,
+                        pageSize: pagination.pageSize,
+                        total: filteredTotal,
                         showSizeChanger: true,
                         showQuickJumper: true,
                         showTotal: (total) => `Tổng ${total} sản phẩm`,
+                        onChange: (page, pageSize) => {
+                            setPagination(prev => ({
+                                ...prev,
+                                current: page,
+                                pageSize: pageSize || prev.pageSize
+                            }));
+                        },
+                        onShowSizeChange: (_, size) => {
+                            setPagination(prev => ({
+                                ...prev,
+                                current: 1, // Reset về trang 1 khi thay đổi page size
+                                pageSize: size
+                            }));
+                        }
                     }}
                     scroll={{ x: 1000 }}
+                    style={{
+                        '--ant-table-row-height': '70px'
+                    } as React.CSSProperties}
+                    components={{
+                        body: {
+                            row: (props: any) => (
+                                <tr {...props} style={{ height: '70px', verticalAlign: 'middle' }} />
+                            )
+                        }
+                    }}
                 />
             </Card>
 
@@ -795,7 +1041,7 @@ const Products: React.FC = () => {
                 onOk={() => form.submit()}
                 onCancel={() => setIsModalVisible(false)}
                 confirmLoading={loading}
-                width={800}
+                width={600}
                 okText={editingProduct ? 'Cập nhật' : 'Thêm mới'}
                 cancelText="Hủy"
             >
@@ -804,94 +1050,43 @@ const Products: React.FC = () => {
                     layout="vertical"
                     onFinish={handleSave}
                 >
-                    <Row gutter={16}>
-                        <Col span={12}>
-                            <Form.Item
-                                name="name"
-                                label="Tên sản phẩm"
-                                rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm' }]}
-                            >
-                                <Input placeholder="Nhập tên sản phẩm" />
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item
-                                name="sku"
-                                label="SKU"
-                                rules={[{ required: true, message: 'Vui lòng nhập SKU' }]}
-                            >
-                                <Input placeholder="Nhập mã SKU" />
-                            </Form.Item>
-                        </Col>
-                    </Row>
+                    <Form.Item
+                        name="name"
+                        label="Tên sản phẩm"
+                        rules={[
+                            { required: true, message: 'Vui lòng nhập tên sản phẩm' },
+                            { min: 1, message: 'Tên sản phẩm không được để trống' }
+                        ]}
+                    >
+                        <Input placeholder="Nhập tên sản phẩm" />
+                    </Form.Item>
 
                     <Row gutter={16}>
                         <Col span={12}>
-                            <Form.Item
-                                name="category"
-                                label="Danh mục"
-                                rules={[{ required: true, message: 'Vui lòng chọn danh mục' }]}
-                            >
-                                <Select placeholder="Chọn danh mục">
-                                    {categories.map(cat => (
-                                        <Option key={cat} value={cat}>{cat}</Option>
-                                    ))}
-                                </Select>
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item
-                                name="status"
-                                label="Trạng thái"
-                                rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
-                            >
-                                <Select placeholder="Chọn trạng thái">
-                                    <Option value="active">Đang bán</Option>
-                                    <Option value="inactive">Ngừng bán</Option>
-                                </Select>
-                            </Form.Item>
-                        </Col>
-                    </Row>
-
-                    <Row gutter={16}>
-                        <Col span={8}>
                             <Form.Item
                                 name="price"
-                                label="Giá gốc (đ)"
-                                rules={[{ required: true, message: 'Vui lòng nhập giá' }]}
+                                label="Giá (đ)"
+                                rules={[
+                                    { required: true, message: 'Vui lòng nhập giá' },
+                                    { type: 'number', min: 0.01, message: 'Giá phải lớn hơn 0' }
+                                ]}
                             >
                                 <InputNumber
                                     style={{ width: '100%' }}
                                     placeholder="0"
+                                    min={0.01}
+                                    step={1000}
                                     formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                    parser={value => value!.replace(/\$\s?|(,*)/g, '')}
                                 />
                             </Form.Item>
                         </Col>
-                        <Col span={8}>
+                        <Col span={12}>
                             <Form.Item
-                                name="salePrice"
-                                label="Giá khuyến mãi (đ)"
+                                name="active"
+                                label="Trạng thái"
+                                valuePropName="checked"
                             >
-                                <InputNumber
-                                    style={{ width: '100%' }}
-                                    placeholder="0"
-                                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                    parser={value => value!.replace(/\$\s?|(,*)/g, '')}
-                                />
-                            </Form.Item>
-                        </Col>
-                        <Col span={8}>
-                            <Form.Item
-                                name="stock"
-                                label="Số lượng tồn kho"
-                                rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
-                            >
-                                <InputNumber
-                                    style={{ width: '100%' }}
-                                    placeholder="0"
-                                    min={0}
-                                />
+                                <Checkbox>Đang bán</Checkbox>
                             </Form.Item>
                         </Col>
                     </Row>
@@ -899,35 +1094,57 @@ const Products: React.FC = () => {
                     <Form.Item
                         name="description"
                         label="Mô tả sản phẩm"
+                        rules={[
+                            { required: true, message: 'Vui lòng nhập mô tả sản phẩm' },
+                            { min: 1, message: 'Mô tả sản phẩm không được để trống' }
+                        ]}
                     >
                         <TextArea
-                            rows={3}
+                            rows={4}
                             placeholder="Nhập mô tả sản phẩm"
                         />
                     </Form.Item>
 
-                    <Form.Item
-                        name="tags"
-                        label="Tags (phân cách bằng dấu phẩy)"
-                    >
-                        <Input placeholder="Ví dụ: Nam, Thun, Basic" />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="image"
-                        label="Hình ảnh sản phẩm"
-                    >
-                        <Upload
-                            listType="picture-card"
-                            maxCount={1}
-                            beforeUpload={() => false}
-                        >
-                            <div>
-                                <UploadOutlined />
-                                <div style={{ marginTop: 8 }}>Upload</div>
-                            </div>
-                        </Upload>
-                    </Form.Item>
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item
+                                name="brandId"
+                                label="Thương hiệu"
+                                rules={[
+                                    { required: true, message: 'Vui lòng chọn thương hiệu' },
+                                    { type: 'number', message: 'Vui lòng chọn thương hiệu hợp lệ' }
+                                ]}
+                            >
+                                <Select placeholder="Chọn thương hiệu">
+                                    <Option value={1}>Nike</Option>
+                                    <Option value={2}>Adidas</Option>
+                                    <Option value={3}>Puma</Option>
+                                    <Option value={4}>Uniqlo</Option>
+                                    <Option value={5}>Chanel</Option>
+                                    <Option value={6}>Gucci</Option>
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item
+                                name="categoryId"
+                                label="Danh mục"
+                                rules={[
+                                    { required: true, message: 'Vui lòng chọn danh mục' },
+                                    { type: 'number', message: 'Vui lòng chọn danh mục hợp lệ' }
+                                ]}
+                            >
+                                <Select 
+                                    placeholder="Chọn danh mục"
+                                    loading={categoriesLoading}
+                                >
+                                    {categories.map(cat => (
+                                        <Option key={cat.id} value={cat.id}>{cat.name}</Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                    </Row>
                 </Form>
             </Modal>
 
@@ -941,185 +1158,80 @@ const Products: React.FC = () => {
                         Đóng
                     </Button>
                 ]}
-                width={600}
+                width={700}
             >
                 {viewingProduct && (
                     <div>
-                        <Row gutter={16}>
+                        <Row gutter={24}>
                             <Col span={8}>
                                 <Image
                                     width="100%"
                                     src={viewingProduct.image}
-                                    fallback="/api/placeholder/200/200"
+                                    fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+                                    style={{ borderRadius: '8px' }}
                                 />
                             </Col>
                             <Col span={16}>
-                                <Title level={4}>{viewingProduct.name}</Title>
-                                <p><strong>SKU:</strong> {viewingProduct.sku}</p>
-                                <p><strong>Danh mục:</strong> {viewingProduct.category}</p>
-                                <p><strong>Giá:</strong>
-                                    {viewingProduct.salePrice && viewingProduct.salePrice > 0 ? (
-                                        <>
-                                            <span style={{ textDecoration: 'line-through', color: '#999' }}>
-                                                {viewingProduct.price.toLocaleString()}đ
-                                            </span>
-                                            {' → '}
-                                            <span className="text-primary" style={{ fontWeight: 'bold' }}>
-                                                {viewingProduct.salePrice?.toLocaleString()}đ
-                                            </span>
-                                        </>
-                                    ) : (
-                                        <span className="text-primary" style={{ fontWeight: 'bold' }}>
+                                <Title level={3} style={{ marginBottom: '16px' }}>
+                                    {viewingProduct.name}
+                                </Title>
+                                
+                                <Descriptions column={1} size="small">
+                                    <Descriptions.Item label="ID">
+                                        <Text code>{viewingProduct.id}</Text>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Thương hiệu">
+                                        <Tag color="blue">{viewingProduct.brandName}</Tag>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Danh mục">
+                                        <Tag color="green">{viewingProduct.categoryName}</Tag>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Giá">
+                                        <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
                                             {viewingProduct.price.toLocaleString()}đ
-                                        </span>
+                                        </Text>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Tồn kho">
+                                        <Text style={{ 
+                                            color: (viewingProduct.stock || 0) === 0 ? '#ff4d4f' : 
+                                                   (viewingProduct.stock || 0) < 20 ? '#faad14' : '#52c41a',
+                                            fontWeight: 'bold'
+                                        }}>
+                                            {viewingProduct.stock || 0}
+                                        </Text>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Trạng thái">
+                                        <Tag color={viewingProduct.active ? 'green' : 'red'}>
+                                            {viewingProduct.active ? 'Đang bán' : 'Ngừng bán'}
+                                        </Tag>
+                                    </Descriptions.Item>
+                                    {viewingProduct.createAt && (
+                                        <Descriptions.Item label="Ngày tạo">
+                                            {new Date(viewingProduct.createAt).toLocaleDateString('vi-VN')}
+                                        </Descriptions.Item>
                                     )}
-                                </p>
-                                <p><strong>Tồn kho:</strong> {viewingProduct.stock}</p>
-                                <p><strong>Trạng thái:</strong>
-                                    <Tag color={viewingProduct.status === 'active' ? 'green' : 'red'} style={{ marginLeft: '8px' }}>
-                                        {viewingProduct.status === 'active' ? 'Đang bán' : 'Hết hàng'}
-                                    </Tag>
-                                </p>
-                                <p><strong>Tags:</strong></p>
-                                <div>
-                                    {viewingProduct.tags.map((tag: string) => (
-                                        <Tag key={tag}>{tag}</Tag>
-                                    ))}
-                                </div>
+                                    {viewingProduct.updateAt && (
+                                        <Descriptions.Item label="Cập nhật lần cuối">
+                                            {new Date(viewingProduct.updateAt).toLocaleDateString('vi-VN')}
+                                        </Descriptions.Item>
+                                    )}
+                                </Descriptions>
                             </Col>
                         </Row>
+                        
                         {viewingProduct.description && (
-                            <div style={{ marginTop: '16px' }}>
-                                <Title level={5}>Mô tả:</Title>
-                                <p>{viewingProduct.description}</p>
-                            </div>
+                            <>
+                                <Divider />
+                                <div>
+                                    <Title level={4}>Mô tả sản phẩm</Title>
+                                    <Text>{viewingProduct.description}</Text>
+                                </div>
+                            </>
                         )}
                     </div>
                 )}
             </Modal>
 
-            {/* Variants Management Modal */}
-            <Modal
-                title="Quản lý biến thể sản phẩm"
-                open={isVariantModalVisible}
-                onCancel={() => setIsVariantModalVisible(false)}
-                width={800}
-                footer={[
-                    <Button key="cancel" onClick={() => setIsVariantModalVisible(false)}>
-                        Hủy
-                    </Button>,
-                    <Button key="save" type="primary" onClick={() => {
-                        // Save variants logic would go here
-                        setIsVariantModalVisible(false);
-                        message.success('Đã lưu biến thể');
-                    }}>
-                        Lưu biến thể
-                    </Button>
-                ]}
-            >
-                <div style={{ marginBottom: '16px' }}>
-                    <Button
-                        type="dashed"
-                        icon={<PlusOutlined />}
-                        onClick={() => {
-                            const newVariant: ProductVariant = {
-                                id: `variant_${Date.now()}`,
-                                color: '',
-                                size: '',
-                                material: '',
-                                price: 0,
-                                stock: 0,
-                                sku: `VAR_${Date.now()}`
-                            };
-                            setEditingVariants([...editingVariants, newVariant]);
-                        }}
-                        block
-                    >
-                        Thêm biến thể mới
-                    </Button>
-                </div>
-
-                {editingVariants.map((variant, index) => (
-                    <Card key={variant.id} size="small" style={{ marginBottom: '12px' }}>
-                        <Row gutter={16}>
-                            <Col span={6}>
-                                <Input
-                                    placeholder="Màu sắc"
-                                    value={variant.color}
-                                    onChange={(e) => {
-                                        const newVariants = [...editingVariants];
-                                        newVariants[index].color = e.target.value;
-                                        setEditingVariants(newVariants);
-                                    }}
-                                />
-                            </Col>
-                            <Col span={4}>
-                                <Input
-                                    placeholder="Size"
-                                    value={variant.size}
-                                    onChange={(e) => {
-                                        const newVariants = [...editingVariants];
-                                        newVariants[index].size = e.target.value;
-                                        setEditingVariants(newVariants);
-                                    }}
-                                />
-                            </Col>
-                            <Col span={6}>
-                                <Input
-                                    placeholder="Chất liệu"
-                                    value={variant.material}
-                                    onChange={(e) => {
-                                        const newVariants = [...editingVariants];
-                                        newVariants[index].material = e.target.value;
-                                        setEditingVariants(newVariants);
-                                    }}
-                                />
-                            </Col>
-                            <Col span={4}>
-                                <InputNumber
-                                    placeholder="Giá"
-                                    value={variant.price}
-                                    onChange={(value) => {
-                                        const newVariants = [...editingVariants];
-                                        newVariants[index].price = value || 0;
-                                        setEditingVariants(newVariants);
-                                    }}
-                                    style={{ width: '100%' }}
-                                />
-                            </Col>
-                            <Col span={3}>
-                                <InputNumber
-                                    placeholder="Kho"
-                                    value={variant.stock}
-                                    onChange={(value) => {
-                                        const newVariants = [...editingVariants];
-                                        newVariants[index].stock = value || 0;
-                                        setEditingVariants(newVariants);
-                                    }}
-                                    style={{ width: '100%' }}
-                                />
-                            </Col>
-                            <Col span={1}>
-                                <Button
-                                    type="text"
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    onClick={() => {
-                                        const newVariants = editingVariants.filter((_, i) => i !== index);
-                                        setEditingVariants(newVariants);
-                                    }}
-                                />
-                            </Col>
-                        </Row>
-                    </Card>
-                ))}
-
-                {editingVariants.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-                        Chưa có biến thế nào. Nhấn "Thêm biến thể mới" để bắt đầu.
-                    </div>
-                )}
-            </Modal>
                 </>
             )}
         </div>

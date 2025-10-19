@@ -59,52 +59,11 @@ interface Customer {
     avatar?: string;
 }
 
-// Mock data - Khách hàng mẫu
-const initialCustomers: Customer[] = [
-    {
-        id: 1, name: 'Nguyễn Văn An', email: 'vanan@gmail.com', phone: '0901234567',
-        address: '123 Đường ABC', city: 'Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Bến Nghé',
-        gender: 'male', dateOfBirth: '1990-05-15', status: 'active', customerType: 'vip',
-        totalOrders: 25, totalSpent: 15000000, lastOrderDate: '2024-02-20',
-        createdAt: '2023-06-01', notes: 'Khách hàng VIP, thường mua hàng cao cấp',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face'
-    },
-    {
-        id: 2, name: 'Trần Thị Bình', email: 'thithbinh@yahoo.com', phone: '0912345678',
-        address: '456 Đường XYZ', city: 'Hà Nội', district: 'Quận Ba Đình', ward: 'Phường Điện Biên',
-        gender: 'female', dateOfBirth: '1985-08-22', status: 'active', customerType: 'premium',
-        totalOrders: 45, totalSpent: 32000000, lastOrderDate: '2024-02-25',
-        createdAt: '2023-03-15', notes: 'Khách hàng thân thiết, hay giới thiệu bạn bè',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b190?w=80&h=80&fit=crop&crop=face'
-    },
-    {
-        id: 3, name: 'Lê Minh Cường', email: 'minhcuong@outlook.com', phone: '0923456789',
-        address: '789 Đường DEF', city: 'Đà Nẵng', district: 'Quận Hải Châu', ward: 'Phường Thạch Thang',
-        gender: 'male', status: 'active', customerType: 'regular',
-        totalOrders: 8, totalSpent: 2500000, lastOrderDate: '2024-02-18',
-        createdAt: '2024-01-10', notes: 'Khách hàng mới, tiềm năng phát triển'
-    },
-    {
-        id: 4, name: 'Phạm Thị Dung', email: 'thidung@gmail.com', phone: '0934567890',
-        address: '321 Đường GHI', city: 'Cần Thơ', district: 'Quận Ninh Kiều', ward: 'Phường An Cư',
-        gender: 'female', dateOfBirth: '1992-12-03', status: 'inactive', customerType: 'regular',
-        totalOrders: 3, totalSpent: 850000, lastOrderDate: '2023-11-15',
-        createdAt: '2023-09-20', notes: 'Chưa mua hàng trong thời gian dài'
-    },
-    {
-        id: 5, name: 'Hoàng Văn Em', email: 'vanem@hotmail.com', phone: '0945678901',
-        address: '654 Đường JKL', city: 'Hải Phòng', district: 'Quận Ngô Quyền', ward: 'Phường Máy Chai',
-        gender: 'male', status: 'blocked', customerType: 'regular',
-        totalOrders: 2, totalSpent: 450000, lastOrderDate: '2023-08-10',
-        createdAt: '2023-07-05', notes: 'Bị khóa do vi phạm chính sách đổi trả',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face'
-    }
-];
-
+// Data sẽ được load từ API
 const cities = ['Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng', 'Cần Thơ', 'Hải Phòng', 'Nha Trang', 'Huế', 'Quy Nhon'];
 
 const Customers: React.FC = () => {
-    const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+    const [customers, setCustomers] = useState<Customer[]>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isViewModalVisible, setIsViewModalVisible] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
