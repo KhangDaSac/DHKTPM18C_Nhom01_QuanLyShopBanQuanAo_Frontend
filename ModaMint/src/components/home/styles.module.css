@@ -36,22 +36,14 @@
   /* IE and Edge */
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/style.css
-.sale-banner-overlay::-webkit-scrollbar {
-  display: none;
-  /* Chrome, Safari, Opera */
-}
 
-/* Category List */
-.category-list {
-=======
 .sale_banner__overlay::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
 
 /* Category List */
 .category_list {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/styles.module.css
+
   margin: auto;
   margin-top: 150px;
   display: flex;
@@ -75,22 +67,16 @@
 }
 
 /* List Products */
-<<<<<<< HEAD:ModaMint/src/components/home/style.css
-.container-product-list {
-=======
+
 .product_list__container {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/styles.module.css
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/style.css
-.product-list {
-=======
 .product_list {
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/styles.module.css
+
   margin: auto;
   display: flex;
   justify-content: space-around;
@@ -198,21 +184,11 @@
   flex-shrink: 0;
 }
 
-<<<<<<< HEAD:ModaMint/src/components/home/style.css
-
-@keyframes starPulse {
-
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-=======
 @keyframes star_pulse {
   0%, 100% {
     transform: scale(1);
   }
->>>>>>> origin/QuocHuy:ModaMint/src/components/home/styles.module.css
+
   50% {
     transform: scale(1.15);
   }
