@@ -123,21 +123,21 @@ export default function Register() {
                 </div>
                 <div className={styles["register__options"]}>
                     <div
-                        className={`register-option ${registerMethod === 'email' ? 'active' : ''}`}
+                        className={`${styles["register__option"]} ${registerMethod === 'email' ? 'active' : ''}`}
                         onClick={() => setRegisterMethod('email')}
                     >
                         <AiOutlineMail className={styles["register__option-icon"]} />
                         <span>Email</span>
                     </div>
                     <div
-                        className={`register-option ${registerMethod === 'facebook' ? 'active' : ''}`}
+                        className={`${styles["register__option"]} ${registerMethod === 'facebook' ? 'active' : ''}`}
                         onClick={() => setRegisterMethod('facebook')}
                     >
                         <FaFacebook className={styles["register__option-icon"]} />
                         <span>Facebook</span>
                     </div>
                     <div
-                        className={`register-option ${registerMethod === 'google' ? 'active' : ''}`}
+                        className={`${styles["register__option"]} ${registerMethod === 'google' ? 'active' : ''}`}
                         onClick={() => setRegisterMethod('google')}
                     >
                         <FaGoogle className={styles["register__option-icon"]} />
@@ -324,7 +324,7 @@ export default function Register() {
                 <div className={styles["register__footer"]}>
                     <p>
                         Bạn đã có tài khoản?{' '}
-                        <Link to="/login" className={styles["register__link"]}>
+                        <Link to="/login" className={styles["register__register-link"]}>
                             Đăng nhập
                         </Link>
                     </p>

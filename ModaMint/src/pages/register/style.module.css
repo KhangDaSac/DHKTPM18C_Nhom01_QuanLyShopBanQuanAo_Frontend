@@ -1,6 +1,6 @@
 /* Register Page - BEM Structure */
 
-.register {
+.register__page {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -11,7 +11,7 @@
 
 .register__container {
     width: 100%;
-    max-width: 450px;
+    max-width: 500px;
     padding: 40px;
     background-color: #fff;
     border-radius: 12px;
@@ -42,7 +42,7 @@
     color: #666;
 }
 
-/* register Options (tabs) */
+/* Register Options (tabs) */
 .register__options {
     display: flex;
     justify-content: center;
@@ -69,11 +69,11 @@
     color: #ff6347;
 }
 
-.register__option--active {
+.register__option.active {
     color: #ff6347;
 }
 
-.register__option--active::after {
+.register__option.active::after {
     content: '';
     position: absolute;
     bottom: -16px;
@@ -96,73 +96,121 @@
     gap: 20px;
 }
 
-.register__form-group {
+/* Form Layout */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.form-group {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.register__label {
+.form-group label {
     font-size: 14px;
     font-weight: 500;
     color: #333;
 }
 
-.register__input {
+.form-group input {
     padding: 12px 16px;
     border: 1px solid #e5e5e5;
     border-radius: 5px;
     font-size: 16px;
     transition: all 0.3s ease;
+    background-color: #fff;
 }
 
-.register__input:focus {
+.form-group input:focus {
     outline: none;
     border-color: #ff6347;
     box-shadow: 0 0 0 2px rgba(255, 99, 71, 0.2);
 }
 
-.register__input:disabled {
+.form-group input:disabled {
     background-color: #f5f5f5;
     color: #999;
     cursor: not-allowed;
     border-color: #e0e0e0;
 }
 
-/* Form Options (Remember me + Forgot password) */
-.register__form-options {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.form-group small {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* Advanced Fields Toggle */
+.advanced-fields-toggle {
+    margin: 15px 0;
+}
+
+.toggle-button {
+    background: none;
+    border: none;
+    color: #ff6347;
     font-size: 14px;
-}
-
-.register__remember {
+    cursor: pointer;
+    padding: 8px 0;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 8px;
-    color: #555;
+    gap: 5px;
 }
 
-.register__checkbox {
+.toggle-button:hover {
+    color: #e55a40;
+}
+
+.advanced-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 15px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+/* Terms Agreement */
+.terms-agreement {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.terms-agreement input[type="checkbox"] {
     width: 18px;
     height: 18px;
     accent-color: #ff6347;
+    margin-top: 2px;
+    flex-shrink: 0;
 }
 
-.register__checkbox:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
+.terms-agreement label {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.4;
+    cursor: pointer;
 }
 
-.register__forgot-link {
+.terms-link {
     color: #ff6347;
     text-decoration: none;
     font-weight: 500;
     transition: all 0.2s ease;
 }
 
-.register__forgot-link:hover {
+.terms-link:hover {
     text-decoration: underline;
 }
 
@@ -203,26 +251,53 @@
     box-shadow: none;
 }
 
-/* Facebook register Section */
-.register__facebook-container {
+/* Social Registration */
+.social-register-container {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-}
-
-.register__facebook-info {
+    gap: 25px;
+    padding: 30px 20px;
     text-align: center;
-    color: #666;
-    font-size: 15px;
-    margin: 10px 0;
 }
 
-.register__facebook-button {
-    background-color: #1877f2;
-    color: #fff;
+.social-register-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.social-register-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.social-register-icon.facebook-color {
+    color: #1877f2;
+}
+
+.social-register-icon.google-color {
+    color: #4285f4;
+}
+
+.social-register-info h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.social-register-info p {
+    font-size: 16px;
+    color: #666;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.social-register-button {
+    padding: 15px 24px;
     border: none;
-    border-radius: 5px;
-    padding: 15px 14px;
+    border-radius: 8px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
@@ -233,72 +308,35 @@
     gap: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    min-height: 56px;
 }
 
-.register__facebook-button:hover {
+.social-register-button.facebook-button {
+    background-color: #1877f2;
+    color: #fff;
+}
+
+.social-register-button.facebook-button:hover {
     background-color: #166fe5;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
 }
 
-.register__facebook-button:active {
-    transform: translateY(0);
-}
-
-.register__facebook-icon {
-    font-size: 20px;
-}
-
-/* Google register Section */
-.register__google-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.register__google-info {
-    text-align: center;
-    color: #666;
-    font-size: 15px;
-    margin: 10px 0;
-    line-height: 1.4;
-}
-
-.register__google-button {
+.social-register-button.google-button {
     background-color: #fff;
     color: #333;
     border: 1px solid #dadce0;
-    border-radius: 5px;
-    padding: 15px 14px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    position: relative;
-    overflow: hidden;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
-.register__google-button:hover {
+.social-register-button.google-button:hover {
     background-color: #f8f9fa;
     border-color: #c6c8ca;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.register__google-button:active {
-    background-color: #f1f3f4;
-    transform: translateY(0);
-}
-
-.register__google-icon {
+.social-icon {
     font-size: 20px;
-    color: #4285f4;
 }
 
 /* Footer Section */
@@ -321,14 +359,19 @@
 }
 
 /* Responsive Design */
-@media (max-width: 576px) {
-    .register__container {
-        padding: 25px;
-        margin: 0 10px;
+@media (max-width: 768px) {
+    .register__page {
+        padding: 20px 10px;
     }
 
-    .register__title {
-        font-size: 24px;
+    .register__container {
+        padding: 30px 20px;
+        max-width: 100%;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 15px;
     }
 
     .register__options {
@@ -346,23 +389,56 @@
         font-size: 20px;
     }
 
-    .register__form-options {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+    .social-register-container {
+        padding: 20px 10px;
+    }
+
+    .social-register-icon {
+        font-size: 40px;
+    }
+
+    .social-register-info h3 {
+        font-size: 20px;
+    }
+
+    .social-register-info p {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .register__container {
+        padding: 20px 15px;
+        margin: 0 5px;
+    }
+
+    .register__header h1 {
+        font-size: 24px;
+    }
+
+    .register__header p {
+        font-size: 14px;
+    }
+
+    .form-group input {
+        padding: 10px 12px;
+        font-size: 16px;
     }
 
     .register__button,
-    .register__facebook-button,
-    .register__google-button {
+    .social-register-button {
         padding: 12px;
         font-size: 15px;
+        min-height: 48px;
     }
 
-    .register__facebook-info,
-    .register__google-info {
-        font-size: 14px;
-        margin: 5px 0;
+    .terms-agreement {
+        padding: 12px;
+        font-size: 13px;
+    }
+
+    .advanced-fields {
+        padding: 15px;
     }
 }
 
