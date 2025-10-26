@@ -419,6 +419,9 @@ const Products: React.FC = () => {
                     )
                 );
                 
+                // Reload dữ liệu từ API để cập nhật trạng thái mới nhất
+                refetch();
+                
                 // Nếu đang ở trang cuối và trang đó trống sau khi xóa, chuyển về trang trước
                 const remainingFilteredProducts = filteredProducts.filter(p => p.id !== id);
                 const maxPage = Math.ceil(remainingFilteredProducts.length / pagination.pageSize);
@@ -446,6 +449,9 @@ const Products: React.FC = () => {
                 
                 // Xóa sản phẩm khỏi local state ngay lập tức
                 setLocalProducts(prevProducts => prevProducts.filter(product => product.id !== id));
+                
+                // Reload dữ liệu từ API để cập nhật trạng thái mới nhất
+                refetch();
                 
                 // Tính toán lại pagination sau khi xóa
                 const remainingProducts = allProducts.filter(p => p.id !== id);
@@ -494,6 +500,9 @@ const Products: React.FC = () => {
                         product.id === id ? { ...product, active: true } : product
                     )
                 );
+                
+                // Reload dữ liệu từ API để cập nhật trạng thái mới nhất
+                refetch();
                 
                 // Nếu đang xem danh sách sản phẩm vô hiệu và khôi phục sản phẩm,
                 // sản phẩm sẽ biến mất khỏi danh sách hiện tại
@@ -562,6 +571,9 @@ const Products: React.FC = () => {
             
             if (successCount > 0) {
                 message.success(`Đã ${action === 'delete' ? 'vô hiệu hóa' : 'khôi phục'} ${successCount}/${selectedIds.length} sản phẩm`);
+                
+                // Reload dữ liệu từ API để cập nhật trạng thái mới nhất
+                refetch();
                 
                 // Tính toán lại pagination nếu cần
                 const maxPage = Math.ceil(filteredProducts.length / pagination.pageSize);

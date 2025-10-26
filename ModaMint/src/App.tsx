@@ -21,7 +21,7 @@ import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
 
 import Detail from "./pages/detail"
 
-import ProductList from './pages/products/ProductList';
+import ProductList from './pages/products';
 
 import Cart from './components/cart';
 import CheckoutPage from './pages/checkout/CheckoutPage';

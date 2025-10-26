@@ -21,6 +21,7 @@ export interface CreateUserRequest {
     firstName: string;
     lastName: string;
     dob?: string;       // yyyy-MM-dd format
+    roles?: string[];   // Backend expects roles array
 }
 
 // Interface cho UpdateUserRequest (giống UserUpdateRequest backend)
@@ -42,23 +43,41 @@ export interface ApiResponse<T> {
 
 // Tạo axios client
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1',
     headers: {
         'Content-Type': 'application/json',
-    }
+    },
+    withCredentials: true, // Important for CORS
 });
 
-// Interceptor để thêm token
+// Debug: Log baseURL để kiểm tra
+console.log('🌐 User Service API Base URL:', apiClient.defaults.baseURL);
+
+// Interceptor để thêm token (chỉ cho các request cần authentication)
 apiClient.interceptors.request.use(
     (config) => {
+        console.log('🔍 Request interceptor - URL:', config.url);
+        console.log('🔍 Request interceptor - Method:', config.method);
+        console.log('🔍 Request interceptor - Headers:', config.headers);
+        
+        // Không thêm token cho registration endpoint
+        if (config.url?.includes('/users') && config.method === 'post') {
+            console.log('🔍 Skipping token for registration endpoint');
+            return config;
+        }
+        
         const authDataStr = localStorage.getItem("authData");
         const authData = authDataStr ? JSON.parse(authDataStr) : null;
         if (authData && authData.token) {
             config.headers.Authorization = `Bearer ${authData.token}`;
+            console.log('🔍 Token added to request');
+        } else {
+            console.log('🔍 No token found in localStorage');
         }
         return config;
     },
     (error) => {
+        console.error('🔍 Request interceptor error:', error);
         return Promise.reject(error);
     }
 );
@@ -133,33 +152,72 @@ class UserService {
     // 3. Tạo user mới (POST /users)
     async createUser(userData: CreateUserRequest): Promise<{ success: boolean; data?: User; message?: string }> {
         try {
+            console.log('📤 Sending registration request to:', `${apiClient.defaults.baseURL}/users`);
+            console.log('📤 Request data:', userData);
+            console.log('📤 Full request config:', {
+                url: `${apiClient.defaults.baseURL}/users`,
+                method: 'POST',
+                headers: apiClient.defaults.headers,
+                data: userData
+            });
+            
             const response = await apiClient.post<ApiResponse<User>>('/users', userData);
+            
+            console.log('📥 Registration response:', response.data);
 
             const apiResponse = response.data;
 
             if (apiResponse.code !== 1000) {
+                console.error('❌ Registration failed with code:', apiResponse.code, 'Message:', apiResponse.message);
                 return {
                     success: false,
                     message: apiResponse.message || 'Tạo người dùng thất bại',
                 };
             }
 
+            console.log('✅ Registration successful:', apiResponse.result);
             return {
                 success: true,
                 data: apiResponse.result,
                 message: 'Đăng ký thành công! Chào mừng bạn đến với ModaMint.',
             };
         } catch (error) {
+            console.error('💥 Registration API error:', error);
+            
             if (axios.isAxiosError(error)) {
+                console.error('📡 HTTP Status:', error.response?.status);
+                console.error('📡 Response data:', error.response?.data);
+                
                 const errorResponse = error.response?.data as ApiResponse<any>;
+                
+                // Xử lý các lỗi HTTP cụ thể
+                if (error.response?.status === 400) {
+                    return {
+                        success: false,
+                        message: errorResponse?.message || 'Dữ liệu đăng ký không hợp lệ',
+                    };
+                } else if (error.response?.status === 409) {
+                    return {
+                        success: false,
+                        message: errorResponse?.message || 'Email hoặc tên đăng nhập đã tồn tại',
+                    };
+                } else if (error.response?.status === 500) {
+                    return {
+                        success: false,
+                        message: 'Lỗi server. Vui lòng thử lại sau',
+                    };
+                }
+                
                 return {
                     success: false,
                     message: errorResponse?.message || 'Tạo người dùng thất bại',
                 };
             }
+            
+            // Lỗi không phải từ HTTP
             return {
                 success: false,
-                message: 'Lỗi kết nối đến server',
+                message: error instanceof Error ? error.message : 'Lỗi kết nối đến server',
             };
         }
     }

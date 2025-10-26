@@ -68,17 +68,19 @@ export default function Register() {
             phone,
             firstName,
             lastName,
-            dob // Format: yyyy-MM-dd
+            dob, // Format: yyyy-MM-dd
+            roles: [] // Backend expects this field
         };
 
         try {
             setIsLoading(true);
-            console.log('Registration attempt with:', registrationData);
-
-
+            console.log('🚀 Registration attempt with:', registrationData);
+            console.log('🌐 API URL:', import.meta.env.VITE_API_URL || 'http://localhost:8080/api');
 
             // Gọi API đăng ký
             const result = await userService.createUser(registrationData);
+            
+            console.log('📡 API Response:', result);
 
             if (result.success) {
                 toast.success(result.message || 'Đăng ký thành công! Chào mừng bạn đến với ModaMint!');
@@ -87,11 +89,24 @@ export default function Register() {
                     navigate('/login');
                 }, 2000);
             } else {
+                console.error('❌ Registration failed:', result.message);
                 toast.error(result.message || 'Có lỗi xảy ra trong quá trình đăng ký!');
             }
         } catch (error) {
-            console.error('Registration error:', error);
-            toast.error('Có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại!');
+            console.error('💥 Registration error:', error);
+            
+            // Kiểm tra loại lỗi
+            if (error instanceof Error) {
+                if (error.message.includes('Network Error')) {
+                    toast.error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng!');
+                } else if (error.message.includes('timeout')) {
+                    toast.error('Yêu cầu quá thời gian. Vui lòng thử lại!');
+                } else {
+                    toast.error(`Lỗi: ${error.message}`);
+                }
+            } else {
+                toast.error('Có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại!');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -118,8 +133,8 @@ export default function Register() {
         <div className={styles["register__page"]}>
             <div className={styles["register__container"]}>
                 <div className={styles["register__header"]}>
-                    <h1>Đăng ký</h1>
-                    <p>Tham gia ModaMint để nhận nhiều ưu đãi hấp dẫn!</p>
+                    <h1 className={styles["register__title"]}>Đăng ký</h1>
+                    <p className={styles["register__subtitle"]}>Tham gia ModaMint để nhận nhiều ưu đãi hấp dẫn!</p>
                 </div>
                 <div className={styles["register__options"]}>
                     <div
@@ -288,35 +303,31 @@ export default function Register() {
                 )}
 
                 {registerMethod === 'facebook' && (
-                    <div className="social-register-container">
-                        <div className="social-register-info">
-                            <FaFacebook className="social-register-icon facebook-color" />
-                            <h3>Đăng ký với Facebook</h3>
-                            <p>Bạn sẽ được chuyển đến trang Facebook để đăng ký an toàn.</p>
-                        </div>
+                    <div className={styles["register__facebook-container"]}>
+                        <p className={styles["register__facebook-info"]}>
+                            Bạn sẽ được chuyển đến trang Facebook để đăng ký an toàn.
+                        </p>
                         <button
                             onClick={handleFacebookRegister}
-                            className="social-register-button facebook-button"
+                            className={styles["register__facebook-button"]}
                         >
-                            <FaFacebook className="social-icon" />
-                            Tiếp tục với Facebook
+                            <FaFacebook className={styles["register__facebook-icon"]} />
+                            Đăng ký với Facebook
                         </button>
                     </div>
                 )}
 
                 {registerMethod === 'google' && (
-                    <div className="social-register-container">
-                        <div className="social-register-info">
-                            <FaGoogle className="social-register-icon google-color" />
-                            <h3>Đăng ký với Google</h3>
-                            <p>Bạn sẽ được chuyển đến trang Google để đăng ký an toàn.</p>
-                        </div>
+                    <div className={styles["register__google-container"]}>
+                        <p className={styles["register__google-info"]}>
+                            Bạn sẽ được chuyển đến trang Google để đăng ký an toàn.
+                        </p>
                         <button
                             onClick={handleGoogleRegister}
-                            className="social-register-button google-button"
+                            className={styles["register__google-button"]}
                         >
-                            <FaGoogle className="social-icon" />
-                            Tiếp tục với Google
+                            <FaGoogle className={styles["register__google-icon"]} />
+                            Đăng ký với Google
                         </button>
                     </div>
                 )}

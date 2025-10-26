@@ -14,7 +14,7 @@ export interface AuthenticationResponse {
     expiresIn: number,
 }
 
-// Interface cho thông tin user trả về từ API
+
 export interface UserResponse {
     id: string,
     username: string,
@@ -23,7 +23,7 @@ export interface UserResponse {
     lastName: string,
     phone: string,
     dob: string,
-    image?: string, // URL hình ảnh từ Cloudinary
+    image?: string, 
     createdDate?: string,
     lastModifiedDate?: string,
 }
@@ -45,7 +45,7 @@ export interface ApiResponse<T> {
 // Tạo một axios instance với config mặc định
 const apiClient = axios.create({
     // URL gốc của API server, lấy từ env hoặc dùng localhost
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
+    baseURL: import.meta.env.VITE_API_URL,
     headers: {
         // Báo cho server biết chúng ta gửi dữ liệu dạng JSON
         'Content-Type': 'application/json',
@@ -77,7 +77,17 @@ const processQueue = (error: any, token: string | null = null) => {
 // Interceptor: can thiệp vào mỗi request trước khi gửi đi
 apiClient.interceptors.request.use(
     (config) => {
-        // Lấy token từ authData
+        // KHÔNG thêm token vào request login, logout, refresh
+        const isAuthRequest = config.url?.includes('/auth/login') || 
+                             config.url?.includes('/auth/logout') || 
+                             config.url?.includes('/auth/refresh');
+        
+        if (isAuthRequest) {
+            console.log('🔓 Auth request - skipping token addition');
+            return config;
+        }
+        
+        // Lấy token từ authData cho các request khác
         const authDataStr = localStorage.getItem("authData");
         
         if (authDataStr) {
@@ -189,29 +199,63 @@ class AuthenticationService {
     // Method đăng nhập
     async authenticate(credentials: AuthenticationRequest): Promise<{ success: boolean; data?: AuthenticationResponse; message?: string }> {
         try {
+            console.log('🔐 Attempting login with credentials:', { username: credentials.username });
+            console.log('🌐 Request URL:', apiClient.defaults.baseURL + '/auth/login');
+            console.log('📤 Request body:', credentials);
+            console.log('📋 Request headers:', apiClient.defaults.headers);
+            
             const response = await apiClient.post<ApiResponse<AuthenticationResponse>>(
                 '/auth/login',
                 credentials
             );
+            console.log('📥 Login response:', response.data);
             const apiResponse = response.data;
-            if (apiResponse.code !== 1000) {
+            
+            // Kiểm tra nếu response có format ApiResponse<T>
+            if (apiResponse.code !== undefined) {
+                if (apiResponse.code !== 1000) {
+                    console.log('❌ Login failed with code:', apiResponse.code, 'message:', apiResponse.message);
+                    return {
+                        success: false,
+                        message: apiResponse.message || 'Đăng nhập thất bại',
+                    };
+                }
+                console.log('✅ Login successful (ApiResponse format)');
                 return {
-                    success: false,
-                    message: apiResponse.message || 'Đăng nhập thất bại',
+                    success: true,
+                    data: apiResponse.result, // Trả về AuthenticationResponse
                 };
             }
+            
+            // Nếu response không có format ApiResponse, có thể là direct data
+            if ((apiResponse as any).accessToken) {
+                console.log('✅ Login successful (Direct format)');
+                return {
+                    success: true,
+                    data: apiResponse as unknown as AuthenticationResponse,
+                };
+            }
+            
+            // Nếu không match format nào
+            console.log('❌ Unknown response format:', apiResponse);
             return {
-                success: true,
-                data: apiResponse.result, // Trả về AuthenticationResponse
+                success: false,
+                message: 'Định dạng phản hồi không hợp lệ',
             };
         } catch (error) {
+            console.error('🚨 Login error:', error);
             // Xử lý lỗi nếu request failed
             if (axios.isAxiosError(error)) {
+                console.log('📊 Error response:', error.response?.data);
+                console.log('📊 Error status:', error.response?.status);
+                console.log('📊 Error headers:', error.response?.headers);
+                console.log('📊 Full error:', error);
+                console.log('📊 Request config:', error.config);
                 // Nếu là lỗi từ axios (VD: 400, 401, 500...)
                 const errorResponse = error.response?.data as ApiResponse<any>;
                 return {
                     success: false,
-                    message: errorResponse?.message || 'Đăng nhập thất bại',
+                    message: errorResponse?.message || `Đăng nhập thất bại (${error.response?.status})`,
                 };
             }
             // Lỗi khác (VD: không có internet)
@@ -334,8 +378,9 @@ class AuthenticationService {
     // Method refresh access token
     async refreshAccessToken(refreshToken: string): Promise<{ success: boolean; data?: AuthenticationResponse; message?: string }> {
         try {
+            console.log('🔄 Attempting to refresh access token...');
             const response = await axios.post<ApiResponse<AuthenticationResponse>>(
-                `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/auth/refresh`,
+                `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/auth/refresh`,
                 { refreshToken },
                 {
                     headers: {
@@ -343,6 +388,7 @@ class AuthenticationService {
                     }
                 }
             );
+            console.log('✅ Token refresh successful');
 
             const apiResponse = response.data;
             if (apiResponse.code !== 1000) {
@@ -478,9 +524,10 @@ class AuthenticationService {
             const payload = JSON.parse(atob(token.split('.')[1]));
             const now = Date.now() / 1000;
 
-            // Kiểm tra token có hết hạn trong 10 phút không
-            return payload.exp <= (now + 600);
+            // Kiểm tra token có hết hạn trong 5 phút không
+            return payload.exp <= (now + 300);
         } catch (error) {
+            console.error('Error checking token expiry:', error);
             return true;
         }
     }
