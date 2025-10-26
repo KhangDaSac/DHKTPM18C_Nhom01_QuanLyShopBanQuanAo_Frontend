@@ -1,15 +1,14 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./style.module.css";
 import { ProductCard } from '../../components/home/item-components/ProductCard';
+import { favoritesService } from '../../services/favorites';
+import { cartService } from '../../services/cart';
+import { useContext } from 'react';
+import { CartContext } from '../../components/contexts/CartContext';
+import { toast } from 'react-toastify';
+import type { FavoriteDto } from '../../services/favorites';
 
-type FavItem = {
-  id: string;
-  name?: string;
-  price?: number;
-  originalPrice?: number;
-  image?: string;
-  badge?: string;
-};
+// frontend favorites are represented by backend FavoriteDto
 
 type ProductCardData = {
   id: number;
@@ -22,31 +21,18 @@ type ProductCardData = {
 };
 
 const FavoritesPage: React.FC = () => {
-  const favorites: FavItem[] = useMemo(
-    () => [
-      {
-        id: "f1",
-        name: "Áo polo nam phối màu ND008",
-        price: 450000,
-        originalPrice: 600000,
-        image: "https://picsum.photos/seed/f1/640/800",
-        badge: "-25%",
-      },
-      {
-        id: "f2",
-        name: "Túi Xách Nữ Công Sở",
-        price: 1800000,
-        image: "https://picsum.photos/seed/f2/640/800",
-      },
-      {
-        id: "f3",
-        name: "Đầm hoa xinh",
-        price: 349000,
-        image: "https://picsum.photos/seed/f3/640/800",
-      },
-    ],
-    []
-  );
+  const [favorites, setFavorites] = useState<FavoriteDto[]>([]);
+
+  const cartCtx = useContext(CartContext);
+
+  useEffect(() => {
+    let mounted = true;
+    favoritesService.getFavorites().then(res => {
+      if (!mounted) return;
+      if (res.success && res.data) setFavorites(res.data);
+    }).catch(() => {/* ignore */});
+    return () => { mounted = false };
+  }, []);
 
   // UI-only handlers (non-functional as requested)
 
@@ -62,17 +48,29 @@ const FavoritesPage: React.FC = () => {
           {favorites.map((item, idx) => {
             const card: ProductCardData = {
               id: idx + 1,
-              image: item.image || 'https://picsum.photos/320',
-              name: item.name || 'Sản phẩm',
-              discount: item.badge,
-              originalPrice: item.originalPrice ? item.originalPrice.toLocaleString('vi-VN') + ' đ' : '',
-              currentPrice: item.price ? item.price.toLocaleString('vi-VN') + ' đ' : '',
+              image: item.price ? `https://picsum.photos/seed/fav${item.productId}/320` : 'https://picsum.photos/320',
+              name: item.productName || 'Sản phẩm',
+              discount: undefined,
+              originalPrice: '',
+              currentPrice: item.price ? Number(item.price).toLocaleString('vi-VN') + ' đ' : '',
               soldCount: undefined,
             };
 
             return (
               <div key={item.id} className={styles.card}>
-                <ProductCard product={card} />
+                <ProductCard product={card} onAdd={async ({ variantId, quantity }) => {
+                  try {
+                    const res = await cartService.addItem({ variantId: variantId ?? item.productId ?? 0, quantity: quantity ?? 1 });
+                    if (res.success && res.data) {
+                      if (cartCtx && cartCtx.setCartFromBackend) cartCtx.setCartFromBackend(res.data);
+                      toast.success('Đã thêm vào giỏ hàng');
+                    } else {
+                      toast.error('Không thể thêm vào giỏ hàng');
+                    }
+                  } catch (e) {
+                    toast.error('Không thể thêm vào giỏ hàng');
+                  }
+                }} />
               </div>
             );
           })}

@@ -14,9 +14,10 @@ interface ProductCardData {
 
 interface ProductCardProps {
   product: ProductCardData;
+  onAdd?: (payload: { variantId?: number; quantity?: number }) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onAdd }) => {
   const [isHovered, setIsHovered] = useState(false);
   const percentage = product.soldCount && product.soldCount > 0 ? (product.soldCount / 200) * 100 : 0;
   const progressWidth = Math.min(percentage, 100);
@@ -71,6 +72,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               isHovered ? styles.hovered : ''
             }`}
             aria-label="add-to-cart"
+            onClick={() => onAdd && onAdd({ variantId: product.id, quantity: 1 })}
           >
             Thêm vào giỏ hàng
           </button>

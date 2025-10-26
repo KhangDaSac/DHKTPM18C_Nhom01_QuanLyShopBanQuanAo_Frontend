@@ -1,5 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ProductCard } from '../../components/home/item-components/ProductCard';
+import { cartService } from '../../services/cart';
+import { useContext } from 'react';
+import { CartContext } from '../../components/contexts/CartContext';
+import { toast } from 'react-toastify';
 import Sidebar from '../../components/product-list/Sidebar';
 import Pagination from '../../components/product-list/Pagination';
 import SortSelect from '../../components/product-list/SortSelect';
@@ -211,6 +215,7 @@ const ProductList: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const cartCtx = useContext(CartContext);
 
     // Hàm lấy danh sách sản phẩm từ API
     const fetchProducts = async () => {
@@ -422,7 +427,20 @@ const ProductList: React.FC = () => {
                                             originalPrice: p.originalPrice.toString(),
                                             currentPrice: p.currentPrice.toString()
                                         };
-                                        return <ProductCard key={p.id} product={productCardData} />;
+                                        return <ProductCard key={p.id} product={productCardData} onAdd={async ({ variantId, quantity }) => {
+                                            try {
+                                                const res = await cartService.addItem({ variantId: variantId ?? productCardData.id, quantity: quantity ?? 1 });
+                                                if (res.success && res.data) {
+                                                    // sync local context from backend cart
+                                                    if (cartCtx && cartCtx.setCartFromBackend) cartCtx.setCartFromBackend(res.data);
+                                                    toast.success('Đã thêm vào giỏ hàng');
+                                                } else {
+                                                    toast.error('Không thể thêm vào giỏ hàng');
+                                                }
+                                            } catch (e) {
+                                                toast.error('Không thể thêm vào giỏ hàng');
+                                            }
+                                        }} />;
                                     })
                                 ) : (
                                     <div style={{
