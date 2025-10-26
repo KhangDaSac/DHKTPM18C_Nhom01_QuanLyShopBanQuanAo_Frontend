@@ -5,7 +5,7 @@ import { FaTiktok, FaInstagram, FaFacebookF, FaYoutube, FaTwitter } from 'react-
 
 export default function Footer() {
     return (
-        <footer className="footer">
+        <footer >
             <div className="footer-wrapper">
                 <div className="footer__branding">
                     <div className="footer__branding-inner">

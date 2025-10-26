@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+
 
 /* Import theme-aware styles */
 @import './dashboard/theme-styles.css';
@@ -8,6 +6,9 @@
 @import './dashboard/debug-theme.css';
 @import './dashboard/force-theme.css';
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 body {
     font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     margin: 0;
