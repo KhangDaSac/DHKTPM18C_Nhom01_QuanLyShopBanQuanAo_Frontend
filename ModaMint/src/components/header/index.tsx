@@ -109,10 +109,10 @@ export default function Header() {
                             </div>
                         </div>
                         <div className={styles.header__actions}>
-                            <div className={styles.header__action}>
+                            <Link to="/favorites" className={`${styles.header__action} ${styles['header__action--link']}`}>
                                 <AiOutlineHeart className={styles['header__action-icon']} />
                                 <span className={styles['header__action-text']}>Yêu thích</span>
-                            </div>
+                            </Link>
                             <div className={`${styles.header__action} ${styles['header__action--account']}`}>
                                 <AiOutlineUser className={styles['header__action-icon']} />
                                 <span className={styles['header__action-text']}>
@@ -134,13 +134,13 @@ export default function Header() {
                                     </ul>
                                 </div>
                             </div>
-                            <div className={styles.header__action}>
+                            <Link to="/carts" className={`${styles.header__action} ${styles['header__action--link']}`}>
                                 <div className={styles['header__cart-wrapper']}>
                                     <AiOutlineShoppingCart className={styles['header__action-icon']} />
                                     <span className={styles['header__cart-count']}>1</span>
                                 </div>
                                 <span className={styles['header__action-text']}>Giỏ hàng</span>
-                            </div>
+                            </Link>
                         </div>
                     </div>
                 </div>

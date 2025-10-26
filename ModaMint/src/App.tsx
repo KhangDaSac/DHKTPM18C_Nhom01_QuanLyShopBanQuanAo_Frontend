@@ -26,7 +26,8 @@ import ProductList from './pages/products';
 import Cart from './components/cart';
 import CheckoutPage from './pages/checkout/CheckoutPage';
 // Context
-import { CartProvider } from '../src/components/contexts/CartContext';
+import { CartProvider } from './components/contexts/CartContext';
+import FavoritesPage from './pages/favorites/FavoritesPage';
 // Import dashboard routes
 import dashboardRoutes from './dashboard/routes';
 // Import Error Boundary
@@ -121,7 +122,8 @@ function App() {
 
         // Phần sản phẩm
 
-        { path: "carts", element: <Cart /> },
+  { path: "carts", element: <Cart /> },
+  { path: "favorites", element: <FavoritesPage /> },
         { path: 'checkoutpage', element: <CheckoutPage /> },
       ]
     },
