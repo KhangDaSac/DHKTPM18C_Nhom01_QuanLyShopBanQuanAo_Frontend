@@ -4,7 +4,6 @@ import Sidebar from '../../components/productList/Sidebar';
 import Pagination from '../../components/productList/Pagination';
 import SortSelect from '../../components/productList/SortSelect';
 import CategoryCarousel from '../../components/productList/CategoryCarousel';
-
 // Mock data (replace with API calls later)
 interface Product {
   id: number;
@@ -19,185 +18,7 @@ interface Product {
   size?: string[];
 }
 
-const MOCK: Product[] = [
-  // Sản phẩm giá thấp, màu đen, size S
-  {
-    id: 1,
-    name: 'Áo thun basic đen',
-    price: 150000,
-    originalPrice: 150000,
-    currentPrice: 150000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp11-2.jpg?v=1731125392907',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#000000',
-    size: ['S']
-  },
-  // Sản phẩm giá trung bình, màu đỏ, size M
-  {
-    id: 2,
-    name: 'Áo sơ mi đỏ',
-    price: 350000,
-    originalPrice: 350000,
-    currentPrice: 350000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp11-2.jpg?v=1731125392907',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#ff0000',
-    size: ['M']
-  },
-  // Sản phẩm giá cao, màu xanh, size L
-  {
-    id: 3,
-    name: 'Áo khoác xanh',
-    price: 850000,
-    originalPrice: 850000,
-    currentPrice: 850000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp7-2.jpg?v=1731125215147',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#0000ff',
-    size: ['L']
-  },
-  // Thêm một số sản phẩm đa dạng
-  {
-    id: 4,
-    name: 'Quần jeans đen',
-    price: 650000,
-    originalPrice: 650000,
-    currentPrice: 650000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp5-2-1ebabec4-fa1b-4365-ba8b-b189cecdea6e.jpg?v=1731512874167',
-    hoverImage: '/vite.svg',
-    category: 'quan-nam',
-    color: '#000000',
-    size: ['M', 'L']
-  },
-  {
-    id: 5,
-    name: 'Áo polo đỏ',
-    price: 250000,
-    originalPrice: 250000,
-    currentPrice: 250000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp1-2-994d2b9b-4bd3-4498-b1c5-377d7dda8b67.jpg?v=1731853502867',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#ff0000',
-    size: ['S', 'M', 'L']
-  },
-  // Sản phẩm giá cao
-  {
-    id: 6,
-    name: 'Áo khoác da cao cấp',
-    price: 1200000,
-    originalPrice: 1200000,
-    currentPrice: 1200000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp1-2-c034c1cf-4923-4e69-9ef0-96d9ae6e3f60.jpg?v=1731513969997',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#000000',
-    size: ['M', 'L']
-  },
-  {
-    id: 7,
-    name: 'Áo polo đỏ',
-    price: 250000,
-    originalPrice: 250000,
-    currentPrice: 250000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp1-2-994d2b9b-4bd3-4498-b1c5-377d7dda8b67.jpg?v=1731853502867',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#ff0000',
-    size: ['S', 'M', 'L']
-  },
-  // Sản phẩm giá cao
-  {
-    id: 8,
-    name: 'Áo khoác da cao cấp',
-    price: 1200000,
-    originalPrice: 1200000,
-    currentPrice: 1200000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp1-2-c034c1cf-4923-4e69-9ef0-96d9ae6e3f60.jpg?v=1731513969997',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#000000',
-    size: ['M', 'L']
-  },
-  {
-    id: 9,
-    name: 'Áo polo đỏ',
-    price: 250000,
-    originalPrice: 250000,
-    currentPrice: 250000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp1-2-994d2b9b-4bd3-4498-b1c5-377d7dda8b67.jpg?v=1731853502867',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#ff0000',
-    size: ['S', 'M', 'L']
-  },
-  // Sản phẩm giá cao
-  {
-    id: 10,
-    name: 'Áo khoác da cao cấp',
-    price: 1200000,
-    originalPrice: 1200000,
-    currentPrice: 1200000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp1-2-c034c1cf-4923-4e69-9ef0-96d9ae6e3f60.jpg?v=1731513969997',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#000000',
-    size: ['M', 'L']
-  },
-  {
-    id: 11,
-    name: 'Áo polo đỏ',
-    price: 250000,
-    originalPrice: 250000,
-    currentPrice: 250000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp1-2-994d2b9b-4bd3-4498-b1c5-377d7dda8b67.jpg?v=1731853502867',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#ff0000',
-    size: ['S', 'M', 'L']
-  },
-  // Sản phẩm giá cao
-  {
-    id: 12,
-    name: 'Áo khoác da cao cấp',
-    price: 1200000,
-    originalPrice: 1200000,
-    currentPrice: 1200000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp1-2-c034c1cf-4923-4e69-9ef0-96d9ae6e3f60.jpg?v=1731513969997',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#000000',
-    size: ['M', 'L']
-  },
-  {
-    id: 13,
-    name: 'Áo polo đỏ',
-    price: 250000,
-    originalPrice: 250000,
-    currentPrice: 250000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp1-2-994d2b9b-4bd3-4498-b1c5-377d7dda8b67.jpg?v=1731853502867',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#ff0000',
-    size: ['S', 'M', 'L']
-  },
-  // Sản phẩm giá cao
-  {
-    id: 14,
-    name: 'Áo khoác da cao cấp',
-    price: 1200000,
-    originalPrice: 1200000,
-    currentPrice: 1200000,
-    image: 'https://bizweb.dktcdn.net/thumb/large/100/534/571/products/sp1-2-c034c1cf-4923-4e69-9ef0-96d9ae6e3f60.jpg?v=1731513969997',
-    hoverImage: '/vite.svg',
-    category: 'ao-nam',
-    color: '#000000',
-    size: ['M', 'L']
-  }
-];
+
 
 const PAGE_SIZE = 12;
 
@@ -206,9 +27,40 @@ const ProductList: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [filters, setFilters] = useState<{ prices: string[]; colors: string[]; sizes: string[] }>({ prices: [], colors: [], sizes: [] });
+const [products, setProducts] = useState<Product[]>([]);
+
+useEffect(() => {
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/products');
+      const data = await response.json();
+      if (data && Array.isArray(data.result)) {
+        setProducts(
+          data.result.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            price: p.price ?? 0,
+            originalPrice: p.price ?? 0,
+            currentPrice: p.price ?? 0,
+            image: '/default.png',
+            hoverImage: '/default.png',
+            category: p.categoryName,
+          }))
+        );
+      } else {
+        setProducts([]);
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy sản phẩm:', error);
+    }
+  };
+
+  fetchProducts();
+}, []);
+
 
   const filtered = useMemo(() => {
-    return MOCK.filter(p => {
+    return products.filter(p => {
       if (category && typeof category === 'string') {
         const normalize = (s: string) => s
           .toLowerCase()

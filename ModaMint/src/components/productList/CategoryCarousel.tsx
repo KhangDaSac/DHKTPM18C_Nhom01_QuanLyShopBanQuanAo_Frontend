@@ -11,7 +11,6 @@ const items = [
   { id: 'giaydep', label: 'ÁO NỮ', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_1.png?1749442635129' },
   { id: 'phukien', label: 'ÁO NAM', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_3.png?1749442635129' },
   { id: 'vay', label: 'ÁO NAM', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_3.png?1749442635129' },
-  { id: 'giaydep', label: 'ÁO NAM', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_3.png?1749442635129' },
 ];
 
 const CategoryCarousel: React.FC<Props> = ({ onSelect }) => {
