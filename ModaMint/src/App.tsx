@@ -34,7 +34,7 @@ function App() {
         { path: "contact", element: <ContactPage /> },
         { path: "login", element: <LoginPage /> },
         { path: "register", element: <RegisterPage /> },
-        { path: "detail/:id", element: <Detail /> },
+        { path: "products/:id", element: <Detail /> },
       ]
     },
 
