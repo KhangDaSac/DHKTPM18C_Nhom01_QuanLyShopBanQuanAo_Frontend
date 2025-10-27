@@ -10,6 +10,8 @@ import {
     LogoutOutlined,
     TeamOutlined,
     ShopOutlined,
+    PercentageOutlined,
+    DollarOutlined,
 } from '@ant-design/icons';
 
 export interface SidebarLink {
@@ -17,6 +19,7 @@ export interface SidebarLink {
     label: string;
     path: string;
     icon: React.ReactNode;
+    children?: SidebarLink[];
 }
 
 export const DASHBOARD_SIDEBAR_LINKS: SidebarLink[] = [
@@ -55,6 +58,20 @@ export const DASHBOARD_SIDEBAR_LINKS: SidebarLink[] = [
         label: 'Khuyến Mãi',
         path: '/dashboard/promotions',
         icon: <GiftOutlined />,
+        children: [
+            {
+                key: 'promotions-percentage',
+                label: 'Khuyến Mãi Theo %',
+                path: '/dashboard/promotions/percentage',
+                icon: <PercentageOutlined />,
+            },
+            {
+                key: 'promotions-fixed',
+                label: 'Khuyến Mãi Theo Giá',
+                path: '/dashboard/promotions/fixed',
+                icon: <DollarOutlined />,
+            },
+        ],
     },
     {
         key: 'roles',
@@ -71,6 +88,12 @@ export const DASHBOARD_SIDEBAR_LINKS: SidebarLink[] = [
 ];
 
 export const DASHBOARD_SIDEBAR_BOTTOM_LINKS: SidebarLink[] = [
+    {
+        key: 'profile',
+        label: 'Thông tin cá nhân',
+        path: '/dashboard/profile',
+        icon: <UserOutlined />,
+    },
     {
         key: 'settings',
         label: 'Cài Đặt',

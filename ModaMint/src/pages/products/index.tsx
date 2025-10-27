@@ -15,6 +15,7 @@ interface Product {
     currentPrice: number;
     image: string;
     hoverImage: string;
+    images?: string[]; // Mảng nhiều ảnh
     category: string;
     color?: string;
     size?: string[];
@@ -357,23 +358,6 @@ const ProductList: React.FC = () => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <div>Sắp xếp theo</div>
                                 <SortSelect value={sort} onChange={(v) => setSort(v)} />
-                                <button
-                                    onClick={fetchProducts}
-                                    disabled={loading}
-                                    style={{
-                                        marginLeft: '12px',
-                                        padding: '6px 12px',
-                                        backgroundColor: loading ? '#ccc' : '#ff6347',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: loading ? 'not-allowed' : 'pointer',
-                                        fontSize: '12px'
-                                    }}
-                                    title="Tải lại danh sách sản phẩm"
-                                >
-                                    {loading ? '⟳' : '↻'} Refresh
-                                </button>
                             </div>
                         </div>
 

@@ -18,7 +18,8 @@ import {
     Typography,
     Checkbox,
     Divider,
-    Tooltip
+    Tooltip,
+    Statistic
 } from 'antd';
 import {
     PlusOutlined,
@@ -321,89 +322,84 @@ const RoleManagement: React.FC = () => {
     };
 
     return (
-        <div className="role-management">
-            <div className="page-header">
-                <Title level={2}>
-                    <SecurityScanOutlined style={{ marginRight: '12px', color: '#1890ff' }} />
-                    Quản lý vai trò & phân quyền
-                </Title>
-                <Space>
-                    <Button
-                        icon={<DownloadOutlined />}
-                        onClick={handleExportRolesExcel}
-                    >
-                        Xuất Excel
-                    </Button>
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        size="large"
-                        onClick={handleAddRole}
-                        className="add-role-btn"
-                    >
-                        Thêm vai trò mới
-                    </Button>
-                </Space>
+        <div style={{ padding: '72px', background: '#f0f2f5', minHeight: '100vh' }}>
+            {/* Header */}
+            <Card style={{ marginBottom: '20px' }}>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center'
+                }}>
+                    <Space>
+                        <SecurityScanOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                        <Title level={2} style={{ margin: 0 }}>Quản lý vai trò & phân quyền</Title>
+                    </Space>
+                    <Space>
+                        <Button
+                            icon={<DownloadOutlined />}
+                            onClick={handleExportRolesExcel}
+                        >
+                            Xuất Excel
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            onClick={handleAddRole}
+                        >
+                            Thêm vai trò mới
+                        </Button>
+                    </Space>
+                </div>
+            </Card>
+
+            {/* Statistics */}
+            <div style={{ marginBottom: '20px' }}>
+                <Row gutter={16}>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic
+                                title="Tổng vai trò"
+                                value={totalRoles}
+                                prefix={<SecurityScanOutlined />}
+                                valueStyle={{ color: '#1890ff' }}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic
+                                title="Vai trò hoạt động"
+                                value={activeRoles}
+                                prefix={<SafetyCertificateOutlined />}
+                                valueStyle={{ color: '#52c41a' }}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic
+                                title="Tổng người dùng"
+                                value={totalUsers}
+                                prefix={<TeamOutlined />}
+                                valueStyle={{ color: '#722ed1' }}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic
+                                title="Người dùng hoạt động"
+                                value={activeUsers}
+                                prefix={<UserOutlined />}
+                                valueStyle={{ color: '#ff4d4f' }}
+                            />
+                        </Card>
+                    </Col>
+                </Row>
             </div>
 
-            {/* Statistics Cards */}
-            <Row gutter={[16, 16]} className="stats-section">
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="stat-card role-stat">
-                        <div className="stat-content">
-                            <div className="stat-icon">
-                                <SecurityScanOutlined />
-                            </div>
-                            <div className="stat-info">
-                                <div className="stat-value">{totalRoles}</div>
-                                <div className="stat-label">Tổng vai trò</div>
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="stat-card active-role-stat">
-                        <div className="stat-content">
-                            <div className="stat-icon">
-                                <SafetyCertificateOutlined />
-                            </div>
-                            <div className="stat-info">
-                                <div className="stat-value">{activeRoles}</div>
-                                <div className="stat-label">Vai trò hoạt động</div>
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="stat-card user-stat">
-                        <div className="stat-content">
-                            <div className="stat-icon">
-                                <TeamOutlined />
-                            </div>
-                            <div className="stat-info">
-                                <div className="stat-value">{totalUsers}</div>
-                                <div className="stat-label">Tổng người dùng</div>
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="stat-card active-user-stat">
-                        <div className="stat-content">
-                            <div className="stat-icon">
-                                <UserOutlined />
-                            </div>
-                            <div className="stat-info">
-                                <div className="stat-value">{activeUsers}</div>
-                                <div className="stat-label">Người dùng hoạt động</div>
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-            </Row>
-
             {/* Search and Filter */}
-            <Card className="filter-section">
+            <Card style={{ marginBottom: '20px' }}>
                 <Row gutter={16} align="middle">
                     <Col flex="auto">
                         <Input
@@ -540,12 +536,17 @@ const RoleManagement: React.FC = () => {
             </div>
 
             {/* Users Section */}
-            <Card className="users-section" style={{ marginTop: '24px' }}>
-                <div className="section-header">
-                    <Title level={3}>
-                        <TeamOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-                        Quản lý người dùng
-                    </Title>
+            <Card>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    marginBottom: '20px'
+                }}>
+                    <Space>
+                        <TeamOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                        <Title level={3} style={{ margin: 0 }}>Quản lý người dùng</Title>
+                    </Space>
                     <Space>
                         <Button
                             icon={<DownloadOutlined />}

@@ -1,0 +1,103 @@
+/* Dashboard Button Styles - Better Color Scheme */
+
+/* View All Button - Beautiful Gradient Blue */
+.btn-view-all {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    padding: 8px 24px !important;
+    height: auto !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+    transition: all 0.3s ease !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.btn-view-all:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
+    color: white !important;
+}
+
+.btn-view-all:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+}
+
+/* View Details Button - Beautiful Gradient Pink/Purple with Icon */
+.btn-view-details {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    padding: 6px 16px !important;
+    height: 32px !important;
+    box-shadow: 0 2px 8px rgba(245, 87, 108, 0.3) !important;
+    transition: all 0.3s ease !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.btn-view-details:hover {
+    background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4) !important;
+    color: white !important;
+}
+
+.btn-view-details:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 1px 4px rgba(245, 87, 108, 0.3) !important;
+}
+
+.btn-view-details .anticon {
+    margin-right: 4px;
+}
+
+/* Alternative: Modern Blue Gradient for View All */
+.btn-view-all-alt {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    padding: 8px 24px !important;
+    height: auto !important;
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3) !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-view-all-alt:hover {
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4) !important;
+    color: white !important;
+}
+
+/* Alternative: Modern Green for View Details */
+.btn-view-details-green {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    padding: 6px 16px !important;
+    height: 32px !important;
+    box-shadow: 0 2px 8px rgba(67, 233, 123, 0.3) !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-view-details-green:hover {
+    background: linear-gradient(135deg, #38f9d7 0%, #43e97b 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(67, 233, 123, 0.4) !important;
+    color: white !important;
+}
+
+/* Card extra button container */
+.ant-card-extra .btn-view-all,
+.ant-card-extra .btn-view-all-alt {
+    margin-left: 0;
+}

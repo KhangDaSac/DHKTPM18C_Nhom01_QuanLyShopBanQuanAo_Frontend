@@ -71,7 +71,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               isHovered ? styles.hovered : ''
             }`}
           >
-            Tùy chọn
+            <span>Tùy chọn</span>
           </button>
         </div>
       </div>

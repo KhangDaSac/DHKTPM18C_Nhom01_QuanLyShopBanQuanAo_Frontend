@@ -15,11 +15,11 @@ import {
     Statistic,
     Typography,
     Popconfirm,
-    Avatar
+    Avatar,
+    Spin
 } from 'antd';
 import './style.css';
 import {
-    PlusOutlined,
     EditOutlined,
     DeleteOutlined,
     EyeOutlined,
@@ -32,6 +32,8 @@ import {
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import '../../components/common-styles.css';
+import { customerService } from '../../../services/customer';
+import { toast } from 'react-toastify';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -40,23 +42,27 @@ const { TextArea } = Input;
 // Interface cho Customer
 interface Customer {
     id: number;
+    userId?: string; // userId từ backend
+    username?: string;
     name: string;
     email: string;
-    phone: string;
-    address: string;
-    city: string;
-    district: string;
-    ward: string;
-    gender: 'male' | 'female' | 'other';
+    phone?: string;
+    address?: string;
+    city?: string;
+    district?: string;
+    ward?: string;
+    gender?: 'male' | 'female' | 'other';
     dateOfBirth?: string;
     status: 'active' | 'inactive' | 'blocked';
     customerType: 'regular' | 'vip' | 'premium';
     totalOrders: number;
     totalSpent: number;
     lastOrderDate?: string;
-    createdAt: string;
+    createdAt?: string;
     notes?: string;
     avatar?: string;
+    firstName?: string;
+    lastName?: string;
 }
 
 // Data sẽ được load từ API
@@ -148,6 +154,69 @@ const Customers: React.FC = () => {
         };
     }, []);
 
+    // Load customers từ API
+    useEffect(() => {
+        loadCustomers();
+    }, []);
+
+    const loadCustomers = async () => {
+        setLoading(true);
+        try {
+            console.log('🔄 Đang gọi API getAllCustomers...');
+            const result = await customerService.getAllCustomers();
+            console.log('📦 Kết quả từ API:', result);
+            
+            if (result.success && result.data) {
+                console.log('✅ Dữ liệu customers:', result.data);
+                // Chuyển đổi customer response sang customer format cho display
+                const customersData: Customer[] = result.data
+                    .filter(customer => customer && customer.user) // Lọc các customer có user data
+                    .map((customer, index) => {
+                        const user = customer.user!; // Safe vì đã filter
+                        const primaryAddress = customer.addresses && customer.addresses.length > 0 
+                            ? customer.addresses[0] 
+                            : null;
+                        const orders = customer.orders || [];
+                        const totalSpent = orders.reduce((sum, order) => sum + (parseFloat(order.id.toString()) || 0), 0);
+                        
+                    return {
+                        id: index + 1,
+                        userId: customer.userId, // Lưu userId từ backend
+                        username: user.username || '',
+                        name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Chưa có tên',
+                        email: user.email || '',
+                        phone: user.phone || '',
+                        address: primaryAddress?.addressDetail || 'Chưa cập nhật',
+                        city: primaryAddress?.city || 'Chưa cập nhật',
+                        district: 'Chưa cập nhật',
+                        ward: primaryAddress?.ward || 'Chưa cập nhật',
+                        gender: 'other' as const,
+                        dateOfBirth: user.dob || '',
+                        status: 'active' as const,
+                        customerType: 'regular' as const,
+                        totalOrders: orders.length,
+                        totalSpent: totalSpent,
+                        createdAt: new Date().toISOString().split('T')[0],
+                        firstName: user.firstName || '',
+                        lastName: user.lastName || '',
+                        avatar: user.image || ''
+                    };
+                    });
+                console.log('👥 Customers data mapped:', customersData);
+                console.log('👥 Total customers:', customersData.length);
+                setCustomers(customersData);
+            } else {
+                console.error('❌ Lỗi:', result.message);
+                toast.error(result.message || 'Không thể tải danh sách khách hàng');
+            }
+        } catch (err) {
+            console.error('❌ Exception:', err);
+            toast.error('Lỗi kết nối đến server');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // States cho filtering
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -167,6 +236,13 @@ const Customers: React.FC = () => {
     const totalRevenue = customers.reduce((sum, c) => sum + c.totalSpent, 0);
 
     const columns = [
+        {
+            title: 'STT',
+            key: 'index',
+            width: 60,
+            align: 'center' as const,
+            render: (_: any, __: any, index: number) => index + 1,
+        },
         {
             title: 'Khách hàng',
             key: 'customer',
@@ -418,12 +494,6 @@ const Customers: React.FC = () => {
         },
     ];
 
-    const handleAdd = () => {
-        setEditingCustomer(null);
-        form.resetFields();
-        setIsModalVisible(true);
-    };
-
     const handleEdit = (customer: Customer) => {
         setEditingCustomer(customer);
         form.setFieldsValue({
@@ -438,9 +508,43 @@ const Customers: React.FC = () => {
         setIsViewModalVisible(true);
     };
 
-    const handleDelete = (id: number) => {
-        setCustomers(customers.filter(c => c.id !== id));
-        message.success('Đã xóa khách hàng thành công');
+    const handleDelete = async (id: number) => {
+        try {
+            setLoading(true);
+            // Tìm customer theo id
+            const customerToDelete = customers.find(c => c.id === id);
+            
+            if (!customerToDelete) {
+                toast.error('Không tìm thấy khách hàng');
+                return;
+            }
+
+            // Gọi API xóa customer (sử dụng userId từ backend)
+            const userIdToDelete = customerToDelete.userId;
+            console.log('🗑️ Attempting to delete customer with userId:', userIdToDelete);
+            
+            if (!userIdToDelete) {
+                toast.error('Không có userId để xóa');
+                return;
+            }
+            
+            const result = await customerService.deleteCustomer(userIdToDelete);
+            console.log('🗑️ Delete result:', result);
+            
+            if (result.success) {
+                setCustomers(customers.filter(c => c.id !== id));
+                console.log('✅ Showing success message');
+                toast.success(result.message || 'Đã xóa khách hàng thành công');
+            } else {
+                console.log('❌ Showing error message');
+                toast.error(result.message || 'Xóa khách hàng thất bại');
+            }
+        } catch (err) {
+            console.error('❌ Delete customer error:', err);
+            toast.error('Lỗi khi xóa khách hàng');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSave = async (values: any) => {
@@ -595,14 +699,6 @@ const Customers: React.FC = () => {
                             >
                                 Xuất Excel
                             </Button>
-                            <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={handleAdd}
-                                className="btn-primary"
-                            >
-                                Thêm khách hàng
-                            </Button>
                         </Space>
                     </Col>
                 </Row>
@@ -628,12 +724,13 @@ const Customers: React.FC = () => {
 
             {/* Customers Table */}
             <Card>
-                <Table
-                    columns={columns}
-                    dataSource={filteredCustomers}
-                    rowKey="id"
-                    size="small"
-                    className="custom-customers-table"
+                <Spin spinning={loading}>
+                    <Table
+                        columns={columns}
+                        dataSource={filteredCustomers}
+                        rowKey="id"
+                        size="small"
+                        className="custom-customers-table"
                     rowSelection={{
                         selectedRowKeys,
                         onChange: setSelectedRowKeys,
@@ -647,7 +744,8 @@ const Customers: React.FC = () => {
                         showTotal: (total) => `Tổng ${total} khách hàng`,
                     }}
                     scroll={{ x: 1200 }}
-                />
+                    />
+                </Spin>
             </Card>
 
             {/* Add/Edit Modal */}

@@ -179,6 +179,13 @@ const Promotions: React.FC = () => {
     // Table columns
     const columns = [
         {
+            title: 'STT',
+            key: 'index',
+            width: 60,
+            align: 'center' as const,
+            render: (_: any, __: any, index: number) => index + 1,
+        },
+        {
             title: 'Tên khuyến mãi',
             key: 'promotion',
             width: 250,

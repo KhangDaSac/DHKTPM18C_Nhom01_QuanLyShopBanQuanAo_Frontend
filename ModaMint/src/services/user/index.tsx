@@ -53,31 +53,32 @@ const apiClient = axios.create({
 // Debug: Log baseURL để kiểm tra
 console.log('🌐 User Service API Base URL:', apiClient.defaults.baseURL);
 
-// Interceptor để thêm token (chỉ cho các request cần authentication)
+// Interceptor để thêm token
 apiClient.interceptors.request.use(
     (config) => {
         console.log('🔍 Request interceptor - URL:', config.url);
         console.log('🔍 Request interceptor - Method:', config.method);
         console.log('🔍 Request interceptor - Headers:', config.headers);
         
-        // Không thêm token cho registration endpoint
+        // Không thêm token chỉ cho POST /users (đăng ký)
         if (config.url?.includes('/users') && config.method === 'post') {
             console.log('🔍 Skipping token for registration endpoint');
             return config;
         }
         
+        // Thêm token cho tất cả các request khác
         const authDataStr = localStorage.getItem("authData");
         const authData = authDataStr ? JSON.parse(authDataStr) : null;
         if (authData && authData.token) {
             config.headers.Authorization = `Bearer ${authData.token}`;
-            console.log('🔍 Token added to request');
+            console.log('✅ Token added to request');
         } else {
-            console.log('🔍 No token found in localStorage');
+            console.log('⚠️ No token found in localStorage');
         }
         return config;
     },
     (error) => {
-        console.error('🔍 Request interceptor error:', error);
+        console.error('❌ Request interceptor error:', error);
         return Promise.reject(error);
     }
 );

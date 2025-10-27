@@ -20,7 +20,8 @@ import {
     TimePicker,
     InputNumber,
     Upload,
-    Progress
+    Progress,
+    Statistic
 } from 'antd';
 import {
     PlusOutlined,
@@ -544,429 +545,123 @@ const StoresPage: React.FC = () => {
     );
 
     return (
-        <div className="store-management">
-            <div className="page-header">
-                <Title level={2}>
-                    <ShopOutlined style={{ marginRight: 12, color: '#1890ff' }} />
-                    Quản lý cửa hàng
-                </Title>
-                <Space>
-                    <Button
-                        type="default"
-                        icon={<ExportOutlined />}
-                        onClick={exportToExcel}
-                    >
-                        Xuất Excel
-                    </Button>
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={handleAddStore}
-                    >
-                        Thêm cửa hàng
-                    </Button>
-                </Space>
-            </div>
+        <div style={{ padding: '72px', background: '#f0f2f5', minHeight: '100vh' }}>
+            <Card style={{ marginBottom: '20px' }}>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center'
+                }}>
+                    <Space>
+                        <ShopOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                        <Title level={2} style={{ margin: 0 }}>Quản lý cửa hàng</Title>
+                    </Space>
+                    <Space>
+                        <Button
+                            icon={<ExportOutlined />}
+                            onClick={exportToExcel}
+                        >
+                            Xuất Excel
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            onClick={handleAddStore}
+                        >
+                            Thêm cửa hàng
+                        </Button>
+                    </Space>
+                </div>
+            </Card>
 
-            {/* Statistics Cards */}
-            <div className="stats-section">
+            {/* Statistics */}
+            <div style={{ marginBottom: '20px' }}>
                 <Row gutter={16}>
                     <Col xs={24} sm={12} md={6}>
-                        <Card className="stat-card total-stores-stat">
-                            <div className="stat-content">
-                                <div className="stat-icon">
-                                    <ShopOutlined />
-                                </div>
-                                <div className="stat-info">
-                                    <div className="stat-value">{stats.totalStores}</div>
-                                    <div className="stat-label">Tổng cửa hàng</div>
-                                </div>
-                            </div>
+                        <Card>
+                            <Statistic
+                                title="Tổng cửa hàng"
+                                value={stats.totalStores}
+                                prefix={<ShopOutlined />}
+                                valueStyle={{ color: '#1890ff' }}
+                            />
                         </Card>
                     </Col>
                     <Col xs={24} sm={12} md={6}>
-                        <Card className="stat-card active-stores-stat">
-                            <div className="stat-content">
-                                <div className="stat-icon">
-                                    <CheckCircleOutlined />
-                                </div>
-                                <div className="stat-info">
-                                    <div className="stat-value">{stats.activeStores}</div>
-                                    <div className="stat-label">Đang hoạt động</div>
-                                </div>
-                            </div>
+                        <Card>
+                            <Statistic
+                                title="Cửa hàng hoạt động"
+                                value={stats.activeStores}
+                                prefix={<CheckCircleOutlined />}
+                                valueStyle={{ color: '#52c41a' }}
+                            />
                         </Card>
                     </Col>
                     <Col xs={24} sm={12} md={6}>
-                        <Card className="stat-card total-revenue-stat">
-                            <div className="stat-content">
-                                <div className="stat-icon">
-                                    <DollarOutlined />
-                                </div>
-                                <div className="stat-info">
-                                    <div className="stat-value">{formatCurrency(stats.totalRevenue)}</div>
-                                    <div className="stat-label">Tổng doanh thu</div>
-                                </div>
-                            </div>
+                        <Card>
+                            <Statistic
+                                title="Tổng doanh thu"
+                                value={stats.totalRevenue}
+                                formatter={(value) => {
+                                    const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+                                    return formatCurrency(numValue);
+                                }}
+                                prefix={<DollarOutlined />}
+                                valueStyle={{ color: '#722ed1' }}
+                            />
                         </Card>
                     </Col>
                     <Col xs={24} sm={12} md={6}>
-                        <Card className="stat-card avg-rating-stat">
-                            <div className="stat-content">
-                                <div className="stat-icon">
-                                    <StarOutlined />
-                                </div>
-                                <div className="stat-info">
-                                    <div className="stat-value">{stats.averageRating}</div>
-                                    <div className="stat-label">Đánh giá TB</div>
-                                </div>
-                            </div>
+                        <Card>
+                            <Statistic
+                                title="Đánh giá trung bình"
+                                value={stats.averageRating}
+                                formatter={(value) => {
+                                    const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+                                    return `${numValue.toFixed(1)} ⭐`;
+                                }}
+                                prefix={<StarOutlined />}
+                                valueStyle={{ color: '#faad14' }}
+                            />
                         </Card>
                     </Col>
                 </Row>
             </div>
 
-            {/* Filter Section */}
-            <Card className="filter-section">
+            {/* Search and Filter */}
+            <Card style={{ marginBottom: '20px' }}>
                 <Row gutter={16} align="middle">
-                    <Col xs={24} md={12}>
+                    <Col flex="auto">
                         <Search
-                            placeholder="Tìm kiếm theo tên, địa chỉ hoặc quản lý..."
+                            placeholder="Tìm kiếm cửa hàng..."
+                            prefix={<SearchOutlined />}
                             allowClear
-                            enterButton={<SearchOutlined />}
                             size="large"
+                            onSearch={(value) => setSearchText(value)}
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
-                            onSearch={setSearchText}
                         />
                     </Col>
-                    <Col xs={24} md={6}>
+                    <Col>
                         <Select
-                            placeholder="Lọc theo trạng thái"
-                            size="large"
-                            style={{ width: '100%' }}
+                            placeholder="Trạng thái"
+                            style={{ width: 150 }}
                             value={statusFilter}
                             onChange={setStatusFilter}
+                            allowClear
                         >
-                            <Option value="all">Tất cả trạng thái</Option>
                             <Option value="active">Hoạt động</Option>
                             <Option value="inactive">Không hoạt động</Option>
                             <Option value="maintenance">Bảo trì</Option>
                         </Select>
                     </Col>
-                    <Col xs={24} md={6}>
-                        <Text type="secondary">
-                            Hiển thị {filteredStores.length} / {stores.length} cửa hàng
-                        </Text>
-                    </Col>
                 </Row>
             </Card>
 
             {/* Stores Grid */}
-            <div className="stores-grid">
-                <Row gutter={[16, 16]}>
-                    {filteredStores.map(renderStoreCard)}
-                </Row>
-            </div>
-
-            {/* Add/Edit Store Modal */}
-            <Modal
-                title={editingStore ? 'Chỉnh sửa cửa hàng' : 'Thêm cửa hàng mới'}
-                open={isModalVisible}
-                onCancel={() => setIsModalVisible(false)}
-                width={800}
-                footer={null}
-                className="store-modal"
-            >
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={handleSubmit}
-                >
-                    <div className="store-form-section">
-                        <div className="section-title">
-                            <ShopOutlined />
-                            Thông tin cơ bản
-                        </div>
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item
-                                    name="name"
-                                    label="Tên cửa hàng"
-                                    rules={[{ required: true, message: 'Vui lòng nhập tên cửa hàng' }]}
-                                >
-                                    <Input placeholder="Nhập tên cửa hàng" />
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item
-                                    name="manager"
-                                    label="Quản lý"
-                                    rules={[{ required: true, message: 'Vui lòng nhập tên quản lý' }]}
-                                >
-                                    <Input placeholder="Nhập tên quản lý" />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                        <Form.Item
-                            name="address"
-                            label="Địa chỉ"
-                            rules={[{ required: true, message: 'Vui lòng nhập địa chỉ' }]}
-                        >
-                            <Input placeholder="Nhập địa chỉ đầy đủ" />
-                        </Form.Item>
-                        <Row gutter={16}>
-                            <Col span={8}>
-                                <Form.Item
-                                    name="phone"
-                                    label="Số điện thoại"
-                                    rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
-                                >
-                                    <Input placeholder="Nhập số điện thoại" />
-                                </Form.Item>
-                            </Col>
-                            <Col span={8}>
-                                <Form.Item
-                                    name="email"
-                                    label="Email"
-                                    rules={[
-                                        { required: true, message: 'Vui lòng nhập email' },
-                                        { type: 'email', message: 'Email không hợp lệ' }
-                                    ]}
-                                >
-                                    <Input placeholder="Nhập email" />
-                                </Form.Item>
-                            </Col>
-                            <Col span={8}>
-                                <Form.Item
-                                    name="status"
-                                    label="Trạng thái"
-                                    rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
-                                >
-                                    <Select placeholder="Chọn trạng thái">
-                                        <Option value="active">Hoạt động</Option>
-                                        <Option value="inactive">Không hoạt động</Option>
-                                        <Option value="maintenance">Bảo trì</Option>
-                                    </Select>
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </div>
-
-                    <Divider />
-
-                    <div className="store-form-section">
-                        <div className="section-title">
-                            <EnvironmentOutlined />
-                            Vị trí và liên hệ
-                        </div>
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item
-                                    name="latitude"
-                                    label="Vĩ độ"
-                                >
-                                    <InputNumber
-                                        placeholder="Nhập vĩ độ"
-                                        style={{ width: '100%' }}
-                                        step={0.000001}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item
-                                    name="longitude"
-                                    label="Kinh độ"
-                                >
-                                    <InputNumber
-                                        placeholder="Nhập kinh độ"
-                                        style={{ width: '100%' }}
-                                        step={0.000001}
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </div>
-
-                    <Divider />
-
-                    <div className="store-form-section">
-                        <div className="section-title">
-                            <TeamOutlined />
-                            Thông tin kinh doanh
-                        </div>
-                        <Row gutter={16}>
-                            <Col span={8}>
-                                <Form.Item
-                                    name="employeeCount"
-                                    label="Số nhân viên"
-                                >
-                                    <InputNumber
-                                        placeholder="Số nhân viên"
-                                        style={{ width: '100%' }}
-                                        min={0}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col span={8}>
-                                <Form.Item
-                                    name="monthlyRevenue"
-                                    label="Doanh thu tháng"
-                                >
-                                    <InputNumber
-                                        placeholder="Doanh thu tháng"
-                                        style={{ width: '100%' }}
-                                        min={0}
-                                        formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                        parser={value => value!.replace(/\$\s?|(,*)/g, '')}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col span={8}>
-                                <Form.Item
-                                    name="rating"
-                                    label="Đánh giá"
-                                >
-                                    <Rate allowHalf />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </div>
-
-                    <Form.Item
-                        name="description"
-                        label="Mô tả"
-                    >
-                        <TextArea
-                            rows={3}
-                            placeholder="Nhập mô tả về cửa hàng"
-                        />
-                    </Form.Item>
-
-                    <Form.Item>
-                        <Space>
-                            <Button onClick={() => setIsModalVisible(false)}>
-                                Hủy
-                            </Button>
-                            <Button type="primary" htmlType="submit" loading={loading}>
-                                {editingStore ? 'Cập nhật' : 'Thêm mới'}
-                            </Button>
-                        </Space>
-                    </Form.Item>
-                </Form>
-            </Modal>
-
-            {/* View Store Drawer */}
-            <Drawer
-                title={
-                    <Space>
-                        <ShopOutlined />
-                        {viewingStore?.name}
-                    </Space>
-                }
-                placement="right"
-                size="large"
-                onClose={() => setIsViewDrawerVisible(false)}
-                open={isViewDrawerVisible}
-            >
-                {viewingStore && (
-                    <div>
-                        <Card title="Thông tin cơ bản" size="small" style={{ marginBottom: 16 }}>
-                            <Row gutter={[16, 8]}>
-                                <Col span={24}>
-                                    <Text strong>Địa chỉ: </Text>
-                                    <Text>{viewingStore.address}</Text>
-                                </Col>
-                                <Col span={12}>
-                                    <Text strong>Quản lý: </Text>
-                                    <Text>{viewingStore.manager}</Text>
-                                </Col>
-                                <Col span={12}>
-                                    <Text strong>Điện thoại: </Text>
-                                    <Text>{viewingStore.phone}</Text>
-                                </Col>
-                                <Col span={12}>
-                                    <Text strong>Email: </Text>
-                                    <Text>{viewingStore.email}</Text>
-                                </Col>
-                                <Col span={12}>
-                                    <Text strong>Trạng thái: </Text>
-                                    <Tag color={getStatusColor(viewingStore.status)}>
-                                        {getStatusText(viewingStore.status)}
-                                    </Tag>
-                                </Col>
-                                <Col span={24}>
-                                    <Text strong>Đánh giá: </Text>
-                                    <Rate disabled defaultValue={viewingStore.rating} allowHalf />
-                                    <span style={{ marginLeft: 8 }}>({viewingStore.rating})</span>
-                                </Col>
-                            </Row>
-                        </Card>
-
-                        <Card title="Hiệu suất kinh doanh" size="small" style={{ marginBottom: 16 }}>
-                            <div className="performance-cards">
-                                <div className="performance-card">
-                                    <TrophyOutlined style={{ fontSize: 24, color: '#1890ff' }} />
-                                    <div className="performance-value">
-                                        {viewingStore.performance.salesGrowth > 0 ? '+' : ''}
-                                        {viewingStore.performance.salesGrowth}%
-                                    </div>
-                                    <div className="performance-label">Tăng trưởng doanh số</div>
-                                    <div className={`performance-trend ${viewingStore.performance.salesGrowth > 0 ? 'trend-up' : 'trend-down'}`}>
-                                        {viewingStore.performance.salesGrowth > 0 ? <RiseOutlined /> : <FallOutlined />}
-                                    </div>
-                                </div>
-                                <div className="performance-card">
-                                    <StarOutlined style={{ fontSize: 24, color: '#52c41a' }} />
-                                    <div className="performance-value">{viewingStore.performance.customerSatisfaction}</div>
-                                    <div className="performance-label">Hài lòng khách hàng</div>
-                                </div>
-                                <div className="performance-card">
-                                    <TeamOutlined style={{ fontSize: 24, color: '#fa8c16' }} />
-                                    <div className="performance-value">{viewingStore.performance.employeeProductivity}%</div>
-                                    <div className="performance-label">Năng suất nhân viên</div>
-                                </div>
-                                <div className="performance-card">
-                                    <ShopOutlined style={{ fontSize: 24, color: '#722ed1' }} />
-                                    <div className="performance-value">{viewingStore.performance.inventoryTurnover}</div>
-                                    <div className="performance-label">Vòng quay kho</div>
-                                </div>
-                            </div>
-                        </Card>
-
-                        <Card title="Giờ làm việc" size="small" style={{ marginBottom: 16 }}>
-                            {Object.entries(viewingStore.workingHours).map(([day, hours]) => (
-                                <Row key={day} style={{ marginBottom: 8 }}>
-                                    <Col span={6}>
-                                        <Text strong>{day}:</Text>
-                                    </Col>
-                                    <Col span={18}>
-                                        {hours.isOpen ? (
-                                            <Text>{hours.open} - {hours.close}</Text>
-                                        ) : (
-                                            <Text type="secondary">Đóng cửa</Text>
-                                        )}
-                                    </Col>
-                                </Row>
-                            ))}
-                        </Card>
-
-                        <Card title="Tiện ích" size="small" style={{ marginBottom: 16 }}>
-                            <Space wrap>
-                                {viewingStore.facilities.map((facility, index) => (
-                                    <Tag key={index} color="blue">{facility}</Tag>
-                                ))}
-                            </Space>
-                        </Card>
-
-                        {viewingStore.description && (
-                            <Card title="Mô tả" size="small">
-                                <Text>{viewingStore.description}</Text>
-                            </Card>
-                        )}
-                    </div>
-                )}
-            </Drawer>
+            <Row gutter={[16, 16]}>
+                {filteredStores.map(store => renderStoreCard(store))}
+            </Row>
         </div>
     );
 };

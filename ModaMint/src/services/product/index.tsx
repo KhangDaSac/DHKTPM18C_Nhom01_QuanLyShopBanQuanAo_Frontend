@@ -55,8 +55,12 @@ export interface ProductResponse {
     price: number;
     active: boolean;
     description: string;
+    images?: string[]; // Mảng ảnh của sản phẩm
     brandName: string;
     categoryName: string;
+    quantity?: number; // Tổng số lượng từ variants
+    createAt?: string;
+    updateAt?: string;
 }
 
 // Pagination response (Spring Data Page)
