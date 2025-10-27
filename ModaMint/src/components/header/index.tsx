@@ -181,7 +181,7 @@ export default function Header() {
                             <li className={styles.header__item}><Link to="/contact">Liên hệ</Link></li>
                             <li className={styles.header__item}><Link to="/stores">Hệ thống cửa hàng</Link></li>
                             <li className={styles.header__item}><Link to="/kiem-tra-don-hang">Kiểm tra đơn hàng</Link></li>
-                            <li className={styles.header__item}><Link to="/chi-tiet-san-pham">Chi tiết sản phẩm</Link></li>
+                            <li className={styles.header__item}><Link to="/detail/1">Chi tiết sản phẩm</Link></li>
                         </ul>
                     </div>
                 </div>

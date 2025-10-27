@@ -2,7 +2,7 @@ import styles from './styles.module.css'
 
 interface CategoryComponentProps {
   name: string;
-  image: string;
+  image: string | undefined;
 }
 
 export const CategoryComponent: React.FC<CategoryComponentProps> = ({ name, image }) => {

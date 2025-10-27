@@ -35,6 +35,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 // Import React Toastify
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ProductDetail from './pages/detail';
 
 
 
@@ -50,6 +51,7 @@ function App() {
         { path: "about", element: <AboutPage /> },
         { path: "stores", element: <StoresPage /> },
         { path: "contact", element: <ContactPage /> },
+        { path: "detail", element: <ProductDetail /> },
 
         // Routes chỉ cho phép user CHƯA đăng nhập
         {
