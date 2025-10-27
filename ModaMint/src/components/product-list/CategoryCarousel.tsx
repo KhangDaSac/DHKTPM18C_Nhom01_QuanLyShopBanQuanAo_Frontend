@@ -8,10 +8,10 @@ const items = [
   { id: 'somi', label: 'SƠ MI', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_4.png?1749442635129' },
   { id: 'quan', label: 'QUẦN', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_5.png?1749442635129' },
   { id: 'aokhoac', label: 'ÁO KHOÁC', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_6.png?1749442635129' },
-  { id: 'giaydep', label: 'ÁO NỮ', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_1.png?1749442635129' },
-  { id: 'phukien', label: 'ÁO NAM', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_3.png?1749442635129' },
-  { id: 'vay', label: 'ÁO NAM', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_3.png?1749442635129' },
-  { id: 'giaydep', label: 'ÁO NAM', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_3.png?1749442635129' },
+  { id: 'aonu', label: 'ÁO NỮ', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_1.png?1749442635129' },
+  { id: 'aonam', label: 'ÁO NAM', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_3.png?1749442635129' },
+  { id: 'vay', label: 'VÁY', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_2.png?1749442635129' },
+  { id: 'giaydep', label: 'GIÀY DÉP', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_3.png?1749442635129' },
 ];
 
 const CategoryCarousel: React.FC<Props> = ({ onSelect }) => {

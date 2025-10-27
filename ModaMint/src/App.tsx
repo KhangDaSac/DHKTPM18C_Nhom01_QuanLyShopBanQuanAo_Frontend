@@ -23,10 +23,10 @@ import Detail from "./pages/detail"
 
 import ProductList from './pages/products';
 
-import Cart from './components/cart';
+import CartPage from './pages/cart/CartPage';
 import CheckoutPage from './pages/checkout/CheckoutPage';
 // Context
-import { CartProvider } from './components/contexts/CartContext';
+import { CartProvider } from './contexts/CartContext';
 import FavoritesPage from './pages/favorites/FavoritesPage';
 // Import dashboard routes
 import dashboardRoutes from './dashboard/routes';
@@ -115,15 +115,14 @@ function App() {
 
 
         { path: "products", element: <ProductList /> },
-
+          {path: "carts", element: <CartPage /> },
 
 
         { path: "detail/:id", element: <Detail /> },
 
         // Phần sản phẩm
 
-  { path: "carts", element: <Cart /> },
-  { path: "favorites", element: <FavoritesPage /> },
+        { path: "favorites", element: <FavoritesPage /> },
         { path: 'checkoutpage', element: <CheckoutPage /> },
       ]
     },
