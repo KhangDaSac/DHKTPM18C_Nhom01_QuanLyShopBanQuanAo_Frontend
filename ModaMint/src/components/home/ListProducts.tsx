@@ -51,7 +51,11 @@ const ListProducts: React.FC<ListProductsProps> = ({ products, itemsPerPage}) =>
 
         <div className={styles.product_list} ref={scrollRef}>
           {visibleProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard 
+              key={product.id} 
+              product={product} 
+              buttonText="Tùy chọn"
+            />
           ))}
         </div>
 

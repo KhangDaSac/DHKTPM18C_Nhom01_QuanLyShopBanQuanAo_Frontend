@@ -38,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
         if (path === '/logout') {
             try {
                 await logout();
-                navigate('/login', { replace: true });
+                // Redirect được xử lý trong logout() của authContext
             } catch (error) {
                 console.error('Logout error:', error);
                 toast.error('Có lỗi xảy ra khi đăng xuất!');

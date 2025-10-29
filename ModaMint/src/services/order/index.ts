@@ -2,7 +2,6 @@ import axios from 'axios';
 import type { ApiResponse } from '../authentication';
 
 export interface OrderRequest {
-  sessionId?: string;
   customerId?: string;
   phone?: string;
   shippingAddressId?: number;
