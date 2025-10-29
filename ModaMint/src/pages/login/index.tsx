@@ -134,17 +134,31 @@ export default function Login() {
         setLoginMethod('facebook');
 
         toast.info('Chức năng đăng nhập Facebook đang được phát triển!');
+
+        
         // TODO: Implement Facebook OAuth login
         // window.location.href = 'https://www.facebook.com/v13.0/dialog/oauth?...'
     };
 
     const handleGoogleLogin = () => {
         setLoginMethod('google');
-        toast.info('Chức năng đăng nhập Google đang được phát triển!');
-        // TODO: Implement Google OAuth login
-        // window.location.href = 'https://accounts.google.com/oauth/authorize?...'
+        
+        // Lấy thông tin từ client_secret file
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        const redirectUri = encodeURIComponent('http://localhost:5173/auth/google');
+        
+        // Tạo URL OAuth2 để gọi Google authorization
+        const googleAuthUrl = `https://accounts.google.com/o/oauth2/auth?` +
+            `client_id=${clientId}&` +
+            `redirect_uri=${redirectUri}&` +
+            `response_type=code&` +
+            `scope=email profile openid&` +
+            `access_type=offline&` +
+            `prompt=select_account`;
+        
+        // Redirect đến Google để hiển thị màn hình chọn account
+        window.location.href = googleAuthUrl;
     };
-
     return (
         <div className={styles.login}>
             <div className={styles.login__container}>

@@ -114,8 +114,6 @@ function App() {
           )
         },
 
-
-
         { path: "products", element: <ProductList /> },
         { path: "carts", element: <CartPage /> },
 
