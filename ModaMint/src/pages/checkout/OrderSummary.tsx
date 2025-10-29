@@ -1,23 +1,54 @@
 import "./style.css";
+import { useContext, useState } from "react";
+import { CartContext } from "../../components/contexts/CartContext";
+import { orderService } from "../../services/order";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const OrderSummary = () => {
+  const cartCtx = useContext(CartContext);
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
+  const handlePlaceOrder = async () => {
+    setLoading(true);
+    try {
+      const sessionId = localStorage.getItem('cartSessionId') || undefined;
+      const res = await orderService.createOrder({ sessionId });
+      if (res.success && res.data) {
+        toast.success(res.data.message || 'Đơn hàng đã được đặt');
+        // clear local cart state and session
+        if (cartCtx && cartCtx.clearCart) cartCtx.clearCart();
+        try { localStorage.removeItem('cartSessionId'); } catch (e) {}
+        // navigate to home or order confirmation
+        navigate('/');
+      } else {
+        toast.error(res.message || 'Không thể tạo đơn hàng');
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'Lỗi mạng');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="order-summary">
       <h2>
-        Đơn hàng <span className="text-gray-500 text-base">(2 sản phẩm)</span>
+        Đơn hàng <span className="text-gray-500 text-base">({cartCtx?.getTotalItems() ?? 0} sản phẩm)</span>
       </h2>
 
-      <div className="order-item">
-        <img
-          src="https://bizweb.dktcdn.net/thumb/1024x1024/100/534/571/products/sp1-2-994d2b9b-4bd3-4498-b1c5-377d7dda8b67.jpg?v=1731853502867"
-          alt="product"
-        />
-        <div>
-          <p className="font-medium">Túi Xách Nữ Da PU Cao Cấp</p>
-          <p className="text-gray-500 text-sm">Trắng</p>
+      {/* basic summary from context */}
+      {cartCtx?.cart && cartCtx.cart.map((it) => (
+        <div key={it.id} className="order-item">
+          {it.image ? <img src={it.image} alt="product" /> : null}
+          <div>
+            <p className="font-medium">{it.name}</p>
+            <p className="text-gray-500 text-sm">x{it.qty}</p>
+          </div>
+          <p className="ml-auto font-semibold">{(it.price * it.qty).toLocaleString()}đ</p>
         </div>
-        <p className="ml-auto font-semibold">2.736.000đ</p>
-      </div>
+      ))}
 
       <div className="coupon-box">
         <input placeholder="Nhập mã giảm giá" />
@@ -27,7 +58,7 @@ const OrderSummary = () => {
       <div className="totals">
         <div className="total-row">
           <span>Tạm tính</span>
-          <span>2.736.000đ</span>
+          <span>{(cartCtx?.getTotalPrice() ?? 0).toLocaleString()}đ</span>
         </div>
         <div className="total-row">
           <span>Phí vận chuyển</span>
@@ -37,12 +68,12 @@ const OrderSummary = () => {
 
       <div className="grand-total">
         <span>Tổng cộng</span>
-        <span className="text-sky-600">2.736.000đ</span>
+        <span className="text-sky-600">{(cartCtx?.getTotalPrice() ?? 0).toLocaleString()}đ</span>
       </div>
 
-      <button className="place-order">ĐẶT HÀNG</button>
+      <button disabled={loading} onClick={handlePlaceOrder} className="place-order">{loading ? 'Đang xử lý...' : 'ĐẶT HÀNG'}</button>
 
-      <p className="back-to-cart">&lt; Quay về giỏ hàng</p>
+      <p onClick={() => navigate('/cart')} className="back-to-cart">&lt; Quay về giỏ hàng</p>
     </div>
   );
 };

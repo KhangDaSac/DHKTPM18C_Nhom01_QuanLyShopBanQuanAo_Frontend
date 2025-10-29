@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
-import Sidebar from "../../components/product-list/Sidebar";
-import Pagination from "../../components/product-list/Pagination";
-import SortSelect from "../../components/product-list/SortSelect";
-import CategoryCarousel from "../../components/product-list/CategoryCarousel";
-import axios from "axios";
-import { useCart } from "../../contexts/CartContext";
+import React, { useEffect, useMemo, useState } from 'react';
+import { ProductCard } from '../../components/home/item-components/ProductCard';
+import Sidebar from '../../components/product-list/Sidebar';
+import Pagination from '../../components/product-list/Pagination';
+import SortSelect from '../../components/product-list/SortSelect';
+import CategoryCarousel from '../../components/product-list/CategoryCarousel';
+import axios from 'axios';
 
+// Mock data (replace with API calls later)
 interface Product {
     id: number;
     name: string;
@@ -202,17 +203,14 @@ const MOCK: Product[] = [
 const PAGE_SIZE = 12;
 
 const ProductList: React.FC = () => {
-  const { addToCart } = useCart();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [sort, setSort] = useState("default");
-  const [page, setPage] = useState(1);
-  const [category, setCategory] = useState<string | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<{ prices: string[]; colors: string[]; sizes: string[] }>({
-    prices: [],
-    colors: [],
-    sizes: [],
-  });
+    const [sort, setSort] = useState<string>('default');
+    const [page, setPage] = useState<number>(1);
+    const [category, setCategory] = useState<string | undefined>(undefined);
+    const [filters, setFilters] = useState<{ prices: string[]; colors: string[]; sizes: string[] }>({ prices: [], colors: [], sizes: [] });
+
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
 
   const fetchProducts = async () => {
     try {
@@ -300,62 +298,72 @@ const ProductList: React.FC = () => {
                             </div>
                         </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
-            {loading
-              ? Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      height: 300,
-                      backgroundColor: "#f0f0f0",
-                      borderRadius: 8,
-                    }}
-                  />
-                ))
-              : pageItems.map((p) => (
-                  <div
-                    key={p.id}
-                    style={{
-                      border: "1px solid #eee",
-                      borderRadius: 8,
-                      padding: 12,
-                      backgroundColor: "#fff",
-                      textAlign: "center",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                    }}
-                  >
-                    <img
-                      src={p.images?.[0] || "https://via.placeholder.com/300x300?text=No+Image"}
-                      alt={p.name}
-                      style={{ width: "100%", borderRadius: 8 }}
-                    />
-                    <h4 style={{ marginTop: 8 }}>{p.name}</h4>
-                    <p style={{ color: "#555", fontSize: 14 }}>{p.brandName}</p>
-                    <p style={{ color: "#e74c3c", fontWeight: 600 }}>
-                      {p.price.toLocaleString("vi-VN")} ₫
-                    </p>
-                    <button
-                      onClick={() => addToCart(p.id, 1)}
-                      style={{
-                        marginTop: 8,
-                        padding: "6px 12px",
-                        backgroundColor: "#ff6347",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 4,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Thêm vào giỏ
-                    </button>
-                  </div>
-                ))}
-          </div>
+                        {/* Hiển thị thông báo lỗi nếu có */}
+                        {error && (
+                            <div style={{
+                                backgroundColor: '#fff3cd',
+                                color: '#856404',
+                                padding: '12px',
+                                borderRadius: '4px',
+                                marginBottom: '16px',
+                                border: '1px solid #ffeaa7'
+                            }}>
+                                ⚠️ {error}
+                            </div>
+                        )}
 
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
-            <Pagination page={page} totalPages={totalPages} onPage={setPage} />
-          </div>
-        </main>
+                        {/* Loading state */}
+                        {loading ? (
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(4, 1fr)',
+                                gap: 20,
+                                marginBottom: 20,
+                                minHeight: 1102
+                            }}>
+                                {Array.from({ length: 12 }, (_, i) => (
+                                    <div
+                                        key={i}
+                                        style={{
+                                            height: '300px',
+                                            backgroundColor: '#f0f0f0',
+                                            borderRadius: '8px',
+                                            animation: 'pulse 1.5s ease-in-out infinite'
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 20, minHeight: 1102 }}>
+                                {pageItems.length > 0 ? (
+                                    pageItems.map(p => {
+                                        // Convert Product to ProductCardData format
+                                        const productCardData = {
+                                            ...p,
+                                            originalPrice: p.originalPrice.toString(),
+                                            currentPrice: p.currentPrice.toString()
+                                        };
+                                        return <ProductCard key={p.id} product={productCardData} />;
+                                    })
+                                ) : (
+                                    <div style={{
+                                        gridColumn: '1 / -1',
+                                        textAlign: 'center',
+                                        padding: '60px 20px',
+                                        color: '#666'
+                                    }}>
+                                        <h3>Không tìm thấy sản phẩm nào</h3>
+                                        <p>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <Pagination page={page} totalPages={totalPages} onPage={(p) => setPage(p)} />
+                        </div>
+
+                    </main>
 
         <aside style={{ flex: 1, maxWidth: 260 }}>
           <Sidebar
