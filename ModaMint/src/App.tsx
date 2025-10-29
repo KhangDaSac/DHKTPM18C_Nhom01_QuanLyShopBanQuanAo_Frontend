@@ -117,7 +117,7 @@ function App() {
 
 
         { path: "products", element: <ProductList /> },
-          {path: "carts", element: <CartPage /> },
+        { path: "carts", element: <CartPage /> },
 
 
         { path: "detail/:id", element: <Detail /> },

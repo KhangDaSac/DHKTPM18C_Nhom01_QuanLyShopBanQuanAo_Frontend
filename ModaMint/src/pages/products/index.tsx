@@ -215,10 +215,24 @@ const ProductList: React.FC = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await axios.get<ProductResponse>("http://localhost:8080/api/v1/products");
-      setProducts(res.data.result ?? []);
+      const res = await axios.get<{code: number; result: any[]; message: string}>("http://localhost:8080/api/v1/products");
+      // Map dữ liệu từ API sang format Product local
+      const mappedProducts: Product[] = (res.data.result ?? []).map((p: any) => ({
+        id: p.id,
+        name: p.name || '',
+        price: p.price || 0,
+        originalPrice: p.price || 0, // Sử dụng price làm originalPrice
+        currentPrice: p.price || 0,  // Sử dụng price làm currentPrice
+        image: p.images && p.images.length > 0 ? p.images[0] : '',
+        hoverImage: p.images && p.images.length > 1 ? p.images[1] : (p.images && p.images[0] ? p.images[0] : ''),
+        category: p.categoryName || p.category || '',
+        color: undefined,
+        size: undefined
+      }));
+      setProducts(mappedProducts);
     } catch (error) {
       console.error("❌ Error fetching products:", error);
+      setError("Không thể tải danh sách sản phẩm");
     } finally {
       setLoading(false);
     }
@@ -230,7 +244,7 @@ const ProductList: React.FC = () => {
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
-      if (category && !p.categoryName.toLowerCase().includes(category.toLowerCase())) return false;
+      if (category && !p.category?.toLowerCase().includes(category.toLowerCase())) return false;
       return true;
     });
   }, [products, category, filters]);
@@ -336,15 +350,19 @@ const ProductList: React.FC = () => {
                         ) : (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 20, minHeight: 1102 }}>
                                 {pageItems.length > 0 ? (
-                                    pageItems.map(p => {
-                                        // Convert Product to ProductCardData format
-                                        const productCardData = {
-                                            ...p,
-                                            originalPrice: p.originalPrice.toString(),
-                                            currentPrice: p.currentPrice.toString()
-                                        };
-                                        return <ProductCard key={p.id} product={productCardData} />;
-                                    })
+                                    pageItems
+                                        .filter(p => p && p.id) // Lọc bỏ các item undefined hoặc không có id
+                                        .map(p => {
+                                            // Convert Product to ProductCardData format
+                                            const productCardData = {
+                                                ...p,
+                                                originalPrice: (p.originalPrice ?? p.price ?? 0).toString(),
+                                                currentPrice: (p.currentPrice ?? p.price ?? 0).toString(),
+                                                image: p.image || '',
+                                                hoverImage: p.hoverImage || p.image || ''
+                                            };
+                                            return <ProductCard key={p.id} product={productCardData} />;
+                                        })
                                 ) : (
                                     <div style={{
                                         gridColumn: '1 / -1',
