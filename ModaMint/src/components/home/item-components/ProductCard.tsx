@@ -68,8 +68,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             className={`${styles.option_button} ${
               isHovered ? styles.hovered : ''
             }`}
+            aria-label="add-to-cart"
           >
-            Tùy chọn
+            Thêm vào giỏ hàng
           </button>
         </div>
       </div>
