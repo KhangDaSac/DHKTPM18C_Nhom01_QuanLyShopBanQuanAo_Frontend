@@ -104,11 +104,11 @@
   cursor: not-allowed;
 }
 
-.product_list__view_all {
+.product_list_view_all {
   display: block;
   margin: 0 auto;
-  padding: 12px 30px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 10px 20px;
+  background: #ff6347;
   color: #fff;
   border: none;
   border-radius: 25px;
@@ -263,4 +263,16 @@
   width: 40px;
   height: 40px;
   font-size: 18px;
+}
+
+
+/* Time count */
+.time_count_text {
+  background: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 40px;
+  font-weight: bold;
+  color: #ff4d4d;
+  margin-bottom: 20px;
 }

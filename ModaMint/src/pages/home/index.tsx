@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { CarouselDiscount } from "../../components/home/CarouselDiscount";
 import { CategoryList } from "../../components/home/CategoryList";
 import { ProductImgCard } from "../../components/home/item-components/ProductImgCard";
@@ -7,18 +8,14 @@ import { ReviewCarousel } from "../../components/home/ReviewCarousel";
 import SaleBanner from "../../components/home/SaleBanner";
 import SuggestionToday from "../../components/home/SuggestionToday";
 import styles from './styles.module.css'
+import { categoryService, type Category} from "../../services/category";
+import { CountdownTimer } from "../../components/home/CountdownTimer";
 
 interface Promotion {
   id: number;
   discount: string;
   price: string;
   buttonText: string;
-}
-
-interface Category {
-  id: number;
-  name: string;
-  image: string;
 }
 
 interface Benefit {
@@ -48,23 +45,12 @@ interface Review {
 }
 export default function Home() {
   const promotions: Promotion[] = [
-    { id: 1, discount: '15%', price: '0.99K', buttonText: 'Xem ngay >' },
-    { id: 2, discount: '25%', price: '10.49K', buttonText: 'Xem ngay >' },
-    { id: 3, discount: '+1 triệu', price: '1.99K', buttonText: 'Xem ngay >' },
-    { id: 4, discount: '+1 triệu', price: '1.99K', buttonText: 'Xem ngay >' },
-    { id: 5, discount: '+1 triệu', price: '1.99K', buttonText: 'Xem ngay >' },
-    { id: 6, discount: '+1 triệu', price: '1.99K', buttonText: 'Xem ngay >' },
-  ];
-
-  const categories: Category[] = [
-    { id: 1, name: 'Áo Nữ', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760199723/image_cate_1_wwqg84.webp' },
-    { id: 2, name: 'Quần Nữ', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760199723/image_cate_1_wwqg84.webp' },
-    { id: 3, name: 'Váy Nữ', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760199723/image_cate_1_wwqg84.webp' },
-    { id: 4, name: 'Áo Nam', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760199723/image_cate_1_wwqg84.webp' },
-    { id: 5, name: 'Quần Nam', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760199723/image_cate_1_wwqg84.webp' },
-    { id: 6, name: 'Phụ Kiện', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760199723/image_cate_1_wwqg84.webp' },
-    { id: 7, name: 'Giày Nữ', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760199723/image_cate_1_wwqg84.webp' },
-    { id: 8, name: 'Túi Xách', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760199723/image_cate_1_wwqg84.webp' },
+    { id: 1, discount: '15%', price: '0.99K', buttonText: 'Xem ngay' },
+    { id: 2, discount: '25%', price: '10.49K', buttonText: 'Xem ngay' },
+    { id: 3, discount: '+1 triệu', price: '1.99K', buttonText: 'Xem ngay' },
+    { id: 4, discount: '+1 triệu', price: '1.99K', buttonText: 'Xem ngay' },
+    { id: 5, discount: '+1 triệu', price: '1.99K', buttonText: 'Xem ngay' },
+    { id: 6, discount: '+1 triệu', price: '1.99K', buttonText: 'Xem ngay' },
   ];
 
   const benefits: Benefit[] = [
@@ -75,10 +61,10 @@ export default function Home() {
   ];
   const sampleProducts: Product[] = [
     { id: 1, image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760247401/sp8-2-b6da4946-d566-436c-bb78-02b179755959_hskyox.webp', name: 'Áo polo nam phông màu ND008', discount: '-25%', originalPrice: '600.000đ', currentPrice: '450.000đ', soldCount: 93 },
-    { id: 2, image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760247401/sp8-2-b6da4946-d566-436c-bb78-02b179755959_hskyox.webp', name: 'Váy liền phối màu', discount: '-28%', originalPrice: '800.000đ', currentPrice: '576.000đ', soldCount: 141 },
+    { id: 2, image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760247401/sp8-2-b6da4946-d566-436c-bb78-02b179755959_hskyox.webp', name: 'Váy liền phối màu', discount: '-28%', originalPrice: '800.000đ', currentPrice: '576.000đ', soldCount: 10 },
     { id: 3, image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760247401/sp8-2-b6da4946-d566-436c-bb78-02b179755959_hskyox.webp', name: 'Áo Nữ Phối Lã Cổ Đẳng Cấp', discount: '-17%', originalPrice: '700.000đ', currentPrice: '581.000đ', soldCount: 111 },
     { id: 4, image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760247401/sp8-2-b6da4946-d566-436c-bb78-02b179755959_hskyox.webp', name: 'Áo Nữ Oversize Cát Bò Tinh Tế', discount: '-44%', originalPrice: '900.000đ', currentPrice: '486.000đ', soldCount: 145 },
-    { id: 5, image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760247401/sp8-2-b6da4946-d566-436c-bb78-02b179755959_hskyox.webp', name: 'Áo Nữ Oversize Cát Bò Tinh Tế', discount: '-44%', originalPrice: '900.000đ', currentPrice: '486.000đ', soldCount: 0 },
+    { id: 5, image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760247401/sp8-2-b6da4946-d566-436c-bb78-02b179755959_hskyox.webp', name: 'Áo Nữ Oversize Cát Bò Tinh Tế', discount: '-44%', originalPrice: '900.000đ', currentPrice: '486.000đ', soldCount: 60 },
     { id: 6, image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760247401/sp8-2-b6da4946-d566-436c-bb78-02b179755959_hskyox.webp', name: 'Áo Nữ Oversize Cát Bò Tinh Tế', discount: '-44%', originalPrice: '900.000đ', currentPrice: '486.000đ', soldCount: 0 },
     { id: 7, image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760247401/sp8-2-b6da4946-d566-436c-bb78-02b179755959_hskyox.webp', name: 'Áo Nữ Oversize Cát Bò Tinh Tế', discount: '-44%', originalPrice: '900.000đ', currentPrice: '486.000đ', soldCount: 145 },
     { id: 8, image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760247401/sp8-2-b6da4946-d566-436c-bb78-02b179755959_hskyox.webp', name: 'Áo Nữ Oversize Cát Bò Tinh Tế', discount: '-44%', originalPrice: '900.000đ', currentPrice: '486.000đ', soldCount: 0 },
@@ -132,19 +118,45 @@ export default function Home() {
     { id: 8, image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760266518/image_album_1_avkisq.jpg', name: 'Áo Nữ Oversize Cát Bò Tinh Tế', discount: '-44%', originalPrice: '900.000đ', currentPrice: '486.000đ', soldCount: 0 },
     ];
 
+    const [topCategories, setTopCategories] = useState<Category[]>([]);
+    const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+      const fetchTopCategories = async () => {
+          setLoading(true);
+          const response = await categoryService.getTop8ActiveCategoriesByProductCount();
+          
+          if (response.code === 1000) {
+            console.log(response.result);
+            setTopCategories(response.result);
+          } else {
+              console.error("Lỗi khi fetch:", response.message);
+          }
+          setLoading(false);
+      };
+
+          fetchTopCategories();
+      }, []);
+
+    if (loading) {
+        return <div>Đang tải...</div>;
+    }
+
+  
+
   return (
     <div className={styles.home_container}>
   <SaleBanner benefits={benefits} />
 
-  <CategoryList categories={categories} />
+  <CategoryList categories={topCategories} />
 
-  <TitleLine title={"Dành riêng cho bạn"} />
+  <TitleLine title={"Khuyến mãi tuyệt vời"} />
   <CarouselDiscount promotions={promotions} />
 
   <div className={styles.list_products_container}>
     <div className={styles.list_header}>
       <span className={styles.preferential_timer}>Ưu đãi đặc biệt</span>
-      <h2 className={styles.preferential_text}>00:00:00</h2>
+      <CountdownTimer durationInSeconds={24*60*60}/>
       <ListProducts products={sampleProducts} itemsPerPage={4} />
     </div>
   </div>

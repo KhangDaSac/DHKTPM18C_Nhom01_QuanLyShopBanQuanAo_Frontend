@@ -10,6 +10,7 @@ export interface Category {
     isActive: boolean;
     createAt?: string;
     updateAt?: string;
+    image?: string;
 }
 
 // Request tạo/cập nhật category (từ CategoryRequest DTO)
@@ -248,6 +249,25 @@ class CategoryService {
                 code: 1001,
                 message: error.response?.data?.message || 'Không thể lấy số lượng danh mục đang hoạt động',
                 result: 0
+            };
+        }
+    }
+
+    //QuocHuy
+    async getTop8ActiveCategoriesByProductCount(): Promise<ApiResponse<Category[]>> {
+        try {
+            // 1. Gọi đúng endpoint mới đã tạo ở backend
+            const response = await categoryApiClient.get('/categories/top-8-active-by-products'); // <-- THAY ĐỔI URL
+            
+            return response.data;
+            
+        } catch (error: any) {
+            console.error('Error getting top 8 active categories:', error);
+            
+            return {
+                code: 1001,
+                message: error.response?.data?.message || 'Không thể lấy top 8 danh mục', // <-- THAY ĐỔI MESSAGE LỖI
+                result: [] 
             };
         }
     }

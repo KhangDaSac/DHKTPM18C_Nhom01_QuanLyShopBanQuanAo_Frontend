@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import styles from './styles.module.css'
+import { Heart } from 'lucide-react';
 
 interface ProductCardData {
   id: number;
@@ -24,9 +25,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <>
       <div
-
         className={styles.product_card}
-
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -53,7 +52,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 ) : (
                   <div
                     className={styles.sold_progress}
-
                     style={{ width: `${progressWidth}%` }}
                   >
                     {product.soldCount} sản phẩm đã bán
@@ -71,7 +69,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               isHovered ? styles.hovered : ''
             }`}
           >
-            <span>Tùy chọn</span>
+            Tùy chọn
           </button>
         </div>
       </div>

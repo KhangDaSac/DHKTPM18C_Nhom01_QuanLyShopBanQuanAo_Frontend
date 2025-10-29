@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ProductCard } from './item-components/ProductCard';
-import {CircleChevronRight, CircleChevronLeft} from 'lucide-react';
+import {CircleChevronRight, CircleChevronLeft, ArrowRight} from 'lucide-react';
 import styles from './styles.module.css'
 
 
@@ -64,7 +64,7 @@ const ListProducts: React.FC<ListProductsProps> = ({ products, itemsPerPage}) =>
         </button>
       </div>
 
-      <button className={styles.product_list__view_all}>Xem tất cả &gt;</button>
+      <button className={styles.product_list_view_all}>Xem tất cả</button>
     </div>
   );
 };
