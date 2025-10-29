@@ -1,5 +1,4 @@
 import { useState } from 'react';
-
 import styles from './styles.module.css'
 import { Heart } from 'lucide-react';
 
@@ -15,67 +14,61 @@ interface ProductCardData {
 
 interface ProductCardProps {
   product: ProductCardData;
-  onAdd?: (payload: { variantId?: number; quantity?: number }) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onAdd }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isHovered, setIsHovered] = useState(false);
   const percentage = product.soldCount && product.soldCount > 0 ? (product.soldCount / 200) * 100 : 0;
   const progressWidth = Math.min(percentage, 100);
 
   return (
-    <>
-      <div
-        className={styles.product_card}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div className={styles.product_image}>
-          <img src={product.image} alt={product.name} />
-          {product.discount && (
-            <div className={styles.discount_badge}>{product.discount}</div>
-          )}
-          <button
-            className={`${styles.heart_icon} ${isHovered ? styles.visible : ''}`}
-          >
-            ♥
-          </button>
-        </div>
-        <div className={styles.product_details}>
-          <div className={styles.user_info}>
-            <span>{product.name}</span>
-          </div>
-          <div className={styles.price_section}>
-            {product.soldCount !== undefined && (
-              <div className={styles.sold_bar}>
-                {product.soldCount === 0 ? (
-                  <span className={styles.sold_text}>0 sản phẩm đã bán</span>
-                ) : (
-                  <div
-                    className={styles.sold_progress}
-                    style={{ width: `${progressWidth}%` }}
-                  >
-                    {product.soldCount} sản phẩm đã bán
-                  </div>
-                )}
-              </div>
-            )}
-            <div className={styles.price}>
-              <span className={styles.current_price}>{product.currentPrice}</span>
-              <span className={styles.original_price}>{product.originalPrice}</span>
-            </div>
-          </div>
-          <button
-            className={`${styles.option_button} ${
-              isHovered ? styles.hovered : ''
-            }`}
-            aria-label="add-to-cart"
-            onClick={() => onAdd && onAdd({ variantId: product.id, quantity: 1 })}
-          >
-            Thêm vào giỏ hàng
-          </button>
-        </div>
+    <div
+      className={styles.product_card}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className={styles.product_image}>
+        <img src={product.image} alt={product.name} />
+        {product.discount && (
+          <div className={styles.discount_badge}>{product.discount}</div>
+        )}
+        <button
+          className={`${styles.heart_icon} ${isHovered ? styles.visible : ''}`}
+        >
+          <Heart/>
+        </button>
       </div>
-    </>
+      <div className={styles.product_details}>
+        <div className={styles.user_info}>
+          <span>{product.name}</span>
+        </div>
+        <div className={styles.price_section}>
+          {product.soldCount !== undefined && (
+            <div className={styles.sold_bar}>
+              <div className={styles.sold_bar_wrapper}>
+                <div
+                  className={styles.sold_progress}
+                  style={{ width: `${progressWidth}%` }}
+                />
+                <span className={styles.sold_text}>
+                  Đã bán {product.soldCount}
+                </span>
+              </div>
+            </div>
+          )}
+          <div className={styles.price}>
+            <span className={styles.current_price}>{product.currentPrice}</span>
+            <span className={styles.original_price}>{product.originalPrice}</span>
+          </div>
+        </div>
+        <button
+          className={`${styles.option_button} ${
+            isHovered ? styles.hovered : ''
+          }`}
+        >
+          Tùy chọn
+        </button>
+      </div>
+    </div>
   );
 };
