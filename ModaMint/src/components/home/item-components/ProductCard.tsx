@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styles from './styles.module.css'
 import { Heart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface ProductCardData {
   id: number;
@@ -10,16 +11,33 @@ interface ProductCardData {
   originalPrice: string;
   currentPrice: string;
   soldCount?: number;
+  variantId?: number; // ID của product variant để thêm vào giỏ hàng
 }
 
 interface ProductCardProps {
   product: ProductCardData;
+  buttonText?: string; // Text của nút, mặc định là "Tùy chọn"
+  onButtonClick?: (product: ProductCardData) => void; // Callback khi click nút
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ 
+  product, 
+  buttonText = 'Tùy chọn',
+  onButtonClick 
+}) => {
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
   const percentage = product.soldCount && product.soldCount > 0 ? (product.soldCount / 200) * 100 : 0;
   const progressWidth = Math.min(percentage, 100);
+
+  const handleButtonClick = () => {
+    if (onButtonClick) {
+      onButtonClick(product);
+    } else {
+      // Default action: navigate to product detail page
+      navigate(`/detail/${product.id}`);
+    }
+  };
 
   return (
     <div
@@ -65,8 +83,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           className={`${styles.option_button} ${
             isHovered ? styles.hovered : ''
           }`}
+          onClick={handleButtonClick}
         >
-          Tùy chọn
+          {buttonText}
         </button>
       </div>
     </div>

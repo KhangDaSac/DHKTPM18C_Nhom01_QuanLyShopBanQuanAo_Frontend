@@ -145,6 +145,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             localStorage.removeItem("authData");
             localStorage.removeItem("accessToken"); // Remove old token if exists
             toast.success('Đăng xuất thành công!');
+            // Redirect về trang login sau khi đăng xuất
+            window.location.replace('/login');
         }
     };
 

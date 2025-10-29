@@ -55,7 +55,7 @@ const SuggestionToday: React.FC<SuggestionTodayProps> = ({ products, tabs }) => 
       </div>
       <div className={styles.suggestion_today__product_grid}>
         {filteredProducts.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard key={product.id} product={product} buttonText="Tùy chọn" />
         ))}
       </div>
     </div>

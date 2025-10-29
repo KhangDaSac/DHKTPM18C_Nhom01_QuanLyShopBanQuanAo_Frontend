@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export interface ProductVariant {
     id: number;
@@ -124,7 +124,8 @@ class ProductVariantService {
         try {
             const response = await this.fetchApi<ProductVariant[]>(`/product-variants/product/${productId}`);
             
-            if (response.code === 1000) {
+            // API có thể trả về code 2000 (thành công) hoặc 1000
+            if (response.code === 2000 || response.code === 1000) {
                 return {
                     success: true,
                     message: 'Lấy danh sách biến thể sản phẩm thành công',
@@ -132,15 +133,16 @@ class ProductVariantService {
                 };
             }
             
+            console.error('❌ API returned error code:', response.code, response.message);
             return {
                 success: false,
                 message: response.message || 'Không thể lấy danh sách biến thể sản phẩm'
             };
-        } catch (error) {
-            console.error('Error fetching product variants by product:', error);
+        } catch (error: any) {
+            console.error('❌ Error fetching product variants by product:', error);
             return {
                 success: false,
-                message: 'Lỗi khi lấy danh sách biến thể sản phẩm'
+                message: error.message || 'Lỗi khi lấy danh sách biến thể sản phẩm'
             };
         }
     }

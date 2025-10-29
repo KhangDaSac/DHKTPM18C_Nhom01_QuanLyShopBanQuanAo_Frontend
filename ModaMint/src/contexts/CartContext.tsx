@@ -40,7 +40,6 @@ export const CartContext = createContext<CartContextType | null>(null);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
 
   const BASE_URL = "http://localhost:8080/api/v1/carts";
 
@@ -55,66 +54,50 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // ⚙️ Lấy customerId hoặc sessionId
+  // ⚙️ Lấy customerId từ authData (không dùng sessionId)
   useEffect(() => {
-    const savedCustomer = localStorage.getItem("customerId");
-    const savedSession = localStorage.getItem("sessionId");
-
-    if (savedCustomer) {
-      setCustomerId(savedCustomer);
-      return;
-    }
-
     try {
       const authData = JSON.parse(localStorage.getItem("authData") || "{}");
       const userId = authData?.user?.id;
       if (userId) {
         setCustomerId(userId);
         localStorage.setItem("customerId", userId);
-      } else {
-        let sid = savedSession;
-        if (!sid) {
-          sid = crypto.randomUUID();
-          localStorage.setItem("sessionId", sid);
-        }
-        setSessionId(sid);
       }
     } catch {
       console.warn("⚠️ authData parse error");
     }
+    
+    // Xóa sessionId nếu có
+    localStorage.removeItem("sessionId");
   }, []);
-
-  // 🔗 Tạo query params
-  const getParams = () => {
-    if (customerId) return `customerId=${customerId}`;
-    if (sessionId) return `sessionId=${sessionId}`;
-    throw new Error("Missing customerId or sessionId");
-  };
 
   // ✅ Lấy giỏ hàng
   const fetchCart = useCallback(async () => {
-    if (!customerId && !sessionId) return;
+    if (!customerId) return;
     try {
-      const url = customerId
-        ? `${BASE_URL}/customer/${customerId}`
-        : `${BASE_URL}/session/${sessionId}`;
+      const url = `${BASE_URL}/customer/${customerId}`;
       const res = await axios.get(url, { headers: getAuthHeaders() });
       setCart(res.data.result);
     } catch (error) {
       console.error("❌ Error fetching cart:", error);
     }
-  }, [customerId, sessionId]);
+  }, [customerId]);
 
   // ✅ Thêm sản phẩm
   const addToCart = async (variantId: number, quantity = 1) => {
+    if (!customerId) {
+      alert("⚠️ Bạn cần đăng nhập để thêm sản phẩm!");
+      return;
+    }
     try {
-      const params = getParams();
       const res = await axios.post(
-        `${BASE_URL}/add?${params}`,
+        `${BASE_URL}/add?customerId=${customerId}`,
         { variantId, quantity },
         { headers: getAuthHeaders() }
       );
       setCart(res.data.result);
+      // Dispatch event để notify cart component
+      window.dispatchEvent(new Event('cartUpdated'));
     } catch (error) {
       const err = error as AxiosError;
       if (err.response?.status === 401) {
@@ -127,12 +110,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   // ✅ Xóa 1 sản phẩm hoặc giảm số lượng (backend tự xử lý)
   const removeFromCart = async (variantId: number) => {
+    if (!customerId) return;
     try {
-      const params = getParams();
-      const res = await axios.delete(`${BASE_URL}/remove/${variantId}?${params}`, {
+      const res = await axios.delete(`${BASE_URL}/remove/${variantId}?customerId=${customerId}`, {
         headers: getAuthHeaders(),
       });
       setCart(res.data.result);
+      window.dispatchEvent(new Event('cartUpdated'));
     } catch (error) {
       console.error("❌ Error removing item:", error);
     }
@@ -140,10 +124,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   // ✅ Xóa toàn bộ giỏ hàng
   const clearCart = async () => {
+    if (!customerId) return;
     try {
-      const params = getParams();
-      await axios.delete(`${BASE_URL}/clear?${params}`, { headers: getAuthHeaders() });
+      await axios.delete(`${BASE_URL}/clear?customerId=${customerId}`, { headers: getAuthHeaders() });
       setCart({ items: [], totalPrice: 0 });
+      window.dispatchEvent(new Event('cartUpdated'));
     } catch (error) {
       console.error("❌ Error clearing cart:", error);
     }
@@ -160,10 +145,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     await fetchCart();
   };
 
-  // 🔁 Fetch giỏ hàng khi có ID
+  // 🔁 Fetch giỏ hàng khi có customerId
   useEffect(() => {
-    if (customerId || sessionId) fetchCart();
-  }, [customerId, sessionId, fetchCart]);
+    if (customerId) fetchCart();
+  }, [customerId, fetchCart]);
 
   return (
     <CartContext.Provider

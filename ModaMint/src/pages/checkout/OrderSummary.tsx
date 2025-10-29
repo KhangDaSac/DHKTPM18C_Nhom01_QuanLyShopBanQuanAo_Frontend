@@ -13,13 +13,11 @@ const OrderSummary = () => {
   const handlePlaceOrder = async () => {
     setLoading(true);
     try {
-      const sessionId = localStorage.getItem('cartSessionId') || undefined;
-      const res = await orderService.createOrder({ sessionId });
+      const res = await orderService.createOrder({});
       if (res.success && res.data) {
         toast.success(res.data.message || 'Đơn hàng đã được đặt');
-        // clear local cart state and session
+        // clear local cart state
         if (cartCtx && cartCtx.clearCart) cartCtx.clearCart();
-        try { localStorage.removeItem('cartSessionId'); } catch (e) {}
         // navigate to home or order confirmation
         navigate('/');
       } else {

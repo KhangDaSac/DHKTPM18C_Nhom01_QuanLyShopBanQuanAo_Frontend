@@ -12,7 +12,7 @@ export interface AddressResponse {
 
 export interface CartResponse {
     id: number;
-    sessionId: string;
+    customerId: string;
 }
 
 export interface OrderResponse {
