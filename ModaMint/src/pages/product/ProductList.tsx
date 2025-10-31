@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ProductCard } from '../../components/home/item-components/ProductCard';
-import Sidebar from '../../components/productList/Sidebar';
-import Pagination from '../../components/productList/Pagination';
-import SortSelect from '../../components/productList/SortSelect';
-import CategoryCarousel from '../../components/productList/CategoryCarousel';
+import Sidebar from '../../components/product-list/Sidebar';
+import Pagination from '../../components/product-list/Pagination';
+import SortSelect from '../../components/product-list/SortSelect';
+import BrandCarousel from '../../components/product-list/BrandCarousel'; // Đổi từ CategoryCarousel thành BrandCarousel
 // Mock data (replace with API calls later)
 interface Product {
   id: number;
@@ -18,46 +18,48 @@ interface Product {
   size?: string[];
 }
 
-
-
 const PAGE_SIZE = 12;
 
 const ProductList: React.FC = () => {
   const [sort, setSort] = useState<string>('default');
   const [page, setPage] = useState<number>(1);
   const [category, setCategory] = useState<string | undefined>(undefined);
+  const [brand, setBrand] = useState<number | undefined>(undefined); // Thêm state cho brand
   const [filters, setFilters] = useState<{ prices: string[]; colors: string[]; sizes: string[] }>({ prices: [], colors: [], sizes: [] });
-const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
 
-useEffect(() => {
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch('http://localhost:8080/api/v1/products');
-      const data = await response.json();
-      if (data && Array.isArray(data.result)) {
-        setProducts(
-          data.result.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            price: p.price ?? 0,
-            originalPrice: p.price ?? 0,
-            currentPrice: p.price ?? 0,
-            image: '/default.png',
-            hoverImage: '/default.png',
-            category: p.categoryName,
-          }))
-        );
-      } else {
-        setProducts([]);
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        let url = 'http://localhost:8080/api/v1/products';
+        if (brand) {
+          url = `http://localhost:8080/api/v1/products/brand/${brand}`;
+        }
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data && Array.isArray(data.result)) {
+          setProducts(
+            data.result.map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              price: p.price ?? 0,
+              originalPrice: p.price ?? 0,
+              currentPrice: p.price ?? 0,
+              image: '/default.png',
+              hoverImage: '/default.png',
+              category: p.categoryName,
+            }))
+          );
+        } else {
+          setProducts([]);
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy sản phẩm:', error);
       }
-    } catch (error) {
-      console.error('Lỗi khi lấy sản phẩm:', error);
-    }
-  };
+    };
 
-  fetchProducts();
-}, []);
-
+    fetchProducts();
+  }, [brand]); // Fetch lại khi brand thay đổi
 
   const filtered = useMemo(() => {
     return products.filter(p => {
@@ -93,11 +95,11 @@ useEffect(() => {
       if (!matchingSize) return false;
       return true;
     });
-  }, [category, filters]);
+  }, [category, filters, products]); // Thêm products vào dependency vì products thay đổi khi brand thay đổi
 
   useEffect(() => {
     setPage(1);
-  }, [category, filters, sort]);
+  }, [category, filters, sort, brand]); // Thêm brand vào dependency
 
   const sorted = useMemo(() => {
     const copy = [...filtered];
@@ -126,9 +128,9 @@ useEffect(() => {
     // Container tổng bao bọc toàn bộ trang, xếp các phần tử theo chiều dọc
     <div style={{ maxWidth: 1400, margin: '0 auto', padding: 12, display: 'flex', flexDirection: 'column' }}>
 
-      {/* 1. CategoryCarousel được đưa ra ngoài và nằm ở trên cùng */}
+      {/* 1. BrandCarousel được đưa ra ngoài và nằm ở trên cùng */}
       <div style={{ marginBottom: '24px' }}>
-        <CategoryCarousel onSelect={(id: string) => setCategory(id)} />
+        <BrandCarousel onSelect={(id: number) => setBrand(id)} />
       </div>
 
       {/* Container mới chứa Main Content và Sidebar, xếp theo chiều ngang */}
