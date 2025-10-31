@@ -4,6 +4,7 @@ import {
     Button,
     Space,
     Tag,
+    Badge,
     Modal,
     Form,
     Input,
@@ -429,30 +430,12 @@ const Customers: React.FC = () => {
             key: 'status',
             width: 120,
             align: 'center' as const,
-            render: (status: string, record: Customer) => {
-                const handleToggleStatus = () => {
-                    const newStatus: 'active' | 'blocked' = status === 'active' ? 'blocked' : 'active';
-
-                    setCustomers(customers.map(c =>
-                        c.id === record.id ? { ...c, status: newStatus } : c
-                    ));
-                    message.success(`Đã cập nhật trạng thái khách hàng`);
-                };
-
-                const getText = () => (status === 'active' ? 'Hoạt động' : 'Bị khóa');
-
-                return (
-                    <div className="status-button-container">
-                        <Button
-                            size="small"
-                            onClick={handleToggleStatus}
-                            className={`status-button ${status}`}
-                        >
-                            {getText()}
-                        </Button>
-                    </div>
-                );
-            },
+            render: (status: string) => (
+                <Badge 
+                    status={status === 'active' ? 'success' : 'error'} 
+                    text={status === 'active' ? 'Hoạt động' : 'Bị khóa'} 
+                />
+            ),
         },
         {
             title: 'Thao tác',
@@ -460,14 +443,7 @@ const Customers: React.FC = () => {
             width: 150,
             align: 'center' as const,
             render: (record: Customer) => (
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '70px',
-                    padding: '8px 0'
-                }}>
-                    <Space size="small">
+                <Space size="small">
                         <Button
                             type="text"
                             icon={<EyeOutlined />}
@@ -494,7 +470,6 @@ const Customers: React.FC = () => {
                             />
                         </Popconfirm>
                     </Space>
-                </div>
             ),
         },
     ];

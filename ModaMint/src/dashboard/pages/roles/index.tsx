@@ -39,6 +39,7 @@ import './style_new.css';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { Search } = Input;
 
 interface Permission {
     id: string;
@@ -322,38 +323,40 @@ const RoleManagement: React.FC = () => {
     };
 
     return (
-        <div style={{ padding: '72px', background: '#f0f2f5', minHeight: '100vh' }}>
-            {/* Header */}
-            <Card style={{ marginBottom: '20px' }}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center'
-                }}>
-                    <Space>
-                        <SecurityScanOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                        <Title level={2} style={{ margin: 0 }}>Quản lý vai trò & phân quyền</Title>
-                    </Space>
-                    <Space>
-                        <Button
-                            icon={<DownloadOutlined />}
-                            onClick={handleExportRolesExcel}
-                        >
-                            Xuất Excel
-                        </Button>
-                        <Button
-                            type="primary"
-                            icon={<PlusOutlined />}
-                            onClick={handleAddRole}
-                        >
-                            Thêm vai trò mới
-                        </Button>
-                    </Space>
-                </div>
-            </Card>
+        <div style={{ margin: 0, padding: 0 }}>
+            <style>{`
+                .ant-table-measure-row {
+                    display: none !important;
+                    height: 0 !important;
+                    visibility: hidden !important;
+                }
+                .ant-table-tbody > tr > td {
+                    height: 70px !important;
+                    vertical-align: middle !important;
+                    padding: 8px 16px !important;
+                }
+                .ant-table-tbody > tr {
+                    height: 70px !important;
+                }
+                .ant-table-tbody > tr:first-child > td {
+                    padding-top: 8px !important;
+                }
+                .ant-table-thead > tr > th {
+                    padding: 8px 16px !important;
+                }
+                .ant-table {
+                    margin-top: 0 !important;
+                }
+                .ant-card-body {
+                    padding: 16px !important;
+                }
+            `}</style>
+            <Title level={2} className="text-primary" style={{ marginBottom: '16px', marginTop: 0 }}>
+                Quản lý vai trò & phân quyền
+            </Title>
 
             {/* Statistics */}
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '16px', marginTop: 0 }}>
                 <Row gutter={16}>
                     <Col xs={24} sm={12} md={6}>
                         <Card>
@@ -399,7 +402,7 @@ const RoleManagement: React.FC = () => {
             </div>
 
             {/* Search and Filter */}
-            <Card style={{ marginBottom: '20px' }}>
+            <Card style={{ marginBottom: '16px', marginTop: 0 }}>
                 <Row gutter={16} align="middle">
                     <Col flex="auto">
                         <Input
@@ -411,14 +414,21 @@ const RoleManagement: React.FC = () => {
                         />
                     </Col>
                     <Col>
-                        <Select
-                            placeholder="Trạng thái"
-                            style={{ width: 120 }}
-                            allowClear
-                        >
-                            <Option value="active">Hoạt động</Option>
-                            <Option value="inactive">Tạm dừng</Option>
-                        </Select>
+                        <Space>
+                            <Button
+                                icon={<DownloadOutlined />}
+                                onClick={handleExportRolesExcel}
+                            >
+                                Xuất Excel
+                            </Button>
+                            <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={handleAddRole}
+                            >
+                                Thêm vai trò
+                            </Button>
+                        </Space>
                     </Col>
                 </Row>
             </Card>
@@ -536,33 +546,38 @@ const RoleManagement: React.FC = () => {
             </div>
 
             {/* Users Section */}
-            <Card>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    marginBottom: '20px'
-                }}>
-                    <Space>
-                        <TeamOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                        <Title level={3} style={{ margin: 0 }}>Quản lý người dùng</Title>
-                    </Space>
-                    <Space>
-                        <Button
-                            icon={<DownloadOutlined />}
-                            onClick={handleExportUsersExcel}
-                        >
-                            Xuất Excel
-                        </Button>
-                        <Button
-                            type="primary"
-                            icon={<PlusOutlined />}
-                            onClick={handleAddUser}
-                        >
-                            Thêm người dùng
-                        </Button>
-                    </Space>
-                </div>
+            <Title level={3} className="text-primary" style={{ marginBottom: '16px', marginTop: 16 }}>
+                Quản lý người dùng
+            </Title>
+            <Card style={{ marginBottom: '16px', marginTop: 0 }}>
+                <Row gutter={16} align="middle">
+                    <Col flex="auto">
+                        <Input.Search
+                            placeholder="Tìm kiếm người dùng..."
+                            allowClear
+                            style={{ borderRadius: '8px' }}
+                        />
+                    </Col>
+                    <Col>
+                        <Space>
+                            <Button
+                                icon={<DownloadOutlined />}
+                                onClick={handleExportUsersExcel}
+                            >
+                                Xuất Excel
+                            </Button>
+                            <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={handleAddUser}
+                            >
+                                Thêm người dùng
+                            </Button>
+                        </Space>
+                    </Col>
+                </Row>
+            </Card>
+            <Card style={{ marginTop: 0 }}>
 
                 <Row gutter={[16, 16]}>
                     {users.map(user => (

@@ -4,6 +4,7 @@ import {
     Button,
     Space,
     Tag,
+    Badge,
     Image,
     Modal,
     Form,
@@ -127,12 +128,9 @@ const Products: React.FC = () => {
             const result = await categoryService.getAllCategories();
             if (result.code === 1000 && result.result) {
                 setCategories(result.result);
-                console.log('Loaded categories:', result.result);
-            } else {
-                console.error('Failed to load categories:', result.message);
             }
         } catch (error) {
-            console.error('Error loading categories:', error);
+            // Silent fail
         } finally {
             setCategoriesLoading(false);
         }
@@ -187,19 +185,6 @@ const Products: React.FC = () => {
     // Cập nhật total cho pagination dựa trên filtered products
     const filteredTotal = filteredProducts.length;
 
-    // Debug filtered products
-    console.log('=== FILTERING DEBUG ===');
-    console.log('All products:', allProducts.length);
-    console.log('Active products:', allProducts.filter(p => p.active).length);
-    console.log('Inactive products:', allProducts.filter(p => !p.active).length);
-    console.log('Filtered products:', filteredProducts.length);
-    console.log('Show deleted (inactive):', showDeleted);
-    console.log('Filter category:', filterCategory);
-    console.log('Search text:', searchText);
-    console.log('Price range:', priceRange);
-    console.log('Available categories:', categories.map(c => c.name));
-    console.log('Sample product categories:', [...new Set(allProducts.map(p => p.categoryName))]);
-
     // Statistics từ dữ liệu thực
     const totalProducts = allProducts.length;
     const activeProducts = allProducts.filter(p => p.active).length;
@@ -223,6 +208,7 @@ const Products: React.FC = () => {
             align: 'center' as const,
             render: (image: string, record: Product) => {
                 if (record.images && record.images.length > 1) {
+                    const imagesLength = record.images.length;
                     return (
                         <div style={{ 
                             display: 'flex', 
@@ -247,7 +233,7 @@ const Products: React.FC = () => {
                                             display: idx === 0 ? 'block' : 'none'
                                         }}
                                         preview={{
-                                            mask: idx === 0 ? <div style={{ color: 'white', fontSize: '12px' }}>Xem {record.images.length} ảnh</div> : false
+                                            mask: idx === 0 ? <div style={{ color: 'white', fontSize: '12px' }}>Xem {imagesLength} ảnh</div> : false
                                         }}
                                     />
                                 ))}
@@ -264,7 +250,7 @@ const Products: React.FC = () => {
                                 fontWeight: 'bold',
                                 lineHeight: '1'
                             }}>
-                                +{record.images.length}
+                                +{imagesLength}
                             </div>
                         </div>
                     );
@@ -370,17 +356,10 @@ const Products: React.FC = () => {
             width: 120,
             align: 'center' as const,
             render: (active: boolean) => (
-                <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    height: '70px',
-                    padding: '8px 0'
-                }}>
-                    <Tag color={active ? 'green' : 'red'} style={{ fontSize: '12px' }}>
-                        {active ? 'Đang bán' : 'Ngừng bán'}
-                    </Tag>
-                </div>
+                <Badge 
+                    status={active ? 'success' : 'default'} 
+                    text={active ? 'Đang bán' : 'Ngừng bán'} 
+                />
             ),
         },
         {
@@ -389,14 +368,7 @@ const Products: React.FC = () => {
             width: 180,
             align: 'center' as const,
             render: (record: Product) => (
-                <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    height: '70px',
-                    padding: '8px 0'
-                }}>
-                    <Space size="small">
+                <Space size="small">
                         <Button
                             type="text"
                             icon={<EyeOutlined />}
@@ -463,7 +435,6 @@ const Products: React.FC = () => {
                             />
                         )}
                     </Space>
-                </div>
             ),
         },
     ];
@@ -746,8 +717,6 @@ const Products: React.FC = () => {
                 }
             }
 
-            console.log('Sending product data:', productData);
-
             let result;
             if (editingProduct) {
                 result = await productService.updateProduct(editingProduct.id, productData);
@@ -787,22 +756,17 @@ const Products: React.FC = () => {
         setVariantsLoading(true);
         
         try {
-            console.log('Loading variants for product:', product.id);
             const result = await productVariantService.getProductVariantsByProductId(product.id);
-            console.log('Variants result:', result);
             
             if (result.success && result.data) {
-                console.log('Loaded variants:', result.data);
                 setEditingVariants(result.data);
                 if (result.data.length === 0) {
                     toast.info('Sản phẩm này chưa có biến thể. Nhấn "Thêm biến thể" để tạo mới.');
                 }
             } else {
-                console.error('Failed to load variants:', result.message);
                 toast.error(result.message || 'Không thể tải danh sách biến thể');
             }
         } catch (error) {
-            console.error('Error loading variants:', error);
             toast.error('Lỗi khi tải danh sách biến thể. Vui lòng thử lại.');
         } finally {
             setVariantsLoading(false);
@@ -1065,12 +1029,19 @@ const Products: React.FC = () => {
                     <Col>
                         <Space>
                             <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={handleAdd}
+                            >
+                                Thêm sản phẩm
+                            </Button>
+                            <Button
                                 type="default"
                                 icon={<ReloadOutlined />}
                                 onClick={refetch}
                                 loading={apiLoading}
                             >
-                                Làm mới API
+                                Làm mới sản phẩm
                             </Button>
                             <Button
                                 type="default"
@@ -1256,9 +1227,11 @@ const Products: React.FC = () => {
                             <Form.Item
                                 name="active"
                                 label="Trạng thái"
-                                valuePropName="checked"
                             >
-                                <Checkbox>Đang bán</Checkbox>
+                                <Select placeholder="Chọn trạng thái">
+                                    <Option value={true}>Đang bán</Option>
+                                    <Option value={false}>Ngừng bán</Option>
+                                </Select>
                             </Form.Item>
                         </Col>
                     </Row>
@@ -1338,10 +1311,10 @@ const Products: React.FC = () => {
                                         reader.onload = () => resolve(reader.result as string);
                                     });
                                 }
-                                const image = new Image();
-                                image.src = src;
+                                const imgElement = document.createElement('img');
+                                imgElement.src = src;
                                 const imgWindow = window.open(src);
-                                imgWindow?.document.write(image.outerHTML);
+                                imgWindow?.document.write(imgElement.outerHTML);
                             }}
                             beforeUpload={(file) => {
                                 const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';

@@ -3,8 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import styles from "./style.module.css";
 import { AiOutlineMinusCircle, AiOutlinePlusCircle, AiOutlineCloseCircle } from 'react-icons/ai';
 // Connect to backend cart service
-import { cartService } from '../../services/cart';
-import type { CartDto, CartItemDto } from '../../services/cart';
+import { cartService } from '@/services/cart';
+import type { CartDto, CartItemDto } from '@/services/cart';
 
 const Cart = () => {
   const navigate = useNavigate();

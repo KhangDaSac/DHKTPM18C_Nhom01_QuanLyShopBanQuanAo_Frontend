@@ -4,9 +4,11 @@ import {
     Button,
     Space,
     Tag,
+    Badge,
     Modal,
     Form,
     Input,
+    Select,
     message,
     Card,
     Row,
@@ -40,6 +42,7 @@ import { categoryService, type CategoryRequest } from '../../../services/categor
 import { useProducts } from '../../../hooks/useProducts';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 // Interface cho Category - phù hợp với API backend
 interface Category {
@@ -144,10 +147,6 @@ const Categories: React.FC = () => {
                     total: totalCategories
                 }));
                 
-                console.log(`Loaded ${totalCategories} categories, page ${currentPage}/${maxPage}`);
-                console.log('All categories from API:', result.result);
-                console.log('Active categories:', result.result.filter(c => c.isActive).length);
-                console.log('Inactive categories:', result.result.filter(c => !c.isActive).length);
             } else {
                 setError(result.message || 'Không thể tải danh sách danh mục');
             }
@@ -172,86 +171,6 @@ const Categories: React.FC = () => {
     // Lấy danh sách sản phẩm thật
     const { products: allProducts } = useProducts();
 
-    // Inject CSS để fix table spacing
-    useEffect(() => {
-        const styleId = 'custom-categories-table-fix';
-        let existingStyle = document.getElementById(styleId);
-
-        if (existingStyle) {
-            existingStyle.remove();
-        }
-
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = `
-            .custom-categories-table .ant-table-thead {
-                position: sticky !important;
-                top: 0 !important;
-                z-index: 2 !important;
-            }
-            
-            .custom-categories-table .ant-table-tbody {
-                margin-top: 0 !important;
-                padding-top: 0 !important;
-            }
-            
-            .custom-categories-table .ant-table-thead > tr > th {
-                vertical-align: middle !important;
-                text-align: center !important;
-                font-weight: 600 !important;
-                padding: 8px 16px !important;
-                border-bottom: 1px solid #f0f0f0 !important;
-                background-color: #fafafa !important;
-                height: 40px !important;
-                margin: 0 !important;
-                border-top: none !important;
-            }
-            
-            .custom-categories-table .ant-table-tbody > tr > td {
-                vertical-align: middle !important;
-                padding: 8px 16px !important;
-                height: 60px !important;
-                border-bottom: 1px solid #f0f0f0 !important;
-                margin: 0 !important;
-                border-top: none !important;
-            }
-            
-            .custom-categories-table .ant-table-container {
-                border: none !important;
-            }
-            
-            .custom-categories-table .ant-table {
-                border-collapse: collapse !important;
-                border-spacing: 0 !important;
-            }
-            
-            .custom-categories-table .ant-table-thead > tr > th.ant-table-selection-column {
-                padding: 8px !important;
-                width: 50px !important;
-                text-align: center !important;
-                background-color: #fafafa !important;
-            }
-            
-            .custom-categories-table .ant-table-tbody > tr > td.ant-table-selection-column {
-                padding: 8px !important;
-                width: 50px !important;
-                text-align: center !important;
-            }
-            /* Level highlight rows */
-            .custom-categories-table .row-level-1 td { background: #ffffff; }
-            .custom-categories-table .row-level-2 td { background: #f8fbff; }
-            .custom-categories-table .row-level-3 td { background: #f9f5ff; }
-        `;
-
-        document.head.appendChild(style);
-
-        return () => {
-            const styleToRemove = document.getElementById(styleId);
-            if (styleToRemove) {
-                styleToRemove.remove();
-            }
-        };
-    }, []);
 
     // Filtered categories - Logic mới: hiển thị hoặc danh mục hoạt động hoặc danh mục ngừng hoạt động
     const filteredCategories = categories.filter(c => {
@@ -265,19 +184,19 @@ const Categories: React.FC = () => {
 
     // Xây dựng cây danh mục theo filter để hiển thị
     const buildCategoryTreeWithProductCount = () => {
-        // Tạo bản đồ: categoryId => số sản phẩm trực tiếp
-        const productMap: Record<number, number> = {};
+        // Tạo bản đồ: categoryName => số sản phẩm trực tiếp
+        const productMap: Record<string, number> = {};
         allProducts.forEach(p => {
-            if (p.categoryId in productMap) {
-                productMap[p.categoryId] += 1;
+            if (p.categoryName in productMap) {
+                productMap[p.categoryName] += 1;
             } else {
-                productMap[p.categoryId] = 1;
+                productMap[p.categoryName] = 1;
             }
         });
         // Build cây, đồng thời cộng dồn sản phẩm cấp con lên cha
         const idToNode = new Map<number, CategoryTree & { productCount?: number }>();
         categories.forEach((c) => {
-            idToNode.set(c.id, { ...c, children: [], level: 1, productCount: productMap[c.id] || 0 });
+            idToNode.set(c.id, { ...c, children: [], level: 1, productCount: productMap[c.name] || 0 });
         });
         idToNode.forEach((node) => {
             if (!node.parentName && node.parentId && idToNode.has(node.parentId)) {
@@ -441,17 +360,10 @@ const Categories: React.FC = () => {
             width: 120,
             align: 'center' as const,
             render: (isActive: boolean) => (
-                <div style={{
-                    padding: '8px 0',
-                    minHeight: '60px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <Tag color={isActive ? 'green' : 'red'} style={{ fontSize: '12px' }}>
-                        {isActive ? 'Hoạt động' : 'Ngừng hoạt động'}
-                    </Tag>
-                </div>
+                <Badge 
+                    status={isActive ? 'success' : 'default'} 
+                    text={isActive ? 'Hoạt động' : 'Ngừng hoạt động'} 
+                />
             ),
         },
         {
@@ -460,14 +372,7 @@ const Categories: React.FC = () => {
             width: 180,
             align: 'center' as const,
             render: (record: Category) => (
-                <div style={{
-                    padding: '8px 0',
-                    minHeight: '60px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <Space size="small">
+                <Space size="small">
                         <Button
                             type="text"
                             icon={<EyeOutlined />}
@@ -527,7 +432,6 @@ const Categories: React.FC = () => {
                             />
                         )}
                     </Space>
-                </div>
             ),
         },
     ];
@@ -677,8 +581,6 @@ const Categories: React.FC = () => {
                 isActive: values.isActive !== undefined ? values.isActive : true,
                 parentId: values.parentId ? Number(values.parentId) : undefined
             };
-
-            console.log('Sending category data:', categoryData);
 
             let result;
             if (editingCategory) {
@@ -832,12 +734,19 @@ const Categories: React.FC = () => {
                     <Col>
                         <Space>
                             <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={handleAdd}
+                            >
+                                Thêm danh mục
+                            </Button>
+                            <Button
                                 type="default"
                                 icon={<ReloadOutlined />}
                                 onClick={refreshData}
                                 loading={loading}
                             >
-                                Làm mới
+                                Làm mới danh mục
                             </Button>
                             <Button
                                 type="default"
@@ -845,14 +754,6 @@ const Categories: React.FC = () => {
                                 onClick={handleExportExcel}
                             >
                                 Xuất Excel
-                            </Button>
-                            <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={handleAdd}
-                                className="btn-primary"
-                            >
-                                Thêm danh mục
                             </Button>
                         </Space>
                     </Col>
@@ -879,6 +780,46 @@ const Categories: React.FC = () => {
 
             {/* Categories Table */}
             <Card style={{ marginTop: 0 }}>
+                <style>{`
+                    .ant-table-measure-row {
+                        display: none !important;
+                        height: 0 !important;
+                        visibility: hidden !important;
+                    }
+                    .ant-table-tbody > tr > td {
+                        height: 70px !important;
+                        vertical-align: middle !important;
+                        padding: 8px 16px !important;
+                    }
+                    .ant-table-tbody > tr {
+                        height: 70px !important;
+                    }
+                    .ant-table-tbody > tr:first-child > td {
+                        padding-top: 8px !important;
+                    }
+                    .ant-table-thead > tr > th {
+                        padding: 8px 16px !important;
+                    }
+                    .ant-table {
+                        margin-top: 0 !important;
+                    }
+                    .ant-table-container {
+                        margin-top: 0 !important;
+                    }
+                    .ant-card-body {
+                        padding: 16px !important;
+                    }
+                    .ant-table-thead {
+                        margin-top: 0 !important;
+                    }
+                    .ant-table-thead > tr {
+                        margin-top: 0 !important;
+                    }
+                    /* Level highlight rows for categories */
+                    .custom-categories-table .row-level-1 td { background: #ffffff !important; }
+                    .custom-categories-table .row-level-2 td { background: #f8fbff !important; }
+                    .custom-categories-table .row-level-3 td { background: #f9f5ff !important; }
+                `}</style>
                 <Table
                     columns={columns}
                     dataSource={sttTree}
@@ -977,10 +918,12 @@ const Categories: React.FC = () => {
                     <Form.Item
                         name="isActive"
                         label="Trạng thái"
-                        valuePropName="checked"
                         initialValue={true}
                     >
-                        <Checkbox>Hoạt động</Checkbox>
+                        <Select placeholder="Chọn trạng thái">
+                            <Option value={true}>Hoạt động</Option>
+                            <Option value={false}>Ngừng hoạt động</Option>
+                        </Select>
                     </Form.Item>
                 </Form>
             </Modal>

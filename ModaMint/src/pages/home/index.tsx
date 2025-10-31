@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { CarouselDiscount } from "../../components/home/CarouselDiscount";
-import { CategoryList } from "../../components/home/CategoryList";
-import { ProductImgCard } from "../../components/home/item-components/ProductImgCard";
-import { TitleLine } from "../../components/home/item-components/TitleLine";
-import ListProducts from "../../components/home/ListProducts";
-import { ReviewCarousel } from "../../components/home/ReviewCarousel";
-import SaleBanner from "../../components/home/SaleBanner";
-import SuggestionToday from "../../components/home/SuggestionToday";
+import { CarouselDiscount } from "@/components/home/CarouselDiscount";
+import { CategoryList } from "@/components/home/CategoryList";
+import { ProductImgCard } from "@/components/home/item-components/ProductImgCard";
+import { TitleLine } from "@/components/home/item-components/TitleLine";
+import ListProducts from "@/components/home/ListProducts";
+import { ReviewCarousel } from "@/components/home/ReviewCarousel";
+import SaleBanner from "@/components/home/SaleBanner";
+import SuggestionToday from "@/components/home/SuggestionToday";
 import styles from './styles.module.css'
-import { categoryService, type Category} from "../../services/category";
-import { CountdownTimer } from "../../components/home/CountdownTimer";
+import { categoryService, type Category} from "@/services/category";
+import { CountdownTimer } from "@/components/home/CountdownTimer";
 
 interface Promotion {
   id: number;

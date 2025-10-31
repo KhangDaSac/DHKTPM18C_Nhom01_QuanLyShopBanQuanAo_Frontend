@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ProductCard } from '../../components/home/item-components/ProductCard';
-import Sidebar from '../../components/product-list/Sidebar';
-import Pagination from '../../components/product-list/Pagination';
-import SortSelect from '../../components/product-list/SortSelect';
-import CategoryCarousel from '../../components/product-list/CategoryCarousel';
+import { ProductCard } from '@/components/product';
+import Sidebar from '@/components/product-list/Sidebar';
+import Pagination from '@/components/product-list/Pagination';
+import SortSelect from '@/components/product-list/SortSelect';
+import CategoryCarousel from '@/components/product-list/CategoryCarousel';
 import axios from 'axios';
-import { cartService } from '../../services/cart';
+import { cartService } from '@/services/cart';
 import { toast } from 'react-toastify';
-import { useAuth } from '../../contexts/authContext';
-import { productVariantService } from '../../services/productVariant';
+import { useAuth } from '@/contexts/authContext';
+import { productVariantService } from '@/services/productVariant';
 
 // Mock data (replace with API calls later)
 interface Product {
@@ -25,6 +25,8 @@ interface Product {
     variantId?: number; // ID của product variant để thêm vào giỏ hàng
 }
 
+// Legacy mock data - not currently used
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const MOCK: Product[] = [
     // Sản phẩm giá thấp, màu đen, size S
     {
@@ -224,11 +226,6 @@ const ProductList: React.FC = () => {
       const res = await axios.get<{code: number; result: any[]; message: string}>("http://localhost:8080/api/v1/products");
       // Map dữ liệu từ API sang format Product local
       const mappedProducts: Product[] = (res.data.result ?? []).map((p: any) => {
-        // Debug: Log structure để xem variants ở đâu
-        if (!p.productVariants && !p.variants) {
-          console.log('Product không có variants:', p.id, p.name, 'Structure:', Object.keys(p));
-        }
-        
         // Thử lấy variantId từ nhiều nguồn khác nhau
         let variantId: number | undefined = undefined;
         let variantPrice: number | undefined = undefined;
@@ -275,10 +272,7 @@ const ProductList: React.FC = () => {
         };
       });
       setProducts(mappedProducts);
-      console.log('✅ Products loaded:', mappedProducts.length, 'products');
-      console.log('Sample product with variantId:', mappedProducts.find(p => p.variantId));
     } catch (error) {
-      console.error("❌ Error fetching products:", error);
       setError("Không thể tải danh sách sản phẩm");
     } finally {
       setLoading(false);
@@ -287,8 +281,6 @@ const ProductList: React.FC = () => {
 
   // Xử lý thêm vào giỏ hàng
   const handleAddToCart = async (product: any) => {
-    console.log('🛒 handleAddToCart called with product:', product);
-    
     if (!isAuthenticated) {
       toast.warning('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
       return;
@@ -296,61 +288,47 @@ const ProductList: React.FC = () => {
 
     // Lấy variantId từ product
     let variantId = product.variantId;
-    console.log('🔍 variantId from product:', variantId);
     
     // Nếu không có variantId, thử lấy từ API
     if (!variantId) {
-      console.log('⚠️ No variantId found, fetching variants for product:', product.id);
       try {
         const variantsResult = await productVariantService.getProductVariantsByProductId(product.id);
         
         if (variantsResult.success && variantsResult.data && variantsResult.data.length > 0) {
           variantId = variantsResult.data[0].id;
-          console.log('✅ Got variantId from API:', variantId);
         } else {
-          console.error('❌ No variants found for product:', product.id);
           toast.error('Sản phẩm này chưa có biến thể. Vui lòng chọn từ trang chi tiết.');
           return;
         }
       } catch (error: any) {
-        console.error('❌ Error fetching variants:', error);
         toast.error('Không thể lấy thông tin biến thể sản phẩm. Vui lòng thử lại.');
         return;
       }
     }
 
     if (!variantId) {
-      console.error('❌ Still no variantId after fetching');
       toast.error('Không thể xác định phiên bản sản phẩm. Vui lòng chọn từ trang chi tiết.');
       return;
     }
 
     try {
-      console.log('📤 Sending addItem request:', { variantId, quantity: 1 });
       const result = await cartService.addItem({ 
         variantId: variantId, 
         quantity: 1 
       });
 
-      console.log('📥 addItem response:', result);
-
       if (result.success) {
         toast.success('Đã thêm sản phẩm vào giỏ hàng!');
-        console.log('✅ addItem success, dispatching cartUpdated event');
         // Dispatch event to notify cart component to reload
         // Use CustomEvent để có thể pass data nếu cần
         const event = new CustomEvent('cartUpdated', { 
           detail: { timestamp: Date.now() }
         });
         window.dispatchEvent(event);
-        console.log('📡 cartUpdated event dispatched');
       } else {
-        console.error('❌ addItem failed:', result.message);
         toast.error(result.message || 'Không thể thêm sản phẩm vào giỏ hàng');
       }
     } catch (error: any) {
-      console.error('❌ Error adding to cart:', error);
-      console.error('Error details:', error.response?.data || error.message);
       toast.error(error.response?.data?.message || error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng');
     }
   };

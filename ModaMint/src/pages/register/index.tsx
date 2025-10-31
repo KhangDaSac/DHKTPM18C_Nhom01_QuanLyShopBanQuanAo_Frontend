@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import styles from './style.module.css';
 import { FaFacebook, FaGoogle } from 'react-icons/fa';
 import { AiOutlineMail } from 'react-icons/ai';
-import { userService } from "../../services/user/index"
-import type { CreateUserRequest } from '../../services/user';
+import { userService } from "@/services/user/index"
+import type { CreateUserRequest } from '@/services/user';
 import { toast } from 'react-toastify';
 
 

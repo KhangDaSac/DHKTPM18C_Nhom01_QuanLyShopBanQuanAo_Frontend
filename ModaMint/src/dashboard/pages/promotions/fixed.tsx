@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Modal, Form, Input, InputNumber, message, Card, Row, Col, Statistic, Typography, Popconfirm, DatePicker, Switch, Descriptions, Badge, Empty } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, DollarOutlined, ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined, GiftOutlined, CalendarOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Tag, Modal, Form, Input, InputNumber, message, Card, Row, Col, Statistic, Typography, Popconfirm, DatePicker, Select, Descriptions, Badge, Empty } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, DollarOutlined, ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined, GiftOutlined, CalendarOutlined, DownloadOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { amountPromotionService, type AmountPromotion } from '../../../services/promotion';
+import * as XLSX from 'xlsx';
 import './style.css';
 import '../../components/common-styles.css';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 const FixedPromotions: React.FC = () => {
     const [amountPromotions, setAmountPromotions] = useState<AmountPromotion[]>([]);
@@ -63,6 +65,35 @@ const FixedPromotions: React.FC = () => {
         } catch (error: any) {
             message.error('Không thể xóa khuyến mãi: ' + (error.response?.data?.message || error.message));
         }
+    };
+
+    const handleExportExcel = () => {
+        const data = amountPromotions.map((item, index) => ({
+            STT: index + 1,
+            ID: item.id,
+            'Mã khuyến mãi': item.code,
+            'Tên': item.name,
+            'Số tiền giảm': item.discountAmount,
+            'Giá trị đơn tối thiểu': item.minOrderValue,
+            'Ngày bắt đầu': dayjs(item.startAt).format('DD/MM/YYYY HH:mm'),
+            'Ngày kết thúc': dayjs(item.endAt).format('DD/MM/YYYY HH:mm'),
+            'Số lượng': item.quantity,
+            'Trạng thái': item.isActive ? 'Hoạt động' : 'Tạm dừng',
+        }));
+        
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Khuyến mãi');
+        
+        // Auto-width columns
+        const maxWidth = 20;
+        const colWidths = Object.keys(data[0] || {}).map(key => ({
+            wch: Math.min(Math.max(key.length, (data[0] as any)[key]?.toString().length || 0), maxWidth)
+        }));
+        ws['!cols'] = colWidths;
+        
+        XLSX.writeFile(wb, `KhuyenMai_GiaCoDinh_${new Date().toISOString().split('T')[0]}.xlsx`);
+        message.success('Xuất Excel thành công!');
     };
 
     const handleSubmit = async () => {
@@ -183,34 +214,35 @@ const FixedPromotions: React.FC = () => {
         {
             title: 'Thao tác',
             key: 'action',
+            width: 150,
+            align: 'center' as const,
             render: (_, record) => (
-                <Space size="middle">
-                        <Button
-                        type="link"
-                            icon={<EyeOutlined />}
-                            onClick={() => handleView(record)}
-                    >
-                        Xem
-                    </Button>
-                        <Button
-                        type="link"
-                            icon={<EditOutlined />}
-                            onClick={() => handleEdit(record)}
-                    >
-                        Sửa
-                    </Button>
-                            <Popconfirm
+                <Space size="small">
+                    <Button
+                        type="text"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleView(record)}
+                        title="Xem chi tiết"
+                        size="small"
+                    />
+                    <Button
+                        type="text"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                        title="Chỉnh sửa"
+                        size="small"
+                    />
+                    <Popconfirm
                         title="Xác nhận xóa"
                         description="Bạn có chắc chắn muốn xóa khuyến mãi này?"
                         onConfirm={() => record.id && handleDelete(record.id)}
                         okText="Xóa"
-                                cancelText="Hủy"
+                        cancelText="Hủy"
+                        icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
                     >
-                        <Button type="link" danger icon={<DeleteOutlined />}>
-                            Xóa
-                        </Button>
-                            </Popconfirm>
-                    </Space>
+                        <Button type="text" danger icon={<DeleteOutlined />} title="Xóa" size="small" />
+                    </Popconfirm>
+                </Space>
             ),
         },
     ];
@@ -223,39 +255,25 @@ const FixedPromotions: React.FC = () => {
                     height: 0 !important;
                     visibility: hidden !important;
                 }
-                * {
-                    margin-top: 0 !important;
+                .ant-table-tbody > tr > td {
+                    height: 70px !important;
+                    vertical-align: middle !important;
+                    padding: 8px 16px !important;
                 }
-                .ant-card {
-                    margin-top: 0 !important;
-                    margin-bottom: 16px !important;
+                .ant-table-tbody > tr {
+                    height: 70px !important;
                 }
-                .ant-card-body {
-                    padding: 16px !important;
-                }
-                .ant-table {
-                    margin-top: 0 !important;
-                }
-                .ant-table-container {
-                    margin-top: 0 !important;
+                .ant-table-tbody > tr:first-child > td {
+                    padding-top: 8px !important;
                 }
                 .ant-table-thead > tr > th {
                     padding: 8px 16px !important;
                 }
-                .ant-typography {
+                .ant-table {
                     margin-top: 0 !important;
                 }
-                .ant-row {
-                    margin-top: 0 !important;
-                }
-                .ant-col {
-                    margin-top: 0 !important;
-                }
-                .ant-statistic {
-                    margin-top: 0 !important;
-                }
-                .ant-statistic-title {
-                    margin-top: 0 !important;
+                .ant-card-body {
+                    padding: 16px !important;
                 }
             `}</style>
 
@@ -301,21 +319,28 @@ const FixedPromotions: React.FC = () => {
             <Card style={{ marginBottom: '16px', marginTop: 0 }}>
                 <Row justify="space-between" align="middle">
                     <Col>
-                        <Space wrap>
+                        <Space>
                             <Button
                                 type="primary"
                                 icon={<PlusOutlined />}
                                 onClick={handleCreate}
-                                size="large"
                             >
                                 Thêm khuyến mãi
                             </Button>
                             <Button
+                                type="default"
                                 icon={<ReloadOutlined />}
                                 onClick={loadPromotions}
                                 loading={loading}
                             >
-                                Làm mới
+                                Làm mới khuyến mãi
+                            </Button>
+                            <Button
+                                type="default"
+                                icon={<DownloadOutlined />}
+                                onClick={handleExportExcel}
+                            >
+                                Xuất Excel
                             </Button>
                         </Space>
                     </Col>
@@ -344,7 +369,9 @@ const FixedPromotions: React.FC = () => {
                             pagination={{
                         pageSize: 10,
                                 showSizeChanger: true,
-                        showTotal: (total) => `Tổng ${total} khuyến mãi`,
+                        showQuickJumper: true,
+                        showTotal: (total, range) =>
+                            `${range[0]}-${range[1]} của ${total} khuyến mãi`,
                         pageSizeOptions: ['5', '10', '20', '50'],
                             }}
                         />
@@ -360,8 +387,17 @@ const FixedPromotions: React.FC = () => {
                     form.resetFields();
                         }}
                 width={600}
-                okText="Lưu"
-                        cancelText="Hủy"
+                footer={[
+                    <Button key="cancel" onClick={() => {
+                        setIsModalVisible(false);
+                        form.resetFields();
+                    }}>
+                        Hủy
+                    </Button>,
+                    <Button key="submit" type="primary" onClick={handleSubmit} loading={loading}>
+                        {editingPromotion ? 'Cập nhật' : 'Thêm mới'}
+                    </Button>
+                ]}
                     >
                         <Form
                             form={form}
@@ -449,9 +485,11 @@ const FixedPromotions: React.FC = () => {
                             <Form.Item
                         name="isActive"
                         label="Trạng thái"
-                        valuePropName="checked"
                     >
-                        <Switch checkedChildren="Hoạt động" unCheckedChildren="Tạm dừng" />
+                        <Select placeholder="Chọn trạng thái">
+                            <Option value={true}>Hoạt động</Option>
+                            <Option value={false}>Tạm dừng</Option>
+                        </Select>
                             </Form.Item>
                         </Form>
                     </Modal>
@@ -469,7 +507,7 @@ const FixedPromotions: React.FC = () => {
                 width={600}
             >
                 {viewingPromotion && (
-                    <Descriptions column={1} bordered>
+                    <Descriptions column={1} size="small">
                         <Descriptions.Item label="Mã khuyến mãi">
                             <Tag color="green">{viewingPromotion.code}</Tag>
                                             </Descriptions.Item>

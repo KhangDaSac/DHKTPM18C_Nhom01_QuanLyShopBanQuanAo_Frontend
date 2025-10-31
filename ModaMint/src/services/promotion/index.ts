@@ -21,12 +21,27 @@ promotionApiClient.interceptors.request.use(
                     config.headers.Authorization = `Bearer ${authData.accessToken}`;
                 }
             } catch (error) {
-                console.error('Error parsing authData:', error);
+                // Silent fail
             }
         }
         return config;
     },
     (error) => Promise.reject(error)
+);
+
+// Add response interceptor for debugging
+promotionApiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        console.error('Promotion API Error:', {
+            url: error.config?.url,
+            method: error.config?.method,
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        return Promise.reject(error);
+    }
 );
 
 // API Response wrapper

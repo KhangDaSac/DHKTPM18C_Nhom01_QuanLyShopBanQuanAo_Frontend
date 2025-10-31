@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import {ProductCard} from '../home/item-components/ProductCard';
+import { ProductCard } from '@/components/product';
 import styles from './styles.module.css';
 
 interface Product {

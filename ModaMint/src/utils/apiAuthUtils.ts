@@ -1,5 +1,5 @@
 /**
- * Auth & JWT Utilities - Gộp tất cả logic xử lý JWT và Auth
+ * Auth & JWT Utilities - Complete JWT and Auth management
  */
 
 // ==================== JWT INTERFACES & TYPES ====================
@@ -12,6 +12,20 @@ export interface JwtPayload {
     email?: string;
     roles?: string[];
     [key: string]: any;
+}
+
+export interface TokenDebugInfo {
+    isValid: boolean;
+    isExpired: boolean;
+    payload: any;
+    roles: string[];
+    userInfo: {
+        id?: string;
+        username?: string;
+        email?: string;
+    };
+    expirationDate?: Date;
+    issuedAt?: Date;
 }
 
 // ==================== JWT DECODING ====================
@@ -41,19 +55,12 @@ export function getRolesFromToken(token: string): string[] {
     const payload = decodeJWT(token);
     if (!payload) return [];
 
-    // Thử lấy roles từ các field khác nhau
     if (payload.scope && typeof payload.scope === 'string') {
         return payload.scope.split(' ').filter(role => role.trim() !== '');
     }
-    if (payload.roles && Array.isArray(payload.roles)) {
-        return payload.roles;
-    }
-    if (payload.authorities && Array.isArray(payload.authorities)) {
-        return payload.authorities;
-    }
-    if (payload.scp && Array.isArray(payload.scp)) {
-        return payload.scp;
-    }
+    if (payload.roles && Array.isArray(payload.roles)) return payload.roles;
+    if (payload.authorities && Array.isArray(payload.authorities)) return payload.authorities;
+    if (payload.scp && Array.isArray(payload.scp)) return payload.scp;
 
     return [];
 }
@@ -87,6 +94,79 @@ export function getUserInfoFromToken(token: string): {
         email: payload.email,
         roles: getRolesFromToken(token)
     };
+}
+
+// ==================== DEBUG UTILITIES ====================
+/**
+ * Debug JWT token và trả về thông tin chi tiết
+ */
+export function debugJWTToken(token: string): TokenDebugInfo {
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+            return {
+                isValid: false,
+                isExpired: true,
+                payload: null,
+                roles: [],
+                userInfo: {}
+            };
+        }
+
+        const payload = decodeJWT(token);
+        if (!payload) {
+            return {
+                isValid: false,
+                isExpired: true,
+                payload: null,
+                roles: [],
+                userInfo: {}
+            };
+        }
+
+        const currentTime = Math.floor(Date.now() / 1000);
+        const isExpired = payload.exp ? payload.exp < currentTime : true;
+
+        return {
+            isValid: true,
+            isExpired,
+            payload,
+            roles: getRolesFromToken(token),
+            userInfo: {
+                id: payload.sub,
+                username: payload.username || payload.preferred_username,
+                email: payload.email
+            },
+            expirationDate: payload.exp ? new Date(payload.exp * 1000) : undefined,
+            issuedAt: payload.iat ? new Date(payload.iat * 1000) : undefined
+        };
+    } catch (error) {
+        console.error('Error debugging JWT token:', error);
+        return {
+            isValid: false,
+            isExpired: true,
+            payload: null,
+            roles: [],
+            userInfo: {}
+        };
+    }
+}
+
+/**
+ * Log JWT token info to console for debugging
+ */
+export function logJWTTokenInfo(token: string): void {
+    const debugInfo = debugJWTToken(token);
+    
+    console.group('🔍 JWT Token Debug Info');
+    console.log('✅ Valid:', debugInfo.isValid);
+    console.log('⏰ Expired:', debugInfo.isExpired);
+    console.log('👤 User Info:', debugInfo.userInfo);
+    console.log('🔑 Roles:', debugInfo.roles);
+    console.log('📅 Expiration:', debugInfo.expirationDate);
+    console.log('📅 Issued At:', debugInfo.issuedAt);
+    console.log('📄 Full Payload:', debugInfo.payload);
+    console.groupEnd();
 }
 
 // ==================== ROLE CHECKING ====================
@@ -132,6 +212,22 @@ export function checkAllRoles(requiredRoles: readonly string[]): boolean {
     return requiredRoles.every(role => roles.includes(role));
 }
 
+/**
+ * Check if user has ADMIN role from token
+ */
+export function hasAdminRoleFromToken(token: string): boolean {
+    const debugInfo = debugJWTToken(token);
+    return debugInfo.roles.includes('ADMIN');
+}
+
+/**
+ * Get all available roles from token
+ */
+export function getAllRolesFromToken(token: string): string[] {
+    const debugInfo = debugJWTToken(token);
+    return debugInfo.roles;
+}
+
 // ==================== API HELPERS ====================
 /**
  * Decorator function để bọc API call với role checking
@@ -170,22 +266,17 @@ export const ROLES = {
  * Permission groups
  */
 export const PERMISSION_GROUPS = {
-    ADMIN: ['ADMIN'],              // Chỉ ADMIN
-    USER: ['USER', 'ADMIN'],       // USER hoặc ADMIN (authenticated)
+    ADMIN: ['ADMIN'],
+    USER: ['USER', 'ADMIN'],
 } as const;
 
 /**
  * API Permissions checker
  */
 export const API_PERMISSIONS = {
-    // Dashboard - Chỉ ADMIN
     accessDashboard: () => checkRole(ROLES.ADMIN),
-    
-    // Auth endpoints - Authenticated users
     getMyInfo: () => checkAnyRole(PERMISSION_GROUPS.USER),
     updateMyProfile: () => checkAnyRole(PERMISSION_GROUPS.USER),
-    
-    // Admin features
     manageProducts: () => checkRole(ROLES.ADMIN),
     manageCategories: () => checkRole(ROLES.ADMIN),
     manageOrders: () => checkRole(ROLES.ADMIN),

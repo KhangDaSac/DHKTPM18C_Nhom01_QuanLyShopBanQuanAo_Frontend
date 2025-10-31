@@ -250,7 +250,7 @@ const Dashboard: React.FC = () => {
         {
             title: 'Thao tác',
             key: 'action',
-            width: 120,
+            width: 140,
             render: (_: unknown, record: Product) => (
                 <Button
                     icon={<EyeOutlined />}
@@ -277,10 +277,10 @@ const Dashboard: React.FC = () => {
                                 <Statistic
                                     title="Tổng sản phẩm"
                                     value={totalProducts}
-                                    valueStyle={{ color: '#3f8600' }}
+                                    valueStyle={{ color: '#1890ff' }}
                                     prefix={<ShoppingOutlined />}
                                 />
-                                <Text type="success" style={{ fontSize: '12px' }}>
+                                <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
                                     {activeProducts} sản phẩm hoạt động
                                 </Text>
                             </Card>
@@ -291,10 +291,10 @@ const Dashboard: React.FC = () => {
                                 <Statistic
                                     title="Sản phẩm hoạt động"
                                     value={activeProducts}
-                                    valueStyle={{ color: '#1677ff' }}
+                                    valueStyle={{ color: '#52c41a' }}
                                     prefix={<UserOutlined />}
                                 />
-                                <Text style={{ color: '#1677ff', fontSize: '12px' }}>
+                                <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
                                     {totalProducts > 0 ? Math.round((activeProducts / totalProducts) * 100) : 0}% tổng sản phẩm
                                 </Text>
                             </Card>
@@ -313,7 +313,7 @@ const Dashboard: React.FC = () => {
                                         new Intl.NumberFormat('vi-VN').format(Number(value))
                                     }
                                 />
-                                <Text style={{ color: '#722ed1', fontSize: '12px' }}>
+                                <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
                                     Giá trị trung bình: {totalProducts > 0 ? new Intl.NumberFormat('vi-VN', {
                                         style: 'currency',
                                         currency: 'VND'
@@ -328,11 +328,11 @@ const Dashboard: React.FC = () => {
                                     title="Tỷ lệ hoạt động"
                                     value={totalProducts > 0 ? Math.round((activeProducts / totalProducts) * 100) : 0}
                                     precision={1}
-                                    valueStyle={{ color: '#cf1322' }}
+                                    valueStyle={{ color: '#faad14' }}
                                     prefix={<RiseOutlined />}
                                     suffix="%"
                                 />
-                                <Text style={{ color: '#cf1322', fontSize: '12px' }}>
+                                <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
                                     {totalProducts - activeProducts} sản phẩm ngừng hoạt động
                                 </Text>
                             </Card>
@@ -403,7 +403,7 @@ const Dashboard: React.FC = () => {
                                         <Statistic
                                             title="Tổng sản phẩm"
                                             value={totalProducts}
-                                            valueStyle={{ fontSize: '20px', color: '#1677ff' }}
+                                            valueStyle={{ fontSize: '20px', color: '#1890ff' }}
                                         />
                                     </Col>
                                     <Col span={12}>
@@ -417,7 +417,7 @@ const Dashboard: React.FC = () => {
                                         <Statistic
                                             title="Hết hàng"
                                             value={allProducts.filter(p => p.stock === 0).length}
-                                            valueStyle={{ fontSize: '20px', color: '#cf1322' }}
+                                            valueStyle={{ fontSize: '20px', color: '#faad14' }}
                                         />
                                     </Col>
                                     <Col span={12} style={{ marginTop: '16px' }}>

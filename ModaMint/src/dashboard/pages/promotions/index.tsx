@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Modal, Form, Input, InputNumber, message, Card, Row, Col, Statistic, Typography, Popconfirm, Tabs, DatePicker, Switch, Descriptions, Badge } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, PercentageOutlined, DollarOutlined, ReloadOutlined, CalendarOutlined, CheckCircleOutlined, CloseCircleOutlined, GiftOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Tag, Modal, Form, Input, InputNumber, message, Card, Row, Col, Statistic, Typography, Popconfirm, Tabs, DatePicker, Select, Descriptions, Badge } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, PercentageOutlined, DollarOutlined, ReloadOutlined, CalendarOutlined, CheckCircleOutlined, CloseCircleOutlined, GiftOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { percentagePromotionService, amountPromotionService, type PercentagePromotion, type AmountPromotion } from '../../../services/promotion';
@@ -9,6 +9,7 @@ import '../../components/common-styles.css';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 const PromotionsPage: React.FC = () => {
     const [percentagePromotions, setPercentagePromotions] = useState<PercentagePromotion[]>([]);
@@ -276,32 +277,33 @@ const PromotionsPage: React.FC = () => {
         {
             title: 'Thao tác',
             key: 'action',
+            width: 150,
+            align: 'center' as const,
             render: (_, record) => (
-                <Space size="middle">
+                <Space size="small">
                     <Button
-                        type="link"
+                        type="text"
                         icon={<EyeOutlined />}
                         onClick={() => handleViewPromotion(record)}
-                    >
-                        Xem
-                    </Button>
+                        title="Xem chi tiết"
+                        size="small"
+                    />
                     <Button
-                        type="link"
+                        type="text"
                         icon={<EditOutlined />}
                         onClick={() => handleEditPercentage(record)}
-                    >
-                        Sửa
-                    </Button>
+                        title="Chỉnh sửa"
+                        size="small"
+                    />
                     <Popconfirm
                         title="Xác nhận xóa"
                         description="Bạn có chắc chắn muốn xóa khuyến mãi này?"
                         onConfirm={() => record.id && handleDeletePercentage(record.id)}
                         okText="Xóa"
                         cancelText="Hủy"
+                        icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
                     >
-                        <Button type="link" danger icon={<DeleteOutlined />}>
-                            Xóa
-                        </Button>
+                        <Button type="text" danger icon={<DeleteOutlined />} title="Xóa" size="small" />
                     </Popconfirm>
                 </Space>
             ),
@@ -380,32 +382,33 @@ const PromotionsPage: React.FC = () => {
         {
             title: 'Thao tác',
             key: 'action',
+            width: 150,
+            align: 'center' as const,
             render: (_, record) => (
-                <Space size="middle">
+                <Space size="small">
                     <Button
-                        type="link"
+                        type="text"
                         icon={<EyeOutlined />}
                         onClick={() => handleViewPromotion(record)}
-                    >
-                        Xem
-                    </Button>
+                        title="Xem chi tiết"
+                        size="small"
+                    />
                     <Button
-                        type="link"
+                        type="text"
                         icon={<EditOutlined />}
                         onClick={() => handleEditAmount(record)}
-                    >
-                        Sửa
-                    </Button>
+                        title="Chỉnh sửa"
+                        size="small"
+                    />
                     <Popconfirm
                         title="Xác nhận xóa"
                         description="Bạn có chắc chắn muốn xóa khuyến mãi này?"
                         onConfirm={() => record.id && handleDeleteAmount(record.id)}
                         okText="Xóa"
                         cancelText="Hủy"
+                        icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
                     >
-                        <Button type="link" danger icon={<DeleteOutlined />}>
-                            Xóa
-                        </Button>
+                        <Button type="text" danger icon={<DeleteOutlined />} title="Xóa" size="small" />
                     </Popconfirm>
                 </Space>
             ),
@@ -413,12 +416,43 @@ const PromotionsPage: React.FC = () => {
     ];
 
     return (
-        <div className="promotions-page" style={{ padding: '24px' }}>
-            <div style={{ marginBottom: '24px' }}>
+        <div style={{ margin: 0, padding: 0 }}>
+            <style>{`
+                .ant-table-measure-row {
+                    display: none !important;
+                    height: 0 !important;
+                    visibility: hidden !important;
+                }
+                .ant-table-tbody > tr > td {
+                    height: 70px !important;
+                    vertical-align: middle !important;
+                    padding: 8px 16px !important;
+                }
+                .ant-table-tbody > tr {
+                    height: 70px !important;
+                }
+                .ant-table-tbody > tr:first-child > td {
+                    padding-top: 8px !important;
+                }
+                .ant-table-thead > tr > th {
+                    padding: 8px 16px !important;
+                }
+                .ant-table {
+                    margin-top: 0 !important;
+                }
+                .ant-card-body {
+                    padding: 16px !important;
+                }
+                .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+                    color: hsl(var(--p));
+                }
+                .ant-tabs-ink-bar {
+                    background: hsl(var(--p));
+                }
+            `}</style>
             <Title level={2} className="text-primary" style={{ marginBottom: '16px', marginTop: 0 }}>
                 <GiftOutlined /> Quản lý khuyến mãi
             </Title>
-            </div>
 
             <Tabs
                 activeKey={activeTab}
@@ -434,8 +468,8 @@ const PromotionsPage: React.FC = () => {
                         children: (
                             <>
                                 {/* Statistics Cards */}
-                                <Row gutter={16} style={{ marginBottom: '24px' }}>
-                                    <Col xs={24} sm={8}>
+                                <Row gutter={16} style={{ marginBottom: '16px', marginTop: 0 }}>
+                                    <Col xs={24} sm={12} lg={8}>
                                         <Card>
                                             <Statistic
                                                 title="Tổng số khuyến mãi"
@@ -445,7 +479,7 @@ const PromotionsPage: React.FC = () => {
                                             />
                                         </Card>
                                     </Col>
-                                    <Col xs={24} sm={8}>
+                                    <Col xs={24} sm={12} lg={8}>
                                         <Card>
                                             <Statistic
                                                 title="Đang hoạt động"
@@ -455,7 +489,7 @@ const PromotionsPage: React.FC = () => {
                                             />
                                         </Card>
                                     </Col>
-                                    <Col xs={24} sm={8}>
+                                    <Col xs={24} sm={12} lg={8}>
                                         <Card>
                                             <Statistic
                                                 title="Đã hết hạn"
@@ -478,27 +512,32 @@ const PromotionsPage: React.FC = () => {
                                             Thêm khuyến mãi
                                         </Button>
                                         <Button
+                                            type="default"
                                             icon={<ReloadOutlined />}
                                             onClick={loadPercentagePromotions}
                                             loading={loadingPercentage}
                                         >
-                                            Làm mới
+                                            Làm mới khuyến mãi
                                         </Button>
                                     </Space>
                                 </div>
 
                                 {/* Table */}
-                                <Table
-                                    columns={percentageColumns}
-                                    dataSource={percentagePromotions}
-                                    loading={loadingPercentage}
-                                    rowKey="id"
-                                    pagination={{
-                                        pageSize: 10,
-                                        showSizeChanger: true,
-                                        showTotal: (total) => `Tổng ${total} khuyến mãi`,
-                                    }}
-                                />
+                                <Card style={{ marginTop: 0 }}>
+                                    <Table
+                                        columns={percentageColumns}
+                                        dataSource={percentagePromotions}
+                                        loading={loadingPercentage}
+                                        rowKey="id"
+                                        pagination={{
+                                            pageSize: 10,
+                                            showSizeChanger: true,
+                                            showQuickJumper: true,
+                                            showTotal: (total, range) =>
+                                                `${range[0]}-${range[1]} của ${total} khuyến mãi`,
+                                        }}
+                                    />
+                                </Card>
                             </>
                         ),
                     },
@@ -512,8 +551,8 @@ const PromotionsPage: React.FC = () => {
                         children: (
                             <>
                                 {/* Statistics Cards */}
-                                <Row gutter={16} style={{ marginBottom: '24px' }}>
-                                    <Col xs={24} sm={8}>
+                                <Row gutter={16} style={{ marginBottom: '16px', marginTop: 0 }}>
+                                    <Col xs={24} sm={12} lg={8}>
                                         <Card>
                                             <Statistic
                                                 title="Tổng số khuyến mãi"
@@ -523,7 +562,7 @@ const PromotionsPage: React.FC = () => {
                                             />
                                         </Card>
                                     </Col>
-                                    <Col xs={24} sm={8}>
+                                    <Col xs={24} sm={12} lg={8}>
                                         <Card>
                                             <Statistic
                                                 title="Đang hoạt động"
@@ -533,7 +572,7 @@ const PromotionsPage: React.FC = () => {
                                             />
                                         </Card>
                                     </Col>
-                                    <Col xs={24} sm={8}>
+                                    <Col xs={24} sm={12} lg={8}>
                                         <Card>
                                             <Statistic
                                                 title="Đã hết hạn"
@@ -556,27 +595,32 @@ const PromotionsPage: React.FC = () => {
                                             Thêm khuyến mãi
                                         </Button>
                                         <Button
+                                            type="default"
                                             icon={<ReloadOutlined />}
                                             onClick={loadAmountPromotions}
                                             loading={loadingAmount}
                                         >
-                                            Làm mới
+                                            Làm mới khuyến mãi
                                         </Button>
                                     </Space>
                                 </div>
 
                                 {/* Table */}
-                                <Table
-                                    columns={amountColumns}
-                                    dataSource={amountPromotions}
-                                    loading={loadingAmount}
-                                    rowKey="id"
-                                    pagination={{
-                                        pageSize: 10,
-                                        showSizeChanger: true,
-                                        showTotal: (total) => `Tổng ${total} khuyến mãi`,
-                                    }}
-                                />
+                                <Card style={{ marginTop: 0 }}>
+                                    <Table
+                                        columns={amountColumns}
+                                        dataSource={amountPromotions}
+                                        loading={loadingAmount}
+                                        rowKey="id"
+                                        pagination={{
+                                            pageSize: 10,
+                                            showSizeChanger: true,
+                                            showQuickJumper: true,
+                                            showTotal: (total, range) =>
+                                                `${range[0]}-${range[1]} của ${total} khuyến mãi`,
+                                        }}
+                                    />
+                                </Card>
                             </>
                         ),
                     },
@@ -593,8 +637,17 @@ const PromotionsPage: React.FC = () => {
                     percentageForm.resetFields();
                 }}
                 width={600}
-                okText="Lưu"
-                cancelText="Hủy"
+                footer={[
+                    <Button key="cancel" onClick={() => {
+                        setIsPercentageModalVisible(false);
+                        percentageForm.resetFields();
+                    }}>
+                        Hủy
+                    </Button>,
+                    <Button key="submit" type="primary" onClick={handleSubmitPercentage} loading={loadingPercentage}>
+                        {editingPercentage ? 'Cập nhật' : 'Thêm mới'}
+                    </Button>
+                ]}
             >
                 <Form
                     form={percentageForm}
@@ -682,9 +735,11 @@ const PromotionsPage: React.FC = () => {
                     <Form.Item
                         name="isActive"
                         label="Trạng thái"
-                        valuePropName="checked"
                     >
-                        <Switch checkedChildren="Hoạt động" unCheckedChildren="Tạm dừng" />
+                        <Select placeholder="Chọn trạng thái">
+                            <Option value={true}>Hoạt động</Option>
+                            <Option value={false}>Tạm dừng</Option>
+                        </Select>
                     </Form.Item>
                 </Form>
             </Modal>
@@ -699,8 +754,17 @@ const PromotionsPage: React.FC = () => {
                     amountForm.resetFields();
                 }}
                 width={600}
-                okText="Lưu"
-                cancelText="Hủy"
+                footer={[
+                    <Button key="cancel" onClick={() => {
+                        setIsAmountModalVisible(false);
+                        amountForm.resetFields();
+                    }}>
+                        Hủy
+                    </Button>,
+                    <Button key="submit" type="primary" onClick={handleSubmitAmount} loading={loadingAmount}>
+                        {editingAmount ? 'Cập nhật' : 'Thêm mới'}
+                    </Button>
+                ]}
             >
                 <Form
                     form={amountForm}
@@ -788,9 +852,11 @@ const PromotionsPage: React.FC = () => {
                     <Form.Item
                         name="isActive"
                         label="Trạng thái"
-                        valuePropName="checked"
                     >
-                        <Switch checkedChildren="Hoạt động" unCheckedChildren="Tạm dừng" />
+                        <Select placeholder="Chọn trạng thái">
+                            <Option value={true}>Hoạt động</Option>
+                            <Option value={false}>Tạm dừng</Option>
+                        </Select>
                     </Form.Item>
                 </Form>
             </Modal>
@@ -808,7 +874,7 @@ const PromotionsPage: React.FC = () => {
                 width={600}
             >
                 {viewingPromotion && (
-                    <Descriptions column={1} bordered>
+                    <Descriptions column={1} size="small">
                         <Descriptions.Item label="Mã khuyến mãi">
                             <Tag color={viewingPromotion.discountPercent ? 'blue' : 'green'}>
                                 {viewingPromotion.code}

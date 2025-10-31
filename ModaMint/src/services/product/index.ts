@@ -45,6 +45,7 @@ export interface ProductRequest {
     categoryId: number;
     description: string;
     price: number;
+    images?: string[];
     active?: boolean;
 }
 

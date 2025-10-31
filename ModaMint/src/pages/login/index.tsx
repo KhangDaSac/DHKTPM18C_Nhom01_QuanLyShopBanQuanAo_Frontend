@@ -4,9 +4,9 @@ import styles from './style.module.css';
 import { FaFacebook, FaGoogle } from 'react-icons/fa';
 import { AiOutlineMail } from 'react-icons/ai';
 import { toast } from 'react-toastify';
-import { authenticationService } from '../../services/authentication';
-import { useAuth } from '../../contexts/authContext';
-import { getRolesFromToken } from '../../utils/apiAuthUtils';
+import { authenticationService } from '@/services/authentication';
+import { useAuth } from '@/contexts/authContext';
+import { getRolesFromToken } from '@/utils/apiAuthUtils';
 
 export default function Login() {
     const [username, setUsername] = useState('');
