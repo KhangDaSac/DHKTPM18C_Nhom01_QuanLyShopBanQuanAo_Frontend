@@ -11,12 +11,15 @@ export interface Category {
     createAt?: string;
     updateAt?: string;
     image?: string;
+    parentId?: number;
+    parentName?: string;
 }
 
 // Request tạo/cập nhật category (từ CategoryRequest DTO)
 export interface CategoryRequest {
     name: string;
     isActive?: boolean;
+    parentId?: number;
 }
 
 // ==================== API CLIENT ====================

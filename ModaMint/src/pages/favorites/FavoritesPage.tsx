@@ -4,7 +4,7 @@ import { ProductCard } from '../../components/home/item-components/ProductCard';
 import { favoritesService } from '../../services/favorites';
 import { cartService } from '../../services/cart';
 import { useContext } from 'react';
-import { CartContext } from '../../components/contexts/CartContext';
+import { CartContext } from '../../contexts/CartContext';
 import { toast } from 'react-toastify';
 import type { FavoriteDto } from '../../services/favorites';
 

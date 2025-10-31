@@ -23,7 +23,7 @@ import Detail from "./pages/detail"
 
 import ProductList from './pages/products';
 
-import CartPage from './pages/cart/CartPage';
+import CartPage from './pages/cart';
 import CheckoutPage from './pages/checkout/CheckoutPage';
 // Context
 import { CartProvider } from './contexts/CartContext';

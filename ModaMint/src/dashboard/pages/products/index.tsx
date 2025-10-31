@@ -205,6 +205,7 @@ const Products: React.FC = () => {
     const activeProducts = allProducts.filter(p => p.active).length;
     const inactiveProducts = allProducts.filter(p => !p.active).length;
     const totalValue = allProducts.reduce((sum, p) => sum + p.price, 0);
+    const totalStock = allProducts.reduce((sum, p) => sum + (p.stock || 0), 0);
 
     const columns = [
         {
@@ -1007,12 +1008,10 @@ const Products: React.FC = () => {
                         <Col xs={24} sm={12} lg={6}>
                             <Card>
                                 <Statistic
-                                    title="Tổng giá trị"
-                                    value={totalValue}
-                                    prefix={<DollarOutlined />}
-                                    suffix="đ"
+                                    title="Tổng tồn kho"
+                                    value={totalStock}
+                                    prefix={<InboxOutlined />}
                                     valueStyle={{ color: '#722ed1' }}
-                                    formatter={(value) => `${Number(value).toLocaleString()}`}
                                 />
                             </Card>
                         </Col>

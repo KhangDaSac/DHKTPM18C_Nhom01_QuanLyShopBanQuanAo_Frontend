@@ -25,8 +25,7 @@ import {
     UserOutlined,
     RiseOutlined,
     EyeOutlined,
-    EditOutlined,
-    DeleteOutlined,
+    
     StarFilled,
     ShoppingOutlined,
     ReloadOutlined
@@ -54,7 +53,7 @@ const Dashboard: React.FC = () => {
     const location = useLocation();
     const [activeTab, setActiveTab] = useState('overview');
     const { products: apiProducts, loading: apiLoading, error: apiError, refetch } = useProducts();
-    const [localProducts, setLocalProducts] = useState<Product[]>([]);
+    const [localProducts] = useState<Product[]>([]);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isViewModalVisible, setIsViewModalVisible] = useState(false);
     
@@ -127,7 +126,7 @@ const Dashboard: React.FC = () => {
                                                 display: idx === 0 ? 'block' : 'none'
                                             }}
                                             preview={{
-                                                mask: idx === 0 ? `Xem ${record.images.length} ảnh` : false
+                                                mask: idx === 0 ? `Xem ${record.images!.length} ảnh` : false
                                             }}
                                         />
                                     ))}
@@ -252,7 +251,7 @@ const Dashboard: React.FC = () => {
             title: 'Thao tác',
             key: 'action',
             width: 120,
-            render: (_, record: Product) => (
+            render: (_: unknown, record: Product) => (
                 <Button
                     icon={<EyeOutlined />}
                     size="small"

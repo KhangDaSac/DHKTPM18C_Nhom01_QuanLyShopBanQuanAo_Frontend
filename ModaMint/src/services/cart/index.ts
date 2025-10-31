@@ -156,27 +156,119 @@ class CartService {
     }
   }
 
-  async updateItem(itemId: number, quantity: number) {
+  async updateItem(variantId: number, quantity: number, customerId?: string) {
     try {
-      const resp = await cartClient.put<ApiResponse<CartItemDto>>(`/carts/items/${itemId}`, { quantity });
-      return { success: true, data: resp.data.result };
+      // Lấy customerId từ auth nếu chưa có
+      if (!customerId) {
+        const authDataStr = localStorage.getItem('authData');
+        if (authDataStr) {
+          try {
+            const authData = JSON.parse(authDataStr);
+            customerId = authData?.user?.id;
+            if (!customerId && authData?.accessToken) {
+              const userInfo = getUserInfoFromToken(authData.accessToken);
+              customerId = userInfo?.id;
+            }
+          } catch (e) {
+            console.error('Error parsing authData:', e);
+          }
+        }
+      }
+
+      if (!customerId) {
+        return { success: false, message: 'Customer ID is required' };
+      }
+
+      // Backend không có endpoint update trực tiếp
+      // Workaround: xóa hết rồi thêm lại với quantity mới
+      const currentCart = await this.getCart(customerId);
+      
+      if (!currentCart.success || !currentCart.data) {
+        return { success: false, message: 'Cannot get current cart' };
+      }
+
+      const currentItem = currentCart.data.items?.find(item => item.variantId === variantId);
+      if (!currentItem) {
+        return { success: false, message: 'Item not found in cart' };
+      }
+
+      const currentQty = currentItem.quantity || 1;
+      const diff = quantity - currentQty;
+
+      if (diff > 0) {
+        // Tăng: thêm thêm quantity
+        const result = await this.addItem({ variantId, quantity: diff, customerId });
+        return { success: result.success, message: result.message || 'Updated successfully' };
+      } else if (diff < 0) {
+        // Giảm: gọi removeItem multiple times
+        const absDiff = Math.abs(diff);
+        for (let i = 0; i < absDiff; i++) {
+          await cartClient.delete(`/carts/remove/${variantId}?customerId=${encodeURIComponent(customerId)}`);
+        }
+        return { success: true, message: 'Updated successfully' };
+      } else {
+        // Không thay đổi
+        return { success: true, message: 'No change needed' };
+      }
     } catch (err: any) {
       return { success: false, message: err?.message || 'Network error' };
     }
   }
 
-  async deleteItem(itemId: number) {
+  async deleteItem(variantId: number, customerId?: string) {
     try {
-      const resp = await cartClient.delete<ApiResponse<void>>(`/carts/items/${itemId}`);
+      // Lấy customerId từ auth nếu chưa có
+      if (!customerId) {
+        const authDataStr = localStorage.getItem('authData');
+        if (authDataStr) {
+          try {
+            const authData = JSON.parse(authDataStr);
+            customerId = authData?.user?.id;
+            if (!customerId && authData?.accessToken) {
+              const userInfo = getUserInfoFromToken(authData.accessToken);
+              customerId = userInfo?.id;
+            }
+          } catch (e) {
+            console.error('Error parsing authData:', e);
+          }
+        }
+      }
+
+      if (!customerId) {
+        return { success: false, message: 'Customer ID is required' };
+      }
+
+      const resp = await cartClient.delete<ApiResponse<void>>(`/carts/remove/${variantId}/complete?customerId=${encodeURIComponent(customerId)}`);
       return { success: true, message: resp.data.message };
     } catch (err: any) {
       return { success: false, message: err?.message || 'Network error' };
     }
   }
 
-  async clearCart() {
+  async clearCart(customerId?: string) {
     try {
-      const resp = await cartClient.delete<ApiResponse<void>>('/carts');
+      // Lấy customerId từ auth nếu chưa có
+      if (!customerId) {
+        const authDataStr = localStorage.getItem('authData');
+        if (authDataStr) {
+          try {
+            const authData = JSON.parse(authDataStr);
+            customerId = authData?.user?.id;
+            if (!customerId && authData?.accessToken) {
+              const userInfo = getUserInfoFromToken(authData.accessToken);
+              customerId = userInfo?.id;
+            }
+          } catch (e) {
+            console.error('Error parsing authData:', e);
+          }
+        }
+      }
+
+      if (!customerId) {
+        return { success: false, message: 'Customer ID is required' };
+      }
+
+      const resp = await cartClient.delete<ApiResponse<void>>(`/carts/clear?customerId=${encodeURIComponent(customerId)}`);
       return { success: true, message: resp.data.message };
     } catch (err: any) {
       return { success: false, message: err?.message || 'Network error' };
