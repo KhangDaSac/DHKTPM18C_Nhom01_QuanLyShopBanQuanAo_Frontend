@@ -82,6 +82,18 @@ export const API_ENDPOINTS = {
         BY_ID: (id: number) => `/addresses/${id}`,
         BY_CUSTOMER: (customerId: string) => `/addresses/customer/${customerId}`,
     },
+
+    // ==================== CHECKOUT ====================
+    CHECKOUT: {
+        PROCESS: '/checkout',
+        AVAILABLE_PROMOTIONS: (customerId: string) => `/checkout/promotions?customerId=${customerId}`,
+    },
+
+    // ==================== CUSTOMERS ====================
+    CUSTOMERS: {
+        BASE: '/customers',
+        BY_ID: (userId: string) => `/customers/${userId}`,
+    },
 } as const;
 
 export type ApiEndpoints = typeof API_ENDPOINTS;
