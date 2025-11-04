@@ -1,11 +1,31 @@
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircleIcon } from 'lucide-react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { FiCheckCircle, FiPackage, FiPhone, FiMapPin, FiCreditCard, FiDollarSign, FiShoppingBag, FiHome, FiList, FiInfo } from 'react-icons/fi';
+import styles from './style-simple.module.css';
 
 const OrderSuccessPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { orderId } = useParams();
     const orderData = location.state?.orderData;
+
+    // Debug: Log order data
+    React.useEffect(() => {
+        console.log('📦 Order Success Page - Order Data:', orderData);
+        if (orderData?.orderItems) {
+            console.log('📦 Order Items:', orderData.orderItems);
+            orderData.orderItems.forEach((item: any, index: number) => {
+                console.log(`Item ${index}:`, {
+                    productName: item.productName,
+                    price: item.price,
+                    unitPrice: item.unitPrice,
+                    quantity: item.quantity,
+                    imageUrl: item.imageUrl,
+                    productImage: item.productImage
+                });
+            });
+        }
+    }, [orderData]);
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('vi-VN', {
@@ -14,64 +34,163 @@ const OrderSuccessPage: React.FC = () => {
         }).format(amount);
     };
 
+    const getPaymentMethodText = (method: string) => {
+        switch(method) {
+            case 'CASH_ON_DELIVERY':
+                return 'Thanh toán khi nhận hàng (COD)';
+            case 'BANK_TRANSFER':
+                return 'Chuyển khoản ngân hàng';
+            case 'E_WALLET':
+                return 'Ví điện tử';
+            default:
+                return method;
+        }
+    };
+
     return (
-        <div className="container mx-auto px-4 py-12">
-            <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+        <div className={styles['success-page']}>
+            <div className={styles['breadcrumb']}>
+                Trang chủ &nbsp;&gt;&nbsp;
+                <span className={styles['current']}> Đặt hàng thành công</span>
+            </div>
+
+            <div className={styles['success-card']}>
                 {/* Success Icon */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
-                        <CheckCircleIcon className="w-12 h-12 text-green-500" />
-                    </div>
-                    <h1 className="text-3xl font-bold text-green-600 mb-2">Đặt hàng thành công!</h1>
-                    <p className="text-gray-600">Cảm ơn bạn đã đặt hàng tại ModaMint</p>
+                <div className={styles['success-icon-wrapper']}>
+                    <FiCheckCircle className={styles['success-icon']} />
                 </div>
 
-                {/* Order Info */}
+                <h1 className={styles['success-title']}>Đặt hàng thành công!</h1>
+                <p className={styles['success-subtitle']}>
+                    Cảm ơn bạn đã tin tưởng và mua sắm tại <strong>ModaMint</strong>
+                </p>
+
+                {/* Order Summary */}
                 {orderData && (
-                    <div className="border-t border-b py-6 mb-6 space-y-3">
-                        <div className="flex justify-between">
-                            <span className="font-medium">Mã đơn hàng:</span>
-                            <span className="text-orange-500 font-bold">{orderData.orderCode}</span>
+                    <div className={styles['order-summary']}>
+                        <div className={styles['order-header']}>
+                            <h2>Thông tin đơn hàng</h2>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="font-medium">Tổng tiền:</span>
-                            <span className="text-xl font-bold text-orange-500">
-                                {formatCurrency(orderData.totalAmount)}
-                            </span>
+
+                        <div className={styles['order-details']}>
+                            <div className={styles['detail-row']}>
+                                <span className={styles['detail-label']}>
+                                    <FiPackage className={styles['icon']} />
+                                    Mã đơn hàng
+                                </span>
+                                <span className={styles['detail-value'] + ' ' + styles['highlight']}>
+                                    {orderData.orderCode || `#${orderId}`}
+                                </span>
+                            </div>
+
+                            <div className={styles['detail-row']}>
+                                <span className={styles['detail-label']}>
+                                    <FiPhone className={styles['icon']} />
+                                    Số điện thoại
+                                </span>
+                                <span className={styles['detail-value']}>
+                                    {orderData.customerPhone}
+                                </span>
+                            </div>
+
+                            <div className={styles['detail-row']}>
+                                <span className={styles['detail-label']}>
+                                    <FiMapPin className={styles['icon']} />
+                                    Địa chỉ giao hàng
+                                </span>
+                                <span className={styles['detail-value'] + ' ' + styles['address']}>
+                                    {orderData.shippingAddress?.fullAddress}
+                                </span>
+                            </div>
+
+                            <div className={styles['detail-row']}>
+                                <span className={styles['detail-label']}>
+                                    <FiCreditCard className={styles['icon']} />
+                                    Phương thức thanh toán
+                                </span>
+                                <span className={styles['detail-value']}>
+                                    {getPaymentMethodText(orderData.paymentMethod)}
+                                </span>
+                            </div>
+
+                            <div className={styles['divider']}></div>
+
+                            <div className={styles['detail-row'] + ' ' + styles['total']}>
+                                <span className={styles['detail-label']}>
+                                    <FiDollarSign className={styles['icon']} />
+                                    Tổng thanh toán
+                                </span>
+                                <span className={styles['detail-value'] + ' ' + styles['total-amount']}>
+                                    {formatCurrency(orderData.totalAmount)}
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="font-medium">Phương thức thanh toán:</span>
-                            <span>{orderData.paymentMethod === 'COD' ? 'Thanh toán khi nhận hàng' : orderData.paymentMethod}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="font-medium">Địa chỉ giao hàng:</span>
-                            <span className="text-right">{orderData.shippingAddress?.fullAddress}</span>
-                        </div>
+
+                        {/* Order Items */}
+                        {orderData.orderItems && orderData.orderItems.length > 0 && (
+                            <div className={styles['order-items']}>
+                                <h3>Sản phẩm đã đặt ({orderData.orderItems.length})</h3>
+                                <div className={styles['items-list']}>
+                                    {orderData.orderItems.map((item: any, index: number) => (
+                                        <div key={index} className={styles['item']}>
+                                            <img 
+                                                src={item.productImage || item.imageUrl || '/placeholder.jpg'} 
+                                                alt={item.productName} 
+                                                className={styles['item-image']} 
+                                            />
+                                            <div className={styles['item-info']}>
+                                                <h4 className={styles['item-name']}>{item.productName}</h4>
+                                                <p className={styles['item-variant']}>
+                                                    {item.size} / {item.color}
+                                                </p>
+                                                <p className={styles['item-quantity']}>
+                                                    Số lượng: {item.quantity}
+                                                </p>
+                                            </div>
+                                            <div className={styles['item-price']}>
+                                                {formatCurrency((item.price || item.unitPrice || 0) * (item.quantity || 1))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
-                {/* Actions */}
-                <div className="space-y-3">
+                {/* Action Buttons */}
+                <div className={styles['actions']}>
                     <button
-                        onClick={() => navigate('/profile/orders')}
-                        className="w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 font-semibold"
+                        onClick={() => navigate('/profile/order')}
+                        className={styles['btn-primary']}
                     >
-                        Xem đơn hàng
+                        <FiList /> Xem đơn hàng của tôi
                     </button>
                     <button
                         onClick={() => navigate('/products')}
-                        className="w-full border border-orange-500 text-orange-500 py-3 rounded-lg hover:bg-orange-50 font-semibold"
+                        className={styles['btn-secondary']}
                     >
-                        Tiếp tục mua sắm
+                        <FiShoppingBag /> Tiếp tục mua sắm
+                    </button>
+                    <button
+                        onClick={() => navigate('/')}
+                        className={styles['btn-outline']}
+                    >
+                        <FiHome /> Về trang chủ
                     </button>
                 </div>
 
-                {/* Note */}
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-gray-700">
-                        <strong>Lưu ý:</strong> Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất để xác nhận đơn hàng. 
-                        Vui lòng kiểm tra email hoặc số điện thoại đã đăng ký.
-                    </p>
+                {/* Info Box */}
+                <div className={styles['info-box']}>
+                    <FiInfo className={styles['info-icon']} />
+                    <div className={styles['info-content']}>
+                        <h4>Lưu ý giao hàng</h4>
+                        <ul>
+                            <li>Đơn hàng sẽ được xử lý trong vòng 24h</li>
+                            <li>Thời gian giao hàng dự kiến: 3-5 ngày làm việc</li>
+                            <li>Vui lòng kiểm tra hàng trước khi thanh toán</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
