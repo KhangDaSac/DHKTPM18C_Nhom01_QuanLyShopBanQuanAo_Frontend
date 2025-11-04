@@ -3,10 +3,10 @@ import { API_ENDPOINTS } from '../../api/endpoints';
 
 export interface CheckoutRequest {
     customerId: string;
-    shippingAddressId: number;
+    shippingAddressId: number; // Required - must create address first if new
     percentagePromotionCode?: string;
     amountPromotionCode?: string;
-    paymentMethod: 'COD' | 'BANK_TRANSFER' | 'E_WALLET';
+    paymentMethod: 'CASH_ON_DELIVERY' | 'BANK_TRANSFER' | 'E_WALLET';
     phone?: string;
     note?: string;
 }
@@ -115,5 +115,26 @@ export const getCustomerAddresses = async (customerId: string): Promise<AddressR
     } catch (error) {
         console.error('Error fetching customer addresses:', error);
         return [];
+    }
+};
+
+/**
+ * Tạo địa chỉ mới cho customer
+ */
+export interface CreateAddressRequest {
+    customerId: string;
+    city: string;
+    district: string;
+    ward: string;
+    addressDetail: string;
+}
+
+export const createAddress = async (request: CreateAddressRequest): Promise<AddressResponse> => {
+    try {
+        const response = await apiClient.post(API_ENDPOINTS.ADDRESSES.BASE, request);
+        return response.data.result;
+    } catch (error) {
+        console.error('Error creating address:', error);
+        throw error;
     }
 };
