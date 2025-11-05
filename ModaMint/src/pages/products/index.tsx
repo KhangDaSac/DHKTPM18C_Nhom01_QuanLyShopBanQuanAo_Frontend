@@ -10,7 +10,6 @@ import { useAuth } from '@/contexts/authContext';
 import { productVariantService } from '@/services/productVariant';
 import BrandCarousel from '@/components/product-list/BrandCarousel';
 
-// Mock data (replace with API calls later)
 interface Product {
   id: number;
   name: string;
@@ -22,11 +21,25 @@ interface Product {
   category: string;
   color?: string;
   size?: string[];
-  variantId?: number; // ID của product variant để thêm vào giỏ hàng
+  variantId?: number;
 }
 
-// Legacy mock data - not currently used
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// Price range mapping for filter
+const PRICE_RANGES: Record<string, { min?: number; max?: number }> = {
+  'p1': { min: 0, max: 200000 },
+  'p2': { min: 200000, max: 500000 },
+  'p3': { min: 500000, max: 700000 },
+  'p4': { min: 700000, max: 1000000 },
+  'p5': { min: 1000000 }
+};
+
+// Color name to hex mapping
+const COLOR_NAME_MAP: Record<string, string> = {
+  '#ffffff': 'Trắng',
+  '#0000ff': 'Xanh',
+  '#000000': 'Đen',
+  '#ff0000': 'Đỏ'
+};
 
 const PAGE_SIZE = 12;
 
@@ -34,35 +47,87 @@ const ProductList: React.FC = () => {
   const [sort, setSort] = useState<string>('default');
   const [page, setPage] = useState<number>(1);
   const [brand, setBrand] = useState<number | undefined>(undefined);
-  const [filters, setFilters] = useState<{ prices: string[]; colors: string[]; sizes: string[] }>({ prices: [], colors: [], sizes: [] });
+  const [category, setCategory] = useState<string | undefined>(undefined);
+  const [filters, setFilters] = useState<{ prices: string[]; colors: string[]; sizes: string[] }>({ 
+    prices: [], 
+    colors: [], 
+    sizes: [] 
+  });
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
 
+  // Fetch products with filters from backend
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await axios.get<{ code: number; result: any[]; message: string }>("http://localhost:8080/api/v1/products");
+      setError(null);
 
-      // Debug: Log response để xem cấu trúc dữ liệu
+      // Build query parameters
+      const params = new URLSearchParams();
+      
+      if (brand) {
+        params.append('brandId', brand.toString());
+      }
+      
+      if (category) {
+        params.append('categoryId', category);
+      }
+      
+      // Handle price ranges
+      if (filters.prices.length > 0) {
+        const priceRanges = filters.prices.map(p => PRICE_RANGES[p]);
+        const minPrice = Math.min(...priceRanges.map(r => r.min ?? 0));
+        const maxPrice = Math.max(...priceRanges.map(r => r.max ?? Number.MAX_SAFE_INTEGER));
+        
+        if (minPrice > 0) {
+          params.append('minPrice', minPrice.toString());
+        }
+        if (maxPrice < Number.MAX_SAFE_INTEGER) {
+          params.append('maxPrice', maxPrice.toString());
+        }
+      }
+      
+      // Handle colors - convert hex to color names
+      if (filters.colors.length > 0) {
+        filters.colors.forEach(hex => {
+          const colorName = COLOR_NAME_MAP[hex];
+          if (colorName) {
+            params.append('colors', colorName);
+          }
+        });
+      }
+      
+      // Handle sizes
+      if (filters.sizes.length > 0) {
+        filters.sizes.forEach(size => {
+          params.append('sizes', size);
+        });
+      }
+
+      const endpoint = params.toString() 
+        ? `http://localhost:8080/api/v1/products/filter?${params.toString()}`
+        : 'http://localhost:8080/api/v1/products';
+
+      console.log('🔍 Fetching with filters:', endpoint);
+      
+      const res = await axios.get<{ code: number; result: any[]; message: string }>(endpoint);
+
       console.log('📦 API Response:', res.data);
-      console.log('📦 First product:', res.data.result?.[0]);
 
-      // Map dữ liệu từ API sang format Product local
+      // Map data from API
       const mappedProducts: Product[] = (res.data.result ?? []).map((p: any) => {
-        // Thử lấy variantId từ nhiều nguồn khác nhau
         let variantId: number | undefined = undefined;
         let variantPrice: number | undefined = undefined;
         let variantDiscount: number | undefined = undefined;
 
-        // Lấy thông tin từ variant đầu tiên nếu có
         if (p.productVariants && Array.isArray(p.productVariants) && p.productVariants.length > 0) {
           const firstVariant = p.productVariants[0];
           variantId = firstVariant.id;
           variantPrice = firstVariant.price;
-          variantDiscount = firstVariant.discount; // Lấy discount từ variant
+          variantDiscount = firstVariant.discount;
         } else if (p.variants && Array.isArray(p.variants) && p.variants.length > 0) {
           const firstVariant = p.variants[0];
           variantId = firstVariant.id;
@@ -72,26 +137,12 @@ const ProductList: React.FC = () => {
           variantId = p.variantId;
         }
 
-        // Tính originalPrice và currentPrice dựa trên variant nếu có
         const basePrice = variantPrice ?? p.price ?? 0;
         const originalPriceNum = basePrice;
-        // Nếu có discount từ variant, tính currentPrice từ đó
         let currentPriceNum = basePrice;
+        
         if (variantDiscount && variantDiscount > 0 && basePrice > 0) {
           currentPriceNum = Math.round(basePrice * (1 - variantDiscount / 100));
-        } else {
-          currentPriceNum = basePrice; // Không có discount thì giá bằng nhau
-        }
-
-        // Debug log for first product
-        if (p.id === res.data.result?.[0]?.id) {
-          console.log('🔍 Mapping first product:', {
-            'p.images': p.images,
-            'p.price': p.price,
-            'variantPrice': variantPrice,
-            'basePrice': basePrice,
-            'imageResult': p.images && p.images.length > 0 ? p.images[0] : 'NO IMAGE'
-          });
         }
 
         return {
@@ -108,15 +159,17 @@ const ProductList: React.FC = () => {
           variantId: variantId
         };
       });
+      
       setProducts(mappedProducts);
     } catch (error) {
+      console.error('❌ Error fetching products:', error);
       setError("Không thể tải danh sách sản phẩm");
     } finally {
       setLoading(false);
     }
   };
 
-  // Xử lý thêm vào giỏ hàng
+  // Handle add to cart
   const handleAddToCart = async (product: any) => {
     console.log('🛒 Adding to cart, product:', product);
 
@@ -125,11 +178,9 @@ const ProductList: React.FC = () => {
       return;
     }
 
-    // Lấy variantId từ product
     let variantId = product.variantId;
     console.log('🔑 variantId from product:', variantId);
 
-    // Nếu không có variantId, thử lấy từ API
     if (!variantId) {
       console.log('⚠️ No variantId, fetching from API for product:', product.id);
       try {
@@ -164,8 +215,6 @@ const ProductList: React.FC = () => {
 
       if (result.success) {
         toast.success('Đã thêm sản phẩm vào giỏ hàng!');
-        // Dispatch event to notify cart component to reload
-        // Use CustomEvent để có thể pass data nếu cần
         const event = new CustomEvent('cartUpdated', {
           detail: { timestamp: Date.now() }
         });
@@ -178,25 +227,15 @@ const ProductList: React.FC = () => {
     }
   };
 
+  // Fetch products when filters change
   useEffect(() => {
     fetchProducts();
-  }, []);
+    setPage(1); // Reset to page 1 when filters change
+  }, [brand, category, filters]);
 
-  // const filtered = useMemo(() => {
-  //   return products.filter((p) => {
-  //     if (category && !p.category?.toLowerCase().includes(category.toLowerCase())) return false;
-  //     return true;
-  //   });
-  // }, [products, category, filters]);
-
-  const filtered = useMemo(() => {
-    return products.filter((p) => {
-      // if (category && !p.category?.toLowerCase().includes(category.toLowerCase())) return false;
-      return true;
-    });
-  }, [products, filters]);
+  // Client-side sorting only
   const sorted = useMemo(() => {
-    const copy = [...filtered];
+    const copy = [...products];
     switch (sort) {
       case "az":
         return copy.sort((a, b) => a.name.localeCompare(b.name));
@@ -209,7 +248,7 @@ const ProductList: React.FC = () => {
       default:
         return copy;
     }
-  }, [filtered, sort]);
+  }, [products, sort]);
 
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE) || 1;
   const pageItems = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -220,18 +259,14 @@ const ProductList: React.FC = () => {
         <BrandCarousel onSelect={(id: number) => setBrand(id)} />
       </div>
 
-      {/* Container mới chứa Main Content và Sidebar, xếp theo chiều ngang */}
       <div style={{ display: 'flex' }}>
-
-        {/* --- PHẦN NỘI DUNG CHÍNH (Bên trái) --- */}
         <main style={{ flex: 3, paddingRight: 20 }}>
-
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <h4>
               Tất cả sản phẩm
               {!loading && (
                 <span style={{ color: '#666', fontSize: '14px', fontWeight: 'normal' }}>
-                  ({filtered.length} sản phẩm)
+                  ({products.length} sản phẩm)
                 </span>
               )}
             </h4>
@@ -258,7 +293,6 @@ const ProductList: React.FC = () => {
             </div>
           </div>
 
-          {/* Hiển thị thông báo lỗi nếu có */}
           {error && (
             <div style={{
               backgroundColor: '#fff3cd',
@@ -272,7 +306,6 @@ const ProductList: React.FC = () => {
             </div>
           )}
 
-          {/* Loading state */}
           {loading ? (
             <div style={{
               display: 'grid',
@@ -297,18 +330,15 @@ const ProductList: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 20, minHeight: 1102 }}>
               {pageItems.length > 0 ? (
                 pageItems
-                  .filter(p => p && p.id) // Lọc bỏ các item undefined hoặc không có id
+                  .filter(p => p && p.id)
                   .map(p => {
-                    // Tính toán giá và discount
                     const originalPriceNum = p.originalPrice ?? p.price ?? 0;
                     const currentPriceNum = p.currentPrice ?? p.price ?? 0;
 
-                    // Format giá với đuôi "đ"
                     const formatPrice = (price: number): string => {
                       return `${price.toLocaleString('vi-VN')}đ`;
                     };
 
-                    // Tính % giảm giá nếu có giảm
                     let discount: string | undefined = undefined;
                     if (originalPriceNum > currentPriceNum && originalPriceNum > 0) {
                       const discountPercent = Math.round(((originalPriceNum - currentPriceNum) / originalPriceNum) * 100);
@@ -317,7 +347,6 @@ const ProductList: React.FC = () => {
                       }
                     }
 
-                    // Convert Product to ProductCardData format
                     const productCardData = {
                       ...p,
                       originalPrice: formatPrice(originalPriceNum),
@@ -327,6 +356,7 @@ const ProductList: React.FC = () => {
                       hoverImage: p.hoverImage || p.image || '',
                       variantId: p.variantId
                     };
+                    
                     return (
                       <ProductCard
                         key={p.id}
@@ -353,12 +383,11 @@ const ProductList: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <Pagination page={page} totalPages={totalPages} onPage={(p) => setPage(p)} />
           </div>
-
         </main>
 
         <aside style={{ flex: 1, maxWidth: 260 }}>
           <Sidebar
-            // onCategory={setCategory}
+            onCategory={setCategory}
             filtersSelected={filters}
             onFiltersChange={setFilters}
           />
