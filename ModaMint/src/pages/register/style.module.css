@@ -1,0 +1,452 @@
+/* Register Page - BEM Structure */
+
+.register__page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 20px;
+    background-color: #f9f9f9;
+    min-height: 70vh;
+}
+
+.register__container {
+    width: 100%;
+    max-width: 500px;
+    padding: 40px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.register__container:hover {
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+}
+
+/* Header Section */
+.register__header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.register__title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ff6347;
+    margin-bottom: 10px;
+}
+
+.register__subtitle {
+    font-size: 16px;
+    color: #666;
+}
+
+/* Register Options (tabs) */
+.register__options {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 25px;
+    gap: 20px;
+    border-bottom: 1px solid #eaeaea;
+    padding-bottom: 15px;
+}
+
+.register__option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 20px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    position: relative;
+    color: #666;
+}
+
+.register__option:hover {
+    background-color: rgba(255, 99, 71, 0.05);
+    color: #ff6347;
+}
+
+.register__option.active {
+    color: #ff6347;
+}
+
+.register__option.active::after {
+    content: '';
+    position: absolute;
+    bottom: -16px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: #ff6347;
+    border-radius: 3px 3px 0 0;
+}
+
+.register__option-icon {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+/* Form Section */
+.register__form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Form Layout */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group input {
+    padding: 12px 16px;
+    border: 1px solid #e5e5e5;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background-color: #fff;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #ff6347;
+    box-shadow: 0 0 0 2px rgba(255, 99, 71, 0.2);
+}
+
+.form-group input:disabled {
+    background-color: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+    border-color: #e0e0e0;
+}
+
+.form-group small {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* Advanced Fields Toggle */
+.advanced-fields-toggle {
+    margin: 15px 0;
+}
+
+.toggle-button {
+    background: none;
+    border: none;
+    color: #ff6347;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 0;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.toggle-button:hover {
+    color: #e55a40;
+}
+
+.advanced-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 15px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+/* Terms Agreement */
+.terms-agreement {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.terms-agreement input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #ff6347;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.terms-agreement label {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+.terms-link {
+    color: #ff6347;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.terms-link:hover {
+    text-decoration: underline;
+}
+
+/* Register Button */
+.register__button {
+    background-color: #ff6347;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 15px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.register__button:hover {
+    background-color: #e55a40;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 99, 71, 0.3);
+}
+
+.register__button:active {
+    transform: translateY(0);
+}
+
+.register__button:disabled {
+    background-color: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Facebook Registration Section */
+.register__facebook-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.register__facebook-info {
+    text-align: center;
+    color: #666;
+    font-size: 15px;
+    margin: 10px 0;
+}
+
+.register__facebook-button {
+    background-color: #1877f2;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 15px 14px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.register__facebook-button:hover {
+    background-color: #166fe5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+}
+
+.register__facebook-button:active {
+    transform: translateY(0);
+}
+
+.register__facebook-icon {
+    font-size: 20px;
+}
+
+/* Google Registration Section */
+.register__google-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.register__google-info {
+    text-align: center;
+    color: #666;
+    font-size: 15px;
+    margin: 10px 0;
+    line-height: 1.4;
+}
+
+.register__google-button {
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #dadce0;
+    border-radius: 5px;
+    padding: 15px 14px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.register__google-button:hover {
+    background-color: #f8f9fa;
+    border-color: #c6c8ca;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.register__google-button:active {
+    background-color: #f1f3f4;
+    transform: translateY(0);
+}
+
+.register__google-icon {
+    font-size: 20px;
+    color: #4285f4;
+}
+
+/* Footer Section */
+.register__footer {
+    margin-top: 25px;
+    text-align: center;
+    font-size: 15px;
+    color: #666;
+}
+
+.register__register-link {
+    color: #ff6347;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.register__register-link:hover {
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 576px) {
+    .register__container {
+        padding: 25px;
+        margin: 0 10px;
+    }
+
+    .register__title {
+        font-size: 28px;
+    }
+
+    .register__options {
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: space-around;
+    }
+
+    .register__option {
+        padding: 8px 12px;
+        min-width: 80px;
+    }
+
+    .register__option-icon {
+        font-size: 20px;
+    }
+
+    .register__button,
+    .register__facebook-button,
+    .register__google-button {
+        padding: 12px;
+        font-size: 15px;
+    }
+
+    .register__facebook-info,
+    .register__google-info {
+        font-size: 14px;
+        margin: 5px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .register__container {
+        padding: 20px 15px;
+        margin: 0 5px;
+    }
+
+    .register__header {
+        padding: 20px 15px;
+        margin-bottom: 30px;
+    }
+
+    .register__title {
+        font-size: 24px;
+        letter-spacing: 0.5px;
+    }
+
+    .register__subtitle {
+        font-size: 16px;
+    }
+
+    .form-group input {
+        padding: 10px 12px;
+        font-size: 16px;
+    }
+
+    .register__button,
+    .register__facebook-button,
+    .register__google-button {
+        padding: 12px;
+        font-size: 15px;
+    }
+
+    .terms-agreement {
+        padding: 12px;
+        font-size: 13px;
+    }
+
+    .advanced-fields {
+        padding: 15px;
+    }
+}
+

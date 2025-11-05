@@ -4,6 +4,7 @@ import {
     Button,
     Space,
     Tag,
+    Badge,
     Modal,
     Form,
     Input,
@@ -15,8 +16,9 @@ import {
     Statistic,
     Typography,
     Popconfirm,
-    Image,
-    ColorPicker
+    Spin,
+    Alert,
+    Checkbox
 } from 'antd';
 import {
     PlusOutlined,
@@ -26,370 +28,251 @@ import {
     DownloadOutlined,
     FolderOutlined,
     TagsOutlined,
-    AppstoreOutlined
+    AppstoreOutlined,
+    ReloadOutlined,
+    RestOutlined,
+    ExclamationCircleOutlined,
+    RightCircleTwoTone,
+    DownCircleTwoTone
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import './style.css';
 import '../../components/common-styles.css';
+import { categoryService, type CategoryRequest } from '../../../services/category';
+import { useProducts } from '../../../hooks/useProducts';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
-const { TextArea } = Input;
 
-// Interface cho Category
+// Interface cho Category - phù hợp với API backend
 interface Category {
     id: number;
     name: string;
-    slug: string;
-    description: string;
-    image: string;
-    parentId: number | null;
-    level: number;
-    productCount: number;
-    status: 'active' | 'inactive';
-    color: string;
-    sortOrder: number;
-    createdAt: string;
-    updatedAt: string;
+    isActive: boolean;
+    createAt?: string;
+    updateAt?: string;
+    // Thêm các trường để hiển thị (mock data)
+    productCount?: number;
+    parentId?: number;
+    parentName?: string;
 }
 
-// Mock data cho categories
-const initialCategories: Category[] = [
-    {
-        id: 1,
-        name: 'Thời trang nam',
-        slug: 'thoi-trang-nam',
-        description: 'Các sản phẩm thời trang dành cho nam giới',
-        image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=200',
-        parentId: null,
-        level: 0,
-        productCount: 125,
-        status: 'active',
-        color: '#1890ff',
-        sortOrder: 1,
-        createdAt: '2024-01-15',
-        updatedAt: '2024-12-01'
-    },
-    {
-        id: 2,
-        name: 'Áo sơ mi nam',
-        slug: 'ao-so-mi-nam',
-        description: 'Áo sơ mi công sở và casual cho nam',
-        image: 'https://images.unsplash.com/photo-1602810316498-ab67cf68c8e1?w=200',
-        parentId: 1,
-        level: 1,
-        productCount: 45,
-        status: 'active',
-        color: '#52c41a',
-        sortOrder: 1,
-        createdAt: '2024-01-16',
-        updatedAt: '2024-12-01'
-    },
-    {
-        id: 3,
-        name: 'Quần jean nam',
-        slug: 'quan-jean-nam',
-        description: 'Quần jean thời trang cho nam',
-        image: 'https://images.unsplash.com/photo-1542272454315-7e475c0d6e99?w=200',
-        parentId: 1,
-        level: 1,
-        productCount: 38,
-        status: 'active',
-        color: '#722ed1',
-        sortOrder: 2,
-        createdAt: '2024-01-16',
-        updatedAt: '2024-12-01'
-    },
-    {
-        id: 4,
-        name: 'Thời trang nữ',
-        slug: 'thoi-trang-nu',
-        description: 'Các sản phẩm thời trang dành cho nữ giới',
-        image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=200',
-        parentId: null,
-        level: 0,
-        productCount: 156,
-        status: 'active',
-        color: '#eb2f96',
-        sortOrder: 2,
-        createdAt: '2024-01-15',
-        updatedAt: '2024-12-01'
-    },
-    {
-        id: 5,
-        name: 'Váy nữ',
-        slug: 'vay-nu',
-        description: 'Váy công sở và dạo phố cho nữ',
-        image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=200',
-        parentId: 4,
-        level: 1,
-        productCount: 42,
-        status: 'active',
-        color: '#f759ab',
-        sortOrder: 1,
-        createdAt: '2024-01-16',
-        updatedAt: '2024-12-01'
-    },
-    {
-        id: 6,
-        name: 'Áo kiểu nữ',
-        slug: 'ao-kieu-nu',
-        description: 'Áo kiểu thời trang cho nữ',
-        image: 'https://images.unsplash.com/photo-1564593165-e0c5e77f9b71?w=200',
-        parentId: 4,
-        level: 1,
-        productCount: 35,
-        status: 'active',
-        color: '#faad14',
-        sortOrder: 2,
-        createdAt: '2024-01-16',
-        updatedAt: '2024-12-01'
-    },
-    {
-        id: 7,
-        name: 'Phụ kiện',
-        slug: 'phu-kien',
-        description: 'Phụ kiện thời trang và trang sức',
-        image: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=200',
-        parentId: null,
-        level: 0,
-        productCount: 89,
-        status: 'active',
-        color: '#13c2c2',
-        sortOrder: 3,
-        createdAt: '2024-01-15',
-        updatedAt: '2024-12-01'
-    },
-    {
-        id: 8,
-        name: 'Túi xách',
-        slug: 'tui-xach',
-        description: 'Túi xách, balo và ví',
-        image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200',
-        parentId: 7,
-        level: 1,
-        productCount: 28,
-        status: 'active',
-        color: '#fa8c16',
-        sortOrder: 1,
-        createdAt: '2024-01-16',
-        updatedAt: '2024-12-01'
-    },
-    {
-        id: 9,
-        name: 'Giày dép',
-        slug: 'giay-dep',
-        description: 'Giày thể thao, giày cao gót, dép',
-        image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200',
-        parentId: null,
-        level: 0,
-        productCount: 73,
-        status: 'active',
-        color: '#a0d911',
-        sortOrder: 4,
-        createdAt: '2024-01-15',
-        updatedAt: '2024-12-01'
-    },
-    {
-        id: 10,
-        name: 'Trang sức',
-        slug: 'trang-suc',
-        description: 'Nhẫn, dây chuyền, bông tai',
-        image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=200',
-        parentId: 7,
-        level: 1,
-        productCount: 19,
-        status: 'inactive',
-        color: '#d46b08',
-        sortOrder: 2,
-        createdAt: '2024-01-16',
-        updatedAt: '2024-12-01'
-    }
-];
+// Data sẽ được load từ API
 
 const Categories: React.FC = () => {
-    const [categories, setCategories] = useState<Category[]>(initialCategories);
+    // State cho categories từ API
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    
+    // Thêm state tree
+    type CategoryTree = Category & { children?: CategoryTree[]; level?: number };
+    const [categoryTree, setCategoryTree] = useState<CategoryTree[]>([]);
+    
+    // State cho modals
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isViewModalVisible, setIsViewModalVisible] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [viewingCategory, setViewingCategory] = useState<Category | null>(null);
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
 
-    // States cho filtering
+    // States cho bulk actions và filtering  
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-    const [filterStatus, setFilterStatus] = useState<string>('all');
-    const [filterLevel, setFilterLevel] = useState<string>('all');
+    const [showDeleted, setShowDeleted] = useState(false);
+    const [searchText, setSearchText] = useState<string>('');
 
-    // Inject CSS để fix table spacing
-    useEffect(() => {
-        const styleId = 'custom-categories-table-fix';
-        let existingStyle = document.getElementById(styleId);
-
-        if (existingStyle) {
-            existingStyle.remove();
-        }
-
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = `
-            .custom-categories-table .ant-table-thead {
-                position: sticky !important;
-                top: 0 !important;
-                z-index: 2 !important;
-            }
-            
-            .custom-categories-table .ant-table-tbody {
-                margin-top: 0 !important;
-                padding-top: 0 !important;
-            }
-            
-            .custom-categories-table .ant-table-thead > tr > th {
-                vertical-align: middle !important;
-                text-align: center !important;
-                font-weight: 600 !important;
-                padding: 8px 16px !important;
-                border-bottom: 1px solid #f0f0f0 !important;
-                background-color: #fafafa !important;
-                height: 40px !important;
-                margin: 0 !important;
-                border-top: none !important;
-            }
-            
-            .custom-categories-table .ant-table-tbody > tr > td {
-                vertical-align: middle !important;
-                padding: 8px 16px !important;
-                height: 60px !important;
-                border-bottom: 1px solid #f0f0f0 !important;
-                margin: 0 !important;
-                border-top: none !important;
-            }
-            
-            .custom-categories-table .ant-table-container {
-                border: none !important;
-            }
-            
-            .custom-categories-table .ant-table {
-                border-collapse: collapse !important;
-                border-spacing: 0 !important;
-            }
-            
-            .custom-categories-table .ant-table-thead > tr > th.ant-table-selection-column {
-                padding: 8px !important;
-                width: 50px !important;
-                text-align: center !important;
-                background-color: #fafafa !important;
-            }
-            
-            .custom-categories-table .ant-table-tbody > tr > td.ant-table-selection-column {
-                padding: 8px !important;
-                width: 50px !important;
-                text-align: center !important;
-            }
-        `;
-
-        document.head.appendChild(style);
-
-        return () => {
-            const styleToRemove = document.getElementById(styleId);
-            if (styleToRemove) {
-                styleToRemove.remove();
-            }
-        };
-    }, []);
-
-    // Filtered categories
-    const filteredCategories = categories.filter(category => {
-        if (filterStatus !== 'all' && category.status !== filterStatus) return false;
-        if (filterLevel !== 'all' && category.level.toString() !== filterLevel) return false;
-        return true;
+    // State cho pagination
+    const [pagination, setPagination] = useState({
+        current: 1,
+        pageSize: 10,
+        total: 0
     });
 
-    // Statistics
-    const totalCategories = categories.length;
-    const activeCategories = categories.filter(c => c.status === 'active').length;
-    const parentCategories = categories.filter(c => c.level === 0).length;
-    const totalProducts = categories.reduce((sum, c) => sum + c.productCount, 0);
+    // Load categories từ API - Logic mới: Load tất cả categories rồi phân trang ở frontend
+    const loadCategories = async (page?: number, forceReload: boolean = false) => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Load tất cả categories từ API (không phân trang ở backend)
+            const result = await categoryService.getAllCategories();
+            
+            if (result.code === 1000 && result.result) {
+                setCategories(result.result);
 
-    // Get parent categories for select options
-    const parentCategoryOptions = categories
-        .filter(c => c.level === 0)
-        .map(c => ({ value: c.id, label: c.name }));
+                // Xây dựng cây danh mục từ parentId và điền parentName nếu thiếu
+                const idToNode = new Map<number, CategoryTree>();
+                result.result.forEach((c) => {
+                    idToNode.set(c.id, { ...c, children: [], level: 1 });
+                });
+                idToNode.forEach((node) => {
+                    if (!node.parentName && node.parentId && idToNode.has(node.parentId)) {
+                        node.parentName = idToNode.get(node.parentId)!.name;
+                    }
+                });
+                const roots: CategoryTree[] = [];
+                idToNode.forEach((node) => {
+                    if (node.parentId && idToNode.has(node.parentId)) {
+                        const parent = idToNode.get(node.parentId)!;
+                        if (!parent.children) parent.children = [];
+                        node.level = (parent.level || 1) + 1;
+                        parent.children.push(node);
+                    } else {
+                        node.level = 1;
+                        roots.push(node);
+                    }
+                });
+                const sortTree = (nodes: CategoryTree[]) => {
+                    nodes.sort((a, b) => a.name.localeCompare(b.name));
+                    nodes.forEach(n => n.children && sortTree(n.children));
+                };
+                sortTree(roots);
+                setCategoryTree(roots);
+                
+                // Tính toán pagination mới
+                const totalCategories = result.result.length;
+                const maxPage = Math.ceil(totalCategories / pagination.pageSize);
+                
+                // Điều chỉnh trang hiện tại nếu cần
+                let currentPage = page !== undefined ? page : pagination.current;
+                if (forceReload) {
+                    currentPage = 1;
+                }
+                if (currentPage > maxPage && maxPage > 0) {
+                    currentPage = maxPage;
+                }
+                
+                setPagination(prev => ({
+                    ...prev,
+                    current: currentPage,
+                    total: totalCategories
+                }));
+                
+            } else {
+                setError(result.message || 'Không thể tải danh sách danh mục');
+            }
+        } catch (err) {
+            setError('Lỗi kết nối đến server');
+            console.error('Error loading categories:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Refresh toàn bộ dữ liệu
+    const refreshData = () => {
+        loadCategories(1, true);
+    };
+
+    // Load categories khi component mount
+    useEffect(() => {
+        loadCategories();
+    }, []); // Chỉ load một lần khi component mount
+
+    // Lấy danh sách sản phẩm thật
+    const { products: allProducts } = useProducts();
+
+
+    // Filtered categories - Logic mới: hiển thị hoặc danh mục hoạt động hoặc danh mục ngừng hoạt động
+    const filteredCategories = categories.filter(c => {
+        // Nếu showDeleted = true: chỉ hiển thị danh mục ngừng hoạt động (!c.isActive)
+        // Nếu showDeleted = false: chỉ hiển thị danh mục hoạt động (c.isActive)
+        const activeCheck = showDeleted ? !c.isActive : c.isActive;
+        const searchCheck = !searchText || c.name.toLowerCase().includes(searchText.toLowerCase());
+        
+        return activeCheck && searchCheck;
+    });
+
+    // Xây dựng cây danh mục theo filter để hiển thị
+    const buildCategoryTreeWithProductCount = () => {
+        // Tạo bản đồ: categoryName => số sản phẩm trực tiếp
+        const productMap: Record<string, number> = {};
+        allProducts.forEach(p => {
+            if (p.categoryName in productMap) {
+                productMap[p.categoryName] += 1;
+            } else {
+                productMap[p.categoryName] = 1;
+            }
+        });
+        // Build cây, đồng thời cộng dồn sản phẩm cấp con lên cha
+        const idToNode = new Map<number, CategoryTree & { productCount?: number }>();
+        categories.forEach((c) => {
+            idToNode.set(c.id, { ...c, children: [], level: 1, productCount: productMap[c.name] || 0 });
+        });
+        idToNode.forEach((node) => {
+            if (!node.parentName && node.parentId && idToNode.has(node.parentId)) {
+                node.parentName = idToNode.get(node.parentId)!.name;
+            }
+        });
+        // Xây cấu trúc cây và cộng dồn productCount
+        const roots: (CategoryTree & { productCount?: number })[] = [];
+        idToNode.forEach((node) => {
+            if (node.parentId && idToNode.has(node.parentId)) {
+                const parent = idToNode.get(node.parentId)!;
+                if (!parent.children) parent.children = [];
+                node.level = (parent.level || 1) + 1;
+                parent.children.push(node);
+            } else {
+                node.level = 1;
+                roots.push(node);
+            }
+        });
+        // Hàm cộng dồn sp lên parent
+        const accumulate = (node: CategoryTree & { productCount?: number }): number => {
+            let total = node.productCount || 0;
+            if (node.children && node.children.length > 0) {
+                for (const child of node.children) {
+                    total += accumulate(child);
+                }
+            }
+            node.productCount = total;
+            return total;
+        };
+        roots.forEach(accumulate);
+        const sortTree = (nodes: (CategoryTree & { productCount?: number })[]) => {
+            nodes.sort((a, b) => a.name.localeCompare(b.name));
+            nodes.forEach(n => n.children && sortTree(n.children));
+        };
+        sortTree(roots);
+        return roots;
+    };
+    const filteredTree = buildCategoryTreeWithProductCount();
+
+    // Gán STT dạng phân cấp trực tiếp trên cây để dùng expandable
+    type SttCategory = CategoryTree & { sttLabel?: string };
+    const assignSttLabels = (nodes: CategoryTree[], prefix: string = ''): SttCategory[] => {
+        return nodes.map((node, idx) => {
+            const currentIndex = idx + 1;
+            const currentStt = prefix ? `${prefix}.${currentIndex}` : `${currentIndex}`;
+            const withStt: SttCategory = { ...node, sttLabel: currentStt };
+            if (node.children && node.children.length > 0) {
+                withStt.children = assignSttLabels(node.children, currentStt);
+            }
+            return withStt;
+        });
+    };
+    const sttTree: SttCategory[] = assignSttLabels(filteredTree);
+
+    // Statistics từ dữ liệu thực
+    const totalCategories = categories.length;
+    const activeCategories = categories.filter(c => c.isActive).length;
+    const inactiveCategories = categories.filter(c => !c.isActive).length;
+    const totalProducts = categories.reduce((sum, c) => sum + (c.productCount || 0), 0);
 
     // Table columns
     const columns = [
         {
-            title: 'Danh mục',
-            key: 'category',
-            width: 300,
-            render: (record: Category) => (
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '8px 0',
-                    minHeight: '60px'
-                }}>
-                    <Image
-                        src={record.image}
-                        alt={record.name}
-                        width={40}
-                        height={40}
-                        style={{
-                            borderRadius: '6px',
-                            objectFit: 'cover',
-                            flexShrink: 0
-                        }}
-                        preview={false}
-                    />
-                    <div style={{ flex: 1 }}>
-                        <div style={{
-                            fontWeight: 'bold',
-                            marginBottom: '4px',
-                            fontSize: '14px',
-                            paddingLeft: record.level * 20 + 'px'
-                        }}>
-                            {record.level > 0 && '└── '}
-                            {record.name}
-                            <div
-                                style={{
-                                    width: '8px',
-                                    height: '8px',
-                                    backgroundColor: record.color,
-                                    borderRadius: '50%',
-                                    display: 'inline-block',
-                                    marginLeft: '8px'
-                                }}
-                            />
-                        </div>
-                        <div style={{
-                            fontSize: '12px',
-                            color: '#666',
-                            marginBottom: '2px'
-                        }}>
-                            <AppstoreOutlined style={{ marginRight: '4px' }} />
-                            {record.slug}
-                        </div>
-                        <div style={{
-                            fontSize: '12px',
-                            color: '#999',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                        }}>
-                            {record.description}
-                        </div>
-                    </div>
-                </div>
-            ),
+            title: 'STT',
+            key: 'index',
+            width: 80,
+            align: 'center' as const,
+            render: (_: any, record: any) => record.sttLabel || '',
         },
         {
-            title: 'Cấp độ',
-            dataIndex: 'level',
-            key: 'level',
-            width: 100,
+            title: 'Danh mục cha',
+            key: 'parentLevel',
+            width: 120,
             align: 'center' as const,
-            render: (level: number) => (
+            render: (_: any, record: any) => (
                 <div style={{
                     padding: '8px 0',
                     minHeight: '60px',
@@ -397,11 +280,57 @@ const Categories: React.FC = () => {
                     alignItems: 'center',
                     justifyContent: 'center'
                 }}>
-                    <Tag color={level === 0 ? 'blue' : 'green'}>
-                        {level === 0 ? 'Chính' : `Cấp ${level}`}
-                    </Tag>
+                    <Tag style={{ fontSize: '12px' }}>Cấp {record.level || 1}</Tag>
                 </div>
             ),
+        },
+        {
+            title: 'Danh mục',
+            key: 'category',
+            width: 400,
+            render: (record: any) => (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '8px 0',
+                    minHeight: '60px',
+                    marginLeft: `${Math.max(0, (record.level || 1) - 1) * 20}px`
+                }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: '#f3f6ff', border: '1px solid #e6efff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <AppstoreOutlined style={{ fontSize: 20, color: '#3b82f6' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '14px' }}>
+                            {record.name}
+                            {record.level && (
+                                <Tag color={record.level === 1 ? 'blue' : record.level === 2 ? 'geekblue' : 'purple'} style={{ marginLeft: 8, fontSize: 11 }}>
+                                    Cấp {record.level}
+                                </Tag>
+                            )}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#9aa4b2', marginBottom: 2 }}>
+                            <span style={{ marginRight: 12 }}>ID: {record.id}</span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                            {record.description || 'Chưa có thông tin'}
+                        </div>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            title: 'Quan hệ',
+            key: 'relation',
+            width: 140,
+            align: 'center' as const,
+            render: (_: any, record: any) => (
+                <div style={{ padding: '8px 0', minHeight: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Tag color={record.level && record.level > 1 ? 'geekblue' : 'green'} style={{ fontSize: '12px' }}>
+                        {record.level && record.level > 1 ? 'Danh mục con' : 'Danh mục cha'}
+                    </Tag>
+                </div>
+            )
         },
         {
             title: 'Sản phẩm',
@@ -409,7 +338,7 @@ const Categories: React.FC = () => {
             key: 'productCount',
             width: 100,
             align: 'center' as const,
-            sorter: (a: Category, b: Category) => a.productCount - b.productCount,
+            sorter: (a: Category, b: Category) => (a.productCount || 0) - (b.productCount || 0),
             render: (count: number) => (
                 <div style={{
                     padding: '8px 0',
@@ -419,107 +348,90 @@ const Categories: React.FC = () => {
                     justifyContent: 'center'
                 }}>
                     <span style={{ fontWeight: 'bold', color: '#1890ff', fontSize: '14px' }}>
-                        {count}
+                        {count || 0}
                     </span>
                 </div>
             ),
         },
         {
-            title: 'Thứ tự',
-            dataIndex: 'sortOrder',
-            key: 'sortOrder',
-            width: 100,
-            align: 'center' as const,
-            sorter: (a: Category, b: Category) => a.sortOrder - b.sortOrder,
-            render: (order: number) => (
-                <div style={{
-                    padding: '8px 0',
-                    minHeight: '60px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <span style={{ fontSize: '14px' }}>{order}</span>
-                </div>
-            ),
-        },
-        {
             title: 'Trạng thái',
-            dataIndex: 'status',
-            key: 'status',
+            dataIndex: 'isActive',
+            key: 'isActive',
             width: 120,
             align: 'center' as const,
-            render: (status: string, record: Category) => {
-                const handleToggleStatus = () => {
-                    const newStatus = status === 'active' ? 'inactive' : 'active';
-                    setCategories(categories.map(c =>
-                        c.id === record.id ? { ...c, status: newStatus } : c
-                    ));
-                    message.success(`Đã cập nhật trạng thái danh mục`);
-                };
-
-                const getText = () => {
-                    switch (status) {
-                        case 'active': return 'Hoạt động';
-                        case 'inactive': return 'Tạm dừng';
-                        default: return status;
-                    }
-                };
-
-                return (
-                    <div className="status-button-container">
-                        <Button
-                            size="small"
-                            onClick={handleToggleStatus}
-                            className={`status-button ${status}`}
-                        >
-                            {getText()}
-                        </Button>
-                    </div>
-                );
-            },
+            render: (isActive: boolean) => (
+                <Badge 
+                    status={isActive ? 'success' : 'default'} 
+                    text={isActive ? 'Hoạt động' : 'Ngừng hoạt động'} 
+                />
+            ),
         },
         {
             title: 'Thao tác',
             key: 'actions',
-            width: 150,
+            width: 180,
             align: 'center' as const,
             render: (record: Category) => (
-                <div style={{
-                    padding: '8px 0',
-                    minHeight: '60px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <Space size="small">
+                <Space size="small">
                         <Button
                             type="text"
                             icon={<EyeOutlined />}
                             onClick={() => handleView(record)}
                             title="Xem chi tiết"
+                            size="small"
                         />
                         <Button
                             type="text"
                             icon={<EditOutlined />}
                             onClick={() => handleEdit(record)}
                             title="Chỉnh sửa"
+                            size="small"
                         />
-                        <Popconfirm
-                            title="Bạn có chắc muốn xóa danh mục này?"
-                            onConfirm={() => handleDelete(record.id)}
-                            okText="Xóa"
-                            cancelText="Hủy"
-                        >
+                        {record.isActive ? (
+                            <Popconfirm
+                                title="Bạn có chắc muốn vô hiệu hóa danh mục này?"
+                                description="Danh mục sẽ không hiển thị trên website nhưng vẫn có thể khôi phục."
+                                onConfirm={() => handleSoftDelete(record.id)}
+                                okText="Vô hiệu hóa"
+                                cancelText="Hủy"
+                                icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
+                            >
+                                <Button
+                                    type="text"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    title="Vô hiệu hóa"
+                                    size="small"
+                                />
+                            </Popconfirm>
+                        ) : (
+                            <Popconfirm
+                                title="Bạn có chắc muốn xóa vĩnh viễn danh mục này?"
+                                description="Hành động này không thể hoàn tác!"
+                                onConfirm={() => handleHardDelete(record.id)}
+                                okText="Xóa vĩnh viễn"
+                                cancelText="Hủy"
+                                icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
+                            >
+                                <Button
+                                    type="text"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    title="Xóa vĩnh viễn"
+                                    size="small"
+                                />
+                            </Popconfirm>
+                        )}
+                        {!record.isActive && (
                             <Button
                                 type="text"
-                                danger
-                                icon={<DeleteOutlined />}
-                                title="Xóa"
+                                icon={<RestOutlined />}
+                                onClick={() => handleRestore(record.id)}
+                                title="Khôi phục"
+                                size="small"
                             />
-                        </Popconfirm>
+                        )}
                     </Space>
-                </div>
             ),
         },
     ];
@@ -533,8 +445,9 @@ const Categories: React.FC = () => {
     const handleEdit = (category: Category) => {
         setEditingCategory(category);
         form.setFieldsValue({
-            ...category,
-            color: category.color
+            name: category.name,
+            isActive: category.isActive,
+            parentId: category.parentId
         });
         setIsModalVisible(true);
     };
@@ -544,49 +457,158 @@ const Categories: React.FC = () => {
         setIsViewModalVisible(true);
     };
 
-    const handleDelete = (id: number) => {
-        // Check if category has subcategories
-        const hasSubCategories = categories.some(c => c.parentId === id);
-        if (hasSubCategories) {
-            message.error('Không thể xóa danh mục có danh mục con!');
-            return;
+    // Soft delete - vô hiệu hóa danh mục
+    const handleSoftDelete = async (id: number) => {
+        try {
+            const result = await categoryService.deleteCategory(id);
+            if (result.code === 1000) {
+                message.success('Đã vô hiệu hóa danh mục thành công');
+                
+                // Cập nhật local state ngay lập tức
+                setCategories(prevCategories => 
+                    prevCategories.map(category => 
+                        category.id === id ? { ...category, isActive: false } : category
+                    )
+                );
+                
+                // Nếu đang ở trang cuối và trang đó trống sau khi xóa, chuyển về trang trước
+                const remainingFilteredCategories = filteredCategories.filter(c => c.id !== id);
+                const maxPage = Math.ceil(remainingFilteredCategories.length / pagination.pageSize);
+                if (pagination.current > maxPage && maxPage > 0) {
+                    setPagination(prev => ({
+                        ...prev,
+                        current: maxPage
+                    }));
+                }
+            } else {
+                message.error(result.message || 'Không thể vô hiệu hóa danh mục');
+            }
+        } catch (error) {
+            message.error('Lỗi khi vô hiệu hóa danh mục');
+            console.error('Error soft deleting category:', error);
         }
+    };
 
-        setCategories(categories.filter(c => c.id !== id));
-        message.success('Đã xóa danh mục thành công!');
+    // Hard delete - xóa vĩnh viễn danh mục
+    const handleHardDelete = async (id: number) => {
+        try {
+            const result = await categoryService.permanentDeleteCategory(id);
+            if (result.code === 1000) {
+                message.success('Đã xóa vĩnh viễn danh mục thành công');
+                
+                // Xóa danh mục khỏi local state ngay lập tức
+                setCategories(prevCategories => prevCategories.filter(category => category.id !== id));
+                
+                // Tính toán lại pagination sau khi xóa
+                const remainingCategories = categories.filter(c => c.id !== id);
+                const remainingFilteredCategories = remainingCategories.filter(c => {
+                    const activeCheck = showDeleted ? !c.isActive : c.isActive;
+                    const searchCheck = !searchText || c.name.toLowerCase().includes(searchText.toLowerCase());
+                    return activeCheck && searchCheck;
+                });
+                
+                const maxPage = Math.ceil(remainingFilteredCategories.length / pagination.pageSize);
+                
+                // Nếu đang ở trang cuối và trang đó trống sau khi xóa, chuyển về trang trước
+                if (pagination.current > maxPage && maxPage > 0) {
+                    setPagination(prev => ({
+                        ...prev,
+                        current: maxPage,
+                        total: remainingCategories.length
+                    }));
+                } else {
+                    setPagination(prev => ({
+                        ...prev,
+                        total: remainingCategories.length
+                    }));
+                }
+            } else {
+                message.error(result.message || 'Không thể xóa vĩnh viễn danh mục');
+            }
+        } catch (error) {
+            message.error('Lỗi khi xóa vĩnh viễn danh mục');
+            console.error('Error hard deleting category:', error);
+        }
+    };
+
+    // Khôi phục danh mục đã xóa
+    const handleRestore = async (id: number) => {
+        try {
+            const result = await categoryService.restoreCategory(id);
+            if (result.code === 1000) {
+                message.success('Đã khôi phục danh mục thành công');
+                
+                // Cập nhật local state ngay lập tức
+                setCategories(prevCategories => 
+                    prevCategories.map(category => 
+                        category.id === id ? { ...category, isActive: true } : category
+                    )
+                );
+                
+                // Nếu đang xem danh sách danh mục vô hiệu và khôi phục danh mục,
+                // danh mục sẽ biến mất khỏi danh sách hiện tại
+                if (showDeleted) {
+                    const remainingFilteredCategories = filteredCategories.filter(c => c.id !== id);
+                    const maxPage = Math.ceil(remainingFilteredCategories.length / pagination.pageSize);
+                    if (pagination.current > maxPage && maxPage > 0) {
+                        setPagination(prev => ({
+                            ...prev,
+                            current: maxPage
+                        }));
+                    }
+                }
+            } else {
+                message.error(result.message || 'Không thể khôi phục danh mục');
+            }
+        } catch (error) {
+            message.error('Lỗi khi khôi phục danh mục');
+            console.error('Error restoring category:', error);
+        }
     };
 
     const handleSave = async (values: any) => {
         setLoading(true);
         try {
-            const newCategory: Category = {
-                id: editingCategory?.id || Date.now(),
-                name: values.name,
-                slug: values.slug || values.name.toLowerCase().replace(/\s+/g, '-'),
-                description: values.description || '',
-                image: values.image || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=200',
-                parentId: values.parentId || null,
-                level: values.parentId ? 1 : 0,
-                productCount: editingCategory?.productCount || 0,
-                status: values.status || 'active',
-                color: values.color || '#1890ff',
-                sortOrder: values.sortOrder || 1,
-                createdAt: editingCategory?.createdAt || new Date().toISOString().split('T')[0],
-                updatedAt: new Date().toISOString().split('T')[0]
-            };
-
-            if (editingCategory) {
-                setCategories(categories.map(c => c.id === editingCategory.id ? newCategory : c));
-                message.success('Đã cập nhật danh mục thành công!');
-            } else {
-                setCategories([...categories, newCategory]);
-                message.success('Đã thêm danh mục thành công!');
+            // Validate required fields
+            if (!values.name?.trim()) {
+                message.error('Tên danh mục không được để trống');
+                setLoading(false);
+                return;
             }
 
-            setIsModalVisible(false);
-            form.resetFields();
+            const categoryData: CategoryRequest = {
+                name: values.name.trim(),
+                isActive: values.isActive !== undefined ? values.isActive : true,
+                parentId: values.parentId ? Number(values.parentId) : undefined
+            };
+
+            let result;
+            if (editingCategory) {
+                result = await categoryService.updateCategory(editingCategory.id, categoryData);
+                if (result.code === 1000) {
+                    message.success('Đã cập nhật danh mục thành công');
+                } else {
+                    message.error(result.message || 'Không thể cập nhật danh mục');
+                }
+            } else {
+                result = await categoryService.createCategory(categoryData);
+                if (result.code === 1000) {
+                    message.success('Đã thêm danh mục thành công');
+                } else {
+                    message.error(result.message || 'Không thể thêm danh mục');
+                }
+            }
+
+            if (result.code === 1000) {
+                setIsModalVisible(false);
+                form.resetFields();
+                
+                // Reload toàn bộ dữ liệu sau khi thêm/sửa để đảm bảo dữ liệu chính xác
+                loadCategories(1, true);
+            }
         } catch (error) {
-            message.error('Có lỗi xảy ra!');
+            message.error('Có lỗi xảy ra, vui lòng thử lại');
+            console.error('Error saving category:', error);
         } finally {
             setLoading(false);
         }
@@ -597,16 +619,10 @@ const Categories: React.FC = () => {
         const worksheet = XLSX.utils.json_to_sheet(categories.map(category => ({
             'ID': category.id,
             'Tên danh mục': category.name,
-            'Slug': category.slug,
-            'Mô tả': category.description,
-            'Cấp độ': category.level,
-            'Danh mục cha': category.parentId ? categories.find(c => c.id === category.parentId)?.name || '' : '',
-            'Số sản phẩm': category.productCount,
-            'Trạng thái': category.status === 'active' ? 'Hoạt động' : 'Tạm dừng',
-            'Màu sắc': category.color,
-            'Thứ tự': category.sortOrder,
-            'Ngày tạo': category.createdAt,
-            'Ngày cập nhật': category.updatedAt
+            'Số sản phẩm': category.productCount || 0,
+            'Trạng thái': category.isActive ? 'Hoạt động' : 'Ngừng hoạt động',
+            'Ngày tạo': category.createAt || '',
+            'Ngày cập nhật': category.updateAt || ''
         })));
 
         const workbook = XLSX.utils.book_new();
@@ -616,57 +632,85 @@ const Categories: React.FC = () => {
     };
 
     return (
-        <div>
-            <Title level={2} className="text-primary" style={{ marginBottom: '24px' }}>
+        <div style={{ margin: 0, padding: 0 }}>
+            <Title level={2} className="text-primary" style={{ marginBottom: '16px', marginTop: 0 }}>
                 Quản lý Danh mục
             </Title>
 
-            {/* Statistics */}
-            <Row gutter={16} style={{ marginBottom: '24px' }}>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                        <Statistic
-                            title="Tổng danh mục"
-                            value={totalCategories}
-                            prefix={<FolderOutlined />}
-                            valueStyle={{ color: '#1890ff' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                        <Statistic
-                            title="Đang hoạt động"
-                            value={activeCategories}
-                            prefix={<TagsOutlined />}
-                            valueStyle={{ color: '#52c41a' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                        <Statistic
-                            title="Danh mục chính"
-                            value={parentCategories}
-                            prefix={<AppstoreOutlined />}
-                            valueStyle={{ color: '#faad14' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                        <Statistic
-                            title="Tổng sản phẩm"
-                            value={totalProducts}
-                            valueStyle={{ color: '#722ed1' }}
-                            formatter={(value) => `${Number(value).toLocaleString()}`}
-                        />
-                    </Card>
-                </Col>
-            </Row>
+            {/* API Error Alert */}
+            {error && (
+                <Alert
+                    message="Lỗi tải dữ liệu từ API"
+                    description={error}
+                    type="error"
+                    showIcon
+                    action={
+                        <Button size="small" onClick={() => loadCategories()}>
+                            Thử lại
+                        </Button>
+                    }
+                    style={{ marginBottom: '24px' }}
+                />
+            )}
+
+            {/* Loading State */}
+            {loading && (
+                <div style={{ textAlign: 'center', padding: '50px' }}>
+                    <Spin size="large" />
+                    <p style={{ marginTop: '16px' }}>Đang tải dữ liệu danh mục từ API...</p>
+                </div>
+            )}
+
+            {/* Content */}
+            {!loading && (
+                <>
+
+                    {/* Statistics */}
+                    <Row gutter={16} style={{ marginBottom: '16px', marginTop: 0 }}>
+                        <Col xs={24} sm={12} lg={6}>
+                            <Card>
+                                <Statistic
+                                    title="Tổng danh mục"
+                                    value={totalCategories}
+                                    prefix={<FolderOutlined />}
+                                    valueStyle={{ color: '#1890ff' }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} lg={6}>
+                            <Card>
+                                <Statistic
+                                    title="Đang hoạt động"
+                                    value={activeCategories}
+                                    prefix={<TagsOutlined />}
+                                    valueStyle={{ color: '#52c41a' }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} lg={6}>
+                            <Card>
+                                <Statistic
+                                    title="Ngừng hoạt động"
+                                    value={inactiveCategories}
+                                    prefix={<AppstoreOutlined />}
+                                    valueStyle={{ color: '#ff4d4f' }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} lg={6}>
+                            <Card>
+                                <Statistic
+                                    title="Tổng sản phẩm"
+                                    value={totalProducts}
+                                    valueStyle={{ color: '#722ed1' }}
+                                    formatter={(value) => `${Number(value).toLocaleString()}`}
+                                />
+                            </Card>
+                        </Col>
+                    </Row>
 
             {/* Action Bar */}
-            <Card style={{ marginBottom: '16px' }}>
+            <Card style={{ marginBottom: '16px', marginTop: 0 }}>
                 <Row justify="space-between" align="middle">
                     <Col>
                         <Space wrap>
@@ -674,45 +718,42 @@ const Categories: React.FC = () => {
                                 placeholder="Tìm kiếm danh mục..."
                                 style={{ width: 300 }}
                                 allowClear
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
                             />
-                            <Select
-                                placeholder="Trạng thái"
-                                style={{ width: 150 }}
-                                value={filterStatus === 'all' ? undefined : filterStatus}
-                                onChange={(value) => setFilterStatus(value || 'all')}
-                                allowClear
-                            >
-                                <Option value="active">Hoạt động</Option>
-                                <Option value="inactive">Tạm dừng</Option>
-                            </Select>
-                            <Select
-                                placeholder="Cấp độ"
-                                style={{ width: 150 }}
-                                value={filterLevel === 'all' ? undefined : filterLevel}
-                                onChange={(value) => setFilterLevel(value || 'all')}
-                                allowClear
-                            >
-                                <Option value="0">Danh mục chính</Option>
-                                <Option value="1">Danh mục con</Option>
-                            </Select>
+                            <div>
+                                <Checkbox
+                                    checked={showDeleted}
+                                    onChange={(e) => setShowDeleted(e.target.checked)}
+                                >
+                                    Hiện danh mục ngừng hoạt động ({inactiveCategories})
+                                </Checkbox>
+                            </div>
                         </Space>
                     </Col>
                     <Col>
                         <Space>
+                            <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={handleAdd}
+                            >
+                                Thêm danh mục
+                            </Button>
+                            <Button
+                                type="default"
+                                icon={<ReloadOutlined />}
+                                onClick={refreshData}
+                                loading={loading}
+                            >
+                                Làm mới danh mục
+                            </Button>
                             <Button
                                 type="default"
                                 icon={<DownloadOutlined />}
                                 onClick={handleExportExcel}
                             >
                                 Xuất Excel
-                            </Button>
-                            <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={handleAdd}
-                                className="btn-primary"
-                            >
-                                Thêm danh mục
                             </Button>
                         </Space>
                     </Col>
@@ -738,25 +779,90 @@ const Categories: React.FC = () => {
             )}
 
             {/* Categories Table */}
-            <Card>
+            <Card style={{ marginTop: 0 }}>
+                <style>{`
+                    .ant-table-measure-row {
+                        display: none !important;
+                        height: 0 !important;
+                        visibility: hidden !important;
+                    }
+                    .ant-table-tbody > tr > td {
+                        height: 70px !important;
+                        vertical-align: middle !important;
+                        padding: 8px 16px !important;
+                    }
+                    .ant-table-tbody > tr {
+                        height: 70px !important;
+                    }
+                    .ant-table-tbody > tr:first-child > td {
+                        padding-top: 8px !important;
+                    }
+                    .ant-table-thead > tr > th {
+                        padding: 8px 16px !important;
+                    }
+                    .ant-table {
+                        margin-top: 0 !important;
+                    }
+                    .ant-table-container {
+                        margin-top: 0 !important;
+                    }
+                    .ant-card-body {
+                        padding: 16px !important;
+                    }
+                    .ant-table-thead {
+                        margin-top: 0 !important;
+                    }
+                    .ant-table-thead > tr {
+                        margin-top: 0 !important;
+                    }
+                    /* Level highlight rows for categories */
+                    .custom-categories-table .row-level-1 td { background: #ffffff !important; }
+                    .custom-categories-table .row-level-2 td { background: #f8fbff !important; }
+                    .custom-categories-table .row-level-3 td { background: #f9f5ff !important; }
+                `}</style>
                 <Table
                     columns={columns}
-                    dataSource={filteredCategories}
+                    dataSource={sttTree}
                     rowKey="id"
-                    size="small"
+                    loading={loading}
                     className="custom-categories-table"
+                    rowClassName={(record: any) => {
+                        const lvl = record.level || 1;
+                        if (lvl >= 3) return 'row-level-3';
+                        if (lvl === 2) return 'row-level-2';
+                        return 'row-level-1';
+                    }}
+                    expandable={{
+                        childrenColumnName: 'children',
+                        expandIconColumnIndex: 2,
+                        indentSize: 0,
+                        expandIcon: ({ expanded, onExpand, record }: any) => {
+                            const hasChildren = record.children && record.children.length > 0;
+                            if (!hasChildren) {
+                                return <span style={{ display: 'inline-block', width: 24 }} />;
+                            }
+                            return (
+                                <Button
+                                    type="text"
+                                    onClick={(e) => onExpand(record, e)}
+                                    style={{ padding: 0, width: 24, height: 24 }}
+                                    icon={expanded ? (
+                                        <DownCircleTwoTone twoToneColor="#1677ff" style={{ fontSize: 18 }} />
+                                    ) : (
+                                        <RightCircleTwoTone twoToneColor="#1677ff" style={{ fontSize: 18 }} />
+                                    )}
+                                />
+                            );
+                        }
+                    }}
                     rowSelection={{
                         selectedRowKeys,
                         onChange: setSelectedRowKeys,
-                        columnWidth: 50,
-                        fixed: true,
+                        getCheckboxProps: (record: Category) => ({
+                            disabled: !record.isActive
+                        })
                     }}
-                    pagination={{
-                        pageSize: 10,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                        showTotal: (total) => `Tổng ${total} danh mục`,
-                    }}
+                    pagination={false}
                     scroll={{ x: 1000 }}
                 />
             </Card>
@@ -769,89 +875,56 @@ const Categories: React.FC = () => {
                 onCancel={() => setIsModalVisible(false)}
                 confirmLoading={loading}
                 width={600}
+                okText={editingCategory ? 'Cập nhật' : 'Thêm mới'}
+                cancelText="Hủy"
             >
                 <Form
                     form={form}
                     layout="vertical"
                     onFinish={handleSave}
                 >
-                    <Row gutter={16}>
-                        <Col span={24}>
-                            <Form.Item
-                                name="name"
-                                label="Tên danh mục"
-                                rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}
+                    <Form.Item
+                        name="name"
+                        label="Tên danh mục"
+                        rules={[
+                            { required: true, message: 'Vui lòng nhập tên danh mục' },
+                            { min: 1, message: 'Tên danh mục không được để trống' }
+                        ]}
+                    >
+                        <Input placeholder="Nhập tên danh mục" />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="parentId"
+                        label="Danh mục cha"
+                        tooltip="Không chọn nếu là danh mục cấp 1"
+                    >
+                        <Input.Group compact>
+                            <select
+                                style={{ width: '100%', height: 32, borderRadius: 6, border: '1px solid #d9d9d9', padding: '4px 8px' }}
+                                value={form.getFieldValue('parentId') ?? ''}
+                                onChange={(e) => form.setFieldsValue({ parentId: e.target.value ? Number(e.target.value) : undefined })}
                             >
-                                <Input placeholder="Nhập tên danh mục" />
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item
-                                name="slug"
-                                label="Slug"
-                            >
-                                <Input placeholder="auto-generate từ tên" />
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item
-                                name="parentId"
-                                label="Danh mục cha"
-                            >
-                                <Select placeholder="Chọn danh mục cha" allowClear>
-                                    {parentCategoryOptions.map(option => (
-                                        <Option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </Option>
+                                <option value="">Không có (cấp 1)</option>
+                                {categories
+                                    .filter(c => !editingCategory || c.id !== editingCategory.id)
+                                    .map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
                                     ))}
-                                </Select>
-                            </Form.Item>
-                        </Col>
-                        <Col span={24}>
-                            <Form.Item
-                                name="description"
-                                label="Mô tả"
-                            >
-                                <TextArea rows={3} placeholder="Nhập mô tả danh mục" />
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item
-                                name="color"
-                                label="Màu sắc"
-                            >
-                                <ColorPicker showText />
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item
-                                name="sortOrder"
-                                label="Thứ tự sắp xếp"
-                            >
-                                <Input type="number" placeholder="1" />
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item
-                                name="image"
-                                label="Hình ảnh URL"
-                            >
-                                <Input placeholder="https://..." />
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item
-                                name="status"
-                                label="Trạng thái"
-                                initialValue="active"
-                            >
-                                <Select>
-                                    <Option value="active">Hoạt động</Option>
-                                    <Option value="inactive">Tạm dừng</Option>
-                                </Select>
-                            </Form.Item>
-                        </Col>
-                    </Row>
+                            </select>
+                        </Input.Group>
+                    </Form.Item>
+
+                    <Form.Item
+                        name="isActive"
+                        label="Trạng thái"
+                        initialValue={true}
+                    >
+                        <Select placeholder="Chọn trạng thái">
+                            <Option value={true}>Hoạt động</Option>
+                            <Option value={false}>Ngừng hoạt động</Option>
+                        </Select>
+                    </Form.Item>
                 </Form>
             </Modal>
 
@@ -870,12 +943,17 @@ const Categories: React.FC = () => {
                 {viewingCategory && (
                     <Row gutter={16}>
                         <Col span={8}>
-                            <Image
-                                src={viewingCategory.image}
-                                alt={viewingCategory.name}
-                                width="100%"
-                                style={{ borderRadius: '8px' }}
-                            />
+                            <div style={{
+                                width: '100%',
+                                height: '120px',
+                                borderRadius: '8px',
+                                backgroundColor: '#f0f0f0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <FolderOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
+                            </div>
                         </Col>
                         <Col span={16}>
                             <div style={{ marginBottom: '16px' }}>
@@ -883,52 +961,34 @@ const Categories: React.FC = () => {
                                 <Text>{viewingCategory.name}</Text>
                             </div>
                             <div style={{ marginBottom: '16px' }}>
-                                <Text strong>Slug: </Text>
-                                <Text code>{viewingCategory.slug}</Text>
-                            </div>
-                            <div style={{ marginBottom: '16px' }}>
-                                <Text strong>Cấp độ: </Text>
-                                <Tag color={viewingCategory.level === 0 ? 'blue' : 'green'}>
-                                    {viewingCategory.level === 0 ? 'Danh mục chính' : `Cấp ${viewingCategory.level}`}
-                                </Tag>
+                                <Text strong>ID: </Text>
+                                <Text code>{viewingCategory.id}</Text>
                             </div>
                             <div style={{ marginBottom: '16px' }}>
                                 <Text strong>Số sản phẩm: </Text>
-                                <Text>{viewingCategory.productCount}</Text>
+                                <Text>{viewingCategory.productCount || 0}</Text>
                             </div>
                             <div style={{ marginBottom: '16px' }}>
                                 <Text strong>Trạng thái: </Text>
-                                <Tag color={viewingCategory.status === 'active' ? 'green' : 'red'}>
-                                    {viewingCategory.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
+                                <Tag color={viewingCategory.isActive ? 'green' : 'red'}>
+                                    {viewingCategory.isActive ? 'Hoạt động' : 'Ngừng hoạt động'}
                                 </Tag>
                             </div>
                             <div style={{ marginBottom: '16px' }}>
-                                <Text strong>Màu sắc: </Text>
-                                <div
-                                    style={{
-                                        width: '20px',
-                                        height: '20px',
-                                        backgroundColor: viewingCategory.color,
-                                        borderRadius: '4px',
-                                        display: 'inline-block',
-                                        marginLeft: '8px',
-                                        border: '1px solid #d9d9d9'
-                                    }}
-                                />
-                                <Text code style={{ marginLeft: '8px' }}>{viewingCategory.color}</Text>
+                                <Text strong>Ngày tạo: </Text>
+                                <Text>{viewingCategory.createAt ? new Date(viewingCategory.createAt).toLocaleDateString('vi-VN') : 'Chưa có thông tin'}</Text>
                             </div>
-                        </Col>
-                        <Col span={24}>
-                            <div style={{ marginTop: '16px' }}>
-                                <Text strong>Mô tả: </Text>
-                                <div style={{ marginTop: '8px', padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '6px' }}>
-                                    {viewingCategory.description || 'Chưa có mô tả'}
-                                </div>
+                            <div style={{ marginBottom: '16px' }}>
+                                <Text strong>Cập nhật lần cuối: </Text>
+                                <Text>{viewingCategory.updateAt ? new Date(viewingCategory.updateAt).toLocaleDateString('vi-VN') : 'Chưa có thông tin'}</Text>
                             </div>
                         </Col>
                     </Row>
                 )}
             </Modal>
+
+                </>
+            )}
         </div>
     );
 };

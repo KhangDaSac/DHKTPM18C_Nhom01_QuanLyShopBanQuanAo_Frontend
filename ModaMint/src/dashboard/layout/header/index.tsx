@@ -18,9 +18,13 @@ import {
     UserOutlined,
     SettingOutlined,
     LogoutOutlined,
-    MailOutlined
+    MailOutlined,
+    SunOutlined,
+    MoonOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/authContext';
+import { toast } from 'react-toastify';
 
 const { Header: AntHeader } = Layout;
 const { Search } = Input;
@@ -33,7 +37,9 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ sidebarCollapsed }) => {
     const navigate = useNavigate();
+    const { logout, user } = useAuth();
     const [notificationVisible, setNotificationVisible] = useState(false);
+    const [theme] = useState<'light' | 'dark'>('light'); // Fixed to light mode
 
     // Mock notifications data
     const notifications = [
@@ -60,6 +66,23 @@ const Header: React.FC<HeaderProps> = ({ sidebarCollapsed }) => {
         }
     ];
 
+    // Hàm xử lý đăng xuất
+    const handleLogout = async () => {
+        try {
+            await logout();
+            // Redirect được xử lý trong logout() của authContext
+        } catch (error) {
+            console.error('Logout error:', error);
+            toast.error('Có lỗi xảy ra khi đăng xuất!');
+        }
+    };
+
+    // Hàm chuyển đổi theme - Tạm thời vô hiệu hóa
+    const toggleTheme = () => {
+        // Disabled - chỉ hiển thị nút không có chức năng
+        return;
+    };
+
     const userMenuItems = [
         {
             key: 'profile',
@@ -81,132 +104,182 @@ const Header: React.FC<HeaderProps> = ({ sidebarCollapsed }) => {
             icon: <LogoutOutlined />,
             label: 'Đăng xuất',
             danger: true,
-            onClick: () => {
-                localStorage.removeItem('token');
-                navigate('/login');
-            }
+            onClick: handleLogout
         }
     ];
 
     const notificationContent = (
-        <div style={{ width: 320, maxHeight: 400, overflow: 'auto' }}>
+        <div style={{ width: '300px', maxHeight: '400px', overflow: 'auto' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
                 <Text strong>Thông báo</Text>
             </div>
             <List
                 dataSource={notifications}
                 renderItem={(item) => (
-                    <List.Item
-                        style={{
-                            padding: '12px 16px',
-                            cursor: 'pointer',
-                            transition: 'background-color 0.2s'
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f5f5f5';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                    >
+                    <List.Item style={{ padding: '12px 16px' }}>
                         <List.Item.Meta
                             avatar={
                                 <Avatar
                                     size="small"
                                     style={{
-                                        backgroundColor: item.type === 'order' ? '#52c41a' :
-                                            item.type === 'warning' ? '#faad14' : '#1677ff'
+                                        backgroundColor: item.type === 'warning' ? '#faad14' : 
+                                                       item.type === 'review' ? '#52c41a' : '#1890ff'
                                     }}
                                     icon={<MailOutlined />}
                                 />
                             }
-                            title={
-                                <Text strong style={{ fontSize: '13px' }}>
-                                    {item.title}
-                                </Text>
-                            }
+                            title={<Text style={{ fontSize: '14px' }}>{item.title}</Text>}
                             description={
                                 <div>
-                                    <Text style={{ fontSize: '12px', color: '#666' }}>
+                                    <Text type="secondary" style={{ fontSize: '12px' }}>
                                         {item.message}
                                     </Text>
-                                    <div>
-                                        <Text style={{ fontSize: '11px', color: '#999' }}>
-                                            {item.time}
-                                        </Text>
-                                    </div>
+                                    <br />
+                                    <Text type="secondary" style={{ fontSize: '11px' }}>
+                                        {item.time}
+                                    </Text>
                                 </div>
                             }
                         />
                     </List.Item>
                 )}
             />
-            <Divider style={{ margin: 0 }} />
-            <div style={{ padding: '8px 16px', textAlign: 'center' }}>
-                <Button type="link" size="small">
-                    Xem tất cả thông báo
-                </Button>
-            </div>
         </div>
     );
 
-    const onSearch = (value: string) => {
-        console.log('Search:', value);
-        // Implement search functionality
-    };
-
     return (
-        <AntHeader
-            style={{
-                position: 'fixed',
-                top: 0,
-                right: 0,
-                left: sidebarCollapsed ? 80 : 240,
-                zIndex: 999,
-                padding: '0 24px',
-                background: '#fff',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                transition: 'left 0.2s',
-                height: 64,
-            }}
-        >
+        <>
+            <style>
+                {`
+                    .dashboard-header {
+                        padding: 0 24px;
+                        background: #ffffff;
+                        border-bottom: 1px solid #f0f0f0;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        gap: 24px;
+                        position: fixed;
+                        top: 0;
+                        right: 0;
+                        z-index: 1000;
+                        transition: left 0.2s ease, background 0.3s ease, border-color 0.3s ease;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                    }
+
+                    [data-theme-mode="dark"] .dashboard-header {
+                        background: #141414;
+                        border-bottom: 1px solid #303030;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+                    }
+                    
+                    .header-search {
+                        flex: 1;
+                        max-width: 400px;
+                        display: flex;
+                        justify-content: center;
+                    }
+                    
+                    .header-actions {
+                        display: flex;
+                        align-items: center;
+                        gap: 16px;
+                    }
+                    
+                    .header-button {
+                        transition: all 0.2s ease;
+                        border-radius: 6px;
+                        color: #595959;
+                    }
+                    
+                    .header-button:hover {
+                        background-color: rgba(0, 0, 0, 0.06);
+                        color: #1890ff;
+                    }
+
+                    [data-theme-mode="dark"] .header-button {
+                        color: #8c8c8c;
+                    }
+
+                    [data-theme-mode="dark"] .header-button:hover {
+                        background-color: rgba(255, 255, 255, 0.08);
+                        color: #ffffff;
+                    }
+                    
+                    .header-user-menu {
+                        transition: background-color 0.15s ease;
+                        border-radius: 6px;
+                        padding: 4px 8px;
+                    }
+                    
+                    .header-user-menu:hover {
+                        background-color: rgba(24, 144, 255, 0.1);
+                    }
+
+                    /* Dark mode for Search input */
+                    [data-theme-mode="dark"] .ant-input {
+                        background: #1f1f1f;
+                        border-color: #434343;
+                        color: #ffffff;
+                    }
+
+                    [data-theme-mode="dark"] .ant-input::placeholder {
+                        color: #8c8c8c;
+                    }
+
+                    [data-theme-mode="dark"] .ant-input-search .ant-input {
+                        background: #1f1f1f;
+                        border-color: #434343;
+                    }
+
+                    [data-theme-mode="dark"] .ant-badge-count {
+                        background: #722ed1;
+                    }
+                `}
+            </style>
+            <AntHeader
+                className="dashboard-header"
+                style={{
+                    left: sidebarCollapsed ? '80px' : '240px',
+                }}
+            >
             {/* Search Bar */}
-            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', maxWidth: 600 }}>
+            <div className="header-search">
                 <Search
                     placeholder="Tìm kiếm sản phẩm, đơn hàng..."
                     allowClear
-                    enterButton={<SearchOutlined />}
-                    size="middle"
-                    onSearch={onSearch}
-                    style={{ width: '100%', maxWidth: 400 }}
+                    style={{ width: '100%' }}
                 />
             </div>
 
             {/* Right Side Actions */}
-            <Space size="middle">
+            <div className="header-actions">
+                {/* Theme Toggle - Disabled */}
+                <Button
+                    type="text"
+                    icon={theme === 'light' ? <MoonOutlined /> : <SunOutlined />}
+                    onClick={toggleTheme}
+                    className="header-button"
+                    style={{ fontSize: '18px', opacity: 0.5, cursor: 'not-allowed' }}
+                    disabled
+                    title="Chức năng đang phát triển"
+                />
+
                 {/* Notifications */}
                 <Popover
                     content={notificationContent}
                     title={null}
                     trigger="click"
-                    placement="bottomRight"
                     open={notificationVisible}
                     onOpenChange={setNotificationVisible}
+                    placement="bottomRight"
                 >
                     <Badge count={notifications.length} size="small">
                         <Button
                             type="text"
-                            icon={<BellOutlined style={{ fontSize: '18px' }} />}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: 40,
-                                height: 40,
-                            }}
+                            icon={<BellOutlined />}
+                            className="header-button"
+                            style={{ fontSize: '16px' }}
                         />
                     </Badge>
                 </Popover>
@@ -217,24 +290,18 @@ const Header: React.FC<HeaderProps> = ({ sidebarCollapsed }) => {
                     placement="bottomRight"
                     trigger={['click']}
                 >
-                    <Space style={{ cursor: 'pointer', padding: '8px' }}>
+                    <Space className="header-user-menu" style={{ cursor: 'pointer' }}>
                         <Avatar
-                            size={32}
-                            style={{ backgroundColor: '#1677ff' }}
+                            size="small"
                             icon={<UserOutlined />}
+                            style={{ backgroundColor: '#1890ff' }}
                         />
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                            <Text strong style={{ fontSize: '13px', lineHeight: 1.2 }}>
-                                Admin User
-                            </Text>
-                            <Text style={{ fontSize: '11px', color: '#666', lineHeight: 1.2 }}>
-                                Quản trị viên
-                            </Text>
-                        </div>
+                        <Text strong>{user?.username || 'Admin'}</Text>
                     </Space>
                 </Dropdown>
-            </Space>
+            </div>
         </AntHeader>
+        </>
     );
 };
 

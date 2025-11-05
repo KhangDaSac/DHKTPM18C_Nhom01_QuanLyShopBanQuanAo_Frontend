@@ -18,7 +18,8 @@ import {
     Typography,
     Checkbox,
     Divider,
-    Tooltip
+    Tooltip,
+    Statistic
 } from 'antd';
 import {
     PlusOutlined,
@@ -38,6 +39,7 @@ import './style_new.css';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { Search } = Input;
 
 interface Permission {
     id: string;
@@ -86,113 +88,16 @@ const RoleManagement: React.FC = () => {
     const [userForm] = Form.useForm();
 
     useEffect(() => {
-        loadMockData();
+        // TODO: Load data from API
+        // loadPermissions();
+        // loadRoles();
+        // loadUsers();
     }, []);
 
-    const loadMockData = () => {
-        const mockPermissions: Permission[] = [
-            { id: '1', name: 'Xem sản phẩm', module: 'products', description: 'Quyền xem danh sách sản phẩm' },
-            { id: '2', name: 'Thêm sản phẩm', module: 'products', description: 'Quyền thêm sản phẩm mới' },
-            { id: '3', name: 'Sửa sản phẩm', module: 'products', description: 'Quyền chỉnh sửa sản phẩm' },
-            { id: '4', name: 'Xóa sản phẩm', module: 'products', description: 'Quyền xóa sản phẩm' },
-            { id: '5', name: 'Xem đơn hàng', module: 'orders', description: 'Quyền xem đơn hàng' },
-            { id: '6', name: 'Xử lý đơn hàng', module: 'orders', description: 'Quyền xử lý đơn hàng' },
-            { id: '7', name: 'Quản lý khách hàng', module: 'customers', description: 'Quyền quản lý khách hàng' },
-            { id: '8', name: 'Xem báo cáo', module: 'reports', description: 'Quyền xem báo cáo' },
-            { id: '9', name: 'Quản lý hệ thống', module: 'system', description: 'Quyền quản lý hệ thống' },
-            { id: '10', name: 'Quản lý người dùng', module: 'users', description: 'Quyền quản lý người dùng' }
-        ];
-
-        const mockRoles: Role[] = [
-            {
-                id: '1',
-                name: 'Admin',
-                description: 'Quản trị viên hệ thống - có toàn quyền truy cập',
-                permissions: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
-                isActive: true,
-                isDefault: true,
-                userCount: 2,
-                createdAt: '2024-01-01',
-                updatedAt: '2024-01-01'
-            },
-            {
-                id: '2',
-                name: 'Manager',
-                description: 'Quản lý cửa hàng - quản lý sản phẩm và đơn hàng',
-                permissions: ['1', '2', '3', '5', '6', '7', '8'],
-                isActive: true,
-                isDefault: false,
-                userCount: 5,
-                createdAt: '2024-01-01',
-                updatedAt: '2024-01-01'
-            },
-            {
-                id: '3',
-                name: 'Staff',
-                description: 'Nhân viên bán hàng - xử lý đơn hàng và khách hàng',
-                permissions: ['1', '5', '6', '7'],
-                isActive: true,
-                isDefault: false,
-                userCount: 12,
-                createdAt: '2024-01-01',
-                updatedAt: '2024-01-01'
-            },
-            {
-                id: '4',
-                name: 'Guest',
-                description: 'Khách vãng lai - chỉ xem thông tin cơ bản',
-                permissions: ['1'],
-                isActive: false,
-                isDefault: false,
-                userCount: 0,
-                createdAt: '2024-01-01',
-                updatedAt: '2024-01-01'
-            }
-        ];
-
-        const mockUsers: User[] = [
-            {
-                id: '1',
-                name: 'Nguyễn Văn A',
-                email: 'admin@modamint.com',
-                roleId: '1',
-                roleName: 'Admin',
-                isActive: true,
-                createdAt: '2024-01-01'
-            },
-            {
-                id: '2',
-                name: 'Trần Thị B',
-                email: 'manager@modamint.com',
-                roleId: '2',
-                roleName: 'Manager',
-                isActive: true,
-                createdAt: '2024-01-01'
-            },
-            {
-                id: '3',
-                name: 'Lê Văn C',
-                email: 'staff1@modamint.com',
-                roleId: '3',
-                roleName: 'Staff',
-                isActive: true,
-                createdAt: '2024-01-01'
-            },
-            {
-                id: '4',
-                name: 'Phạm Thị D',
-                email: 'staff2@modamint.com',
-                roleId: '3',
-                roleName: 'Staff',
-                isActive: false,
-                createdAt: '2024-01-01'
-            }
-        ];
-
-        setAllPermissions(mockPermissions);
-        setRoles(mockRoles);
-        setUsers(mockUsers);
-    };
+    // TODO: Implement API calls to load data
+    // const loadPermissions = async () => { ... }
+    // const loadRoles = async () => { ... }
+    // const loadUsers = async () => { ... }
 
     const getRoleIcon = (roleName: string) => {
         switch (roleName.toLowerCase()) {
@@ -418,89 +323,86 @@ const RoleManagement: React.FC = () => {
     };
 
     return (
-        <div className="role-management">
-            <div className="page-header">
-                <Title level={2}>
-                    <SecurityScanOutlined style={{ marginRight: '12px', color: '#1890ff' }} />
-                    Quản lý vai trò & phân quyền
-                </Title>
-                <Space>
-                    <Button
-                        icon={<DownloadOutlined />}
-                        onClick={handleExportRolesExcel}
-                    >
-                        Xuất Excel
-                    </Button>
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        size="large"
-                        onClick={handleAddRole}
-                        className="add-role-btn"
-                    >
-                        Thêm vai trò mới
-                    </Button>
-                </Space>
+        <div style={{ margin: 0, padding: 0 }}>
+            <style>{`
+                .ant-table-measure-row {
+                    display: none !important;
+                    height: 0 !important;
+                    visibility: hidden !important;
+                }
+                .ant-table-tbody > tr > td {
+                    height: 70px !important;
+                    vertical-align: middle !important;
+                    padding: 8px 16px !important;
+                }
+                .ant-table-tbody > tr {
+                    height: 70px !important;
+                }
+                .ant-table-tbody > tr:first-child > td {
+                    padding-top: 8px !important;
+                }
+                .ant-table-thead > tr > th {
+                    padding: 8px 16px !important;
+                }
+                .ant-table {
+                    margin-top: 0 !important;
+                }
+                .ant-card-body {
+                    padding: 16px !important;
+                }
+            `}</style>
+            <Title level={2} className="text-primary" style={{ marginBottom: '16px', marginTop: 0 }}>
+                Quản lý vai trò & phân quyền
+            </Title>
+
+            {/* Statistics */}
+            <div style={{ marginBottom: '16px', marginTop: 0 }}>
+                <Row gutter={16}>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic
+                                title="Tổng vai trò"
+                                value={totalRoles}
+                                prefix={<SecurityScanOutlined />}
+                                valueStyle={{ color: '#1890ff' }}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic
+                                title="Vai trò hoạt động"
+                                value={activeRoles}
+                                prefix={<SafetyCertificateOutlined />}
+                                valueStyle={{ color: '#52c41a' }}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic
+                                title="Tổng người dùng"
+                                value={totalUsers}
+                                prefix={<TeamOutlined />}
+                                valueStyle={{ color: '#722ed1' }}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic
+                                title="Người dùng hoạt động"
+                                value={activeUsers}
+                                prefix={<UserOutlined />}
+                                valueStyle={{ color: '#ff4d4f' }}
+                            />
+                        </Card>
+                    </Col>
+                </Row>
             </div>
 
-            {/* Statistics Cards */}
-            <Row gutter={[16, 16]} className="stats-section">
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="stat-card role-stat">
-                        <div className="stat-content">
-                            <div className="stat-icon">
-                                <SecurityScanOutlined />
-                            </div>
-                            <div className="stat-info">
-                                <div className="stat-value">{totalRoles}</div>
-                                <div className="stat-label">Tổng vai trò</div>
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="stat-card active-role-stat">
-                        <div className="stat-content">
-                            <div className="stat-icon">
-                                <SafetyCertificateOutlined />
-                            </div>
-                            <div className="stat-info">
-                                <div className="stat-value">{activeRoles}</div>
-                                <div className="stat-label">Vai trò hoạt động</div>
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="stat-card user-stat">
-                        <div className="stat-content">
-                            <div className="stat-icon">
-                                <TeamOutlined />
-                            </div>
-                            <div className="stat-info">
-                                <div className="stat-value">{totalUsers}</div>
-                                <div className="stat-label">Tổng người dùng</div>
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="stat-card active-user-stat">
-                        <div className="stat-content">
-                            <div className="stat-icon">
-                                <UserOutlined />
-                            </div>
-                            <div className="stat-info">
-                                <div className="stat-value">{activeUsers}</div>
-                                <div className="stat-label">Người dùng hoạt động</div>
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-            </Row>
-
             {/* Search and Filter */}
-            <Card className="filter-section">
+            <Card style={{ marginBottom: '16px', marginTop: 0 }}>
                 <Row gutter={16} align="middle">
                     <Col flex="auto">
                         <Input
@@ -512,14 +414,21 @@ const RoleManagement: React.FC = () => {
                         />
                     </Col>
                     <Col>
-                        <Select
-                            placeholder="Trạng thái"
-                            style={{ width: 120 }}
-                            allowClear
-                        >
-                            <Option value="active">Hoạt động</Option>
-                            <Option value="inactive">Tạm dừng</Option>
-                        </Select>
+                        <Space>
+                            <Button
+                                icon={<DownloadOutlined />}
+                                onClick={handleExportRolesExcel}
+                            >
+                                Xuất Excel
+                            </Button>
+                            <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={handleAddRole}
+                            >
+                                Thêm vai trò
+                            </Button>
+                        </Space>
                     </Col>
                 </Row>
             </Card>
@@ -637,28 +546,38 @@ const RoleManagement: React.FC = () => {
             </div>
 
             {/* Users Section */}
-            <Card className="users-section" style={{ marginTop: '24px' }}>
-                <div className="section-header">
-                    <Title level={3}>
-                        <TeamOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-                        Quản lý người dùng
-                    </Title>
-                    <Space>
-                        <Button
-                            icon={<DownloadOutlined />}
-                            onClick={handleExportUsersExcel}
-                        >
-                            Xuất Excel
-                        </Button>
-                        <Button
-                            type="primary"
-                            icon={<PlusOutlined />}
-                            onClick={handleAddUser}
-                        >
-                            Thêm người dùng
-                        </Button>
-                    </Space>
-                </div>
+            <Title level={3} className="text-primary" style={{ marginBottom: '16px', marginTop: 16 }}>
+                Quản lý người dùng
+            </Title>
+            <Card style={{ marginBottom: '16px', marginTop: 0 }}>
+                <Row gutter={16} align="middle">
+                    <Col flex="auto">
+                        <Input.Search
+                            placeholder="Tìm kiếm người dùng..."
+                            allowClear
+                            style={{ borderRadius: '8px' }}
+                        />
+                    </Col>
+                    <Col>
+                        <Space>
+                            <Button
+                                icon={<DownloadOutlined />}
+                                onClick={handleExportUsersExcel}
+                            >
+                                Xuất Excel
+                            </Button>
+                            <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={handleAddUser}
+                            >
+                                Thêm người dùng
+                            </Button>
+                        </Space>
+                    </Col>
+                </Row>
+            </Card>
+            <Card style={{ marginTop: 0 }}>
 
                 <Row gutter={[16, 16]}>
                     {users.map(user => (

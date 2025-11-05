@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './style.css';
 
 interface Store {
@@ -71,7 +71,7 @@ const mockStores: Store[] = [
 ];
 
 export default function StoresPage() {
-    const [stores, setStores] = useState<Store[]>(mockStores);
+    const [stores] = useState<Store[]>(mockStores);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 

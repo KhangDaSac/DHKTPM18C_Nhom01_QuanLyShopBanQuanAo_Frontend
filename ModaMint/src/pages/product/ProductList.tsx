@@ -1,16 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ProductCard } from '../../components/home/item-components/ProductCard';
-import Sidebar from '../../components/product-list/Sidebar';
-import Pagination from '../../components/product-list/Pagination';
-import SortSelect from '../../components/product-list/SortSelect';
+
+import { ProductCard } from '@/components/product';
+import Sidebar from '@/components/product-list/Sidebar';
+import Pagination from '@/components/product-list/Pagination';
+import SortSelect from '@/components/product-list/SortSelect';
 import BrandCarousel from '../../components/product-list/BrandCarousel'; // Đổi từ CategoryCarousel thành BrandCarousel
+
 // Mock data (replace with API calls later)
 interface Product {
   id: number;
   name: string;
   price: number;
-  originalPrice: number;
-  currentPrice: number;
+  originalPrice: string;
+  currentPrice: string;
   image: string;
   hoverImage: string;
   category: string;
@@ -28,6 +30,7 @@ const ProductList: React.FC = () => {
   const [filters, setFilters] = useState<{ prices: string[]; colors: string[]; sizes: string[] }>({ prices: [], colors: [], sizes: [] });
   const [products, setProducts] = useState<Product[]>([]);
 
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -43,8 +46,8 @@ const ProductList: React.FC = () => {
               id: p.id,
               name: p.name,
               price: p.price ?? 0,
-              originalPrice: p.price ?? 0,
-              currentPrice: p.price ?? 0,
+               originalPrice: ((p.price ?? 0) * 1.2).toLocaleString('vi-VN') + ' đ',
+            currentPrice: (p.price ?? 0).toLocaleString('vi-VN') + ' đ',
               image: '/default.png',
               hoverImage: '/default.png',
               category: p.categoryName,

@@ -1,0 +1,224 @@
+/* Page wrapper */
+.pageWrap {
+  padding: 28px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial;
+  background: #f6f7f8; /* match cart page background */
+  min-height: calc(100vh - 40px);
+  box-sizing: border-box;
+}
+
+/* breadcrumb */
+.breadcrumb {
+  color: #66676b;
+  margin-bottom: 18px;
+  font-size: 14px;
+}
+.current {
+  color: #ff6c52; /* accent */
+}
+
+/* container to align with main layout */
+.container {
+  /* inner white card matching cart styling */
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 22px;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-shadow: 0 6px 18px rgba(31, 41, 55, 0.06);
+  box-sizing: border-box;
+}
+
+/* grid: 2 columns with large image cards to match the mock */
+.grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 products per row */
+  gap: 24px;
+}
+
+/* card */
+.card {
+  background: transparent;
+  border-radius: 12px;
+  overflow: visible;
+}
+
+/* image area */
+.imageWrap {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  padding: 12px;
+  box-shadow: 0 4px 18px rgba(18, 18, 18, 0.03);
+}
+.image {
+  width: 100%;
+  height: 240px; /* shorter to fit 4-per-row */
+  object-fit: cover;
+  display: block;
+  border-radius: 10px;
+  background: #f8f8f8;
+}
+
+/* discount badge */
+.badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #ff6c52;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 13px;
+  z-index: 3;
+  box-shadow: 0 6px 14px rgba(255, 108, 82, 0.12);
+}
+
+/* meta under the image */
+.meta {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* small thumbnails / color dots */
+.thumbRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.smallThumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.smallImg {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.06);
+}
+.colorDot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ff2b2b;
+  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.06);
+  border: 3px solid #fff;
+}
+
+/* product title */
+.title {
+  color: #111827;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* price row with pill button (subtle) */
+.priceRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 18px;
+  margin-top: 6px;
+}
+
+/* price block */
+.priceWrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+}
+.price {
+  color: #ff6c52;
+  font-weight: 700;
+  font-size: 18px;
+}
+.original {
+  color: #9b9b9b;
+  text-decoration: line-through;
+  font-size: 14px;
+}
+
+/* add to cart pill (subtle background like mock) */
+.addBtn {
+  margin-left: 6px;
+  background: rgba(0, 0, 0, 0.03);
+  color: #9ca3af;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 30px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.18s ease;
+  box-shadow: none;
+}
+.addBtn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #6b7280;
+}
+
+/* actions under each card */
+.cardActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.btn {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid transparent;
+  background: #fff;
+}
+
+.small {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.outline {
+  background: transparent;
+  border: 1px solid #e6e6e6;
+  color: #374151;
+}
+
+/* responsive behaviour */
+/* Responsive behaviour: 4 -> 2 -> 1 columns */
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  .image {
+    height: 280px;
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .image {
+    height: 420px; /* keep tall images on mobile */
+  }
+  .pageWrap {
+    padding: 18px;
+  }
+}

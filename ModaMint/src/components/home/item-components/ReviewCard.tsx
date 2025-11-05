@@ -1,6 +1,5 @@
-import {Star} from "lucide-react";
-import React, { useState } from 'react';
-
+import { Star } from "lucide-react";
+import styles from "./styles.module.css"
 interface Review {
   id: number;
   text: string;
@@ -11,27 +10,28 @@ interface Review {
 }
 
 export const ReviewCard = ({ review }: { review: Review }) => {
-    const items = Array.from({ length: review.rating }, (_, i) => i + 1);
+  const items = Array.from({ length: review.rating }, (_, i) => i + 1);
   return (
-    <div className="review-card">
-      <p className="review-text">{review.text}</p>
+    <div className={styles.review_card}>
+      <p className={styles.review_text}>{review.text}</p>
 
-      <div className="star-rating">
-        {
-            items.map( i => <Star key={i} color="yellow" fill="yellow"/>)
-        }
+      <div className={styles.star_rating}>
+        {items.map((i) => (
+          <Star key={i} color="yellow" fill="yellow" />
+        ))}
       </div>
 
-      <div className="reviewer-info">
-        <div className="avatar-container">
-          <img 
+      <div className={styles.reviewer_info}>
+        <div className={styles.avatar_container}>
+
+          <img
             src={review.avatar}
             alt={review.name}
-            className="avatar"
+            className={styles.avatar}
           />
         </div>
-        <div className="reviewer-name">{review.name}</div>
-        <div className="reviewer-role">{review.role}</div>
+        <div className={styles.reviewer_name}>{review.name}</div>
+        <div className={styles.reviewer_role}>{review.role}</div>
       </div>
     </div>
   );

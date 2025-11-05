@@ -99,7 +99,7 @@ const mockNews: NewsArticle[] = [
 const categories = ["Tất cả", "Xu hướng", "Phối đồ", "Sản phẩm", "Hướng dẫn", "Bền vững"];
 
 export default function NewsPage() {
-    const [articles, setArticles] = useState<NewsArticle[]>(mockNews);
+    const [articles] = useState<NewsArticle[]>(mockNews);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('Tất cả');
     const [currentPage, setCurrentPage] = useState(1);

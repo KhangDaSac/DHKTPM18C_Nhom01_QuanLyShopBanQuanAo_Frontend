@@ -104,218 +104,10 @@ interface Order {
     trackingNumber?: string;
 }
 
-// Mock data cho orders
-const initialOrders: Order[] = [
-    {
-        id: 1,
-        orderNumber: 'ORD001',
-        customerId: 1,
-        customerName: 'Nguyễn Văn An',
-        customerEmail: 'nguyenvanan@email.com',
-        customerPhone: '0123456789',
-        status: 'delivered',
-        paymentStatus: 'paid',
-        paymentMethod: 'bank_transfer',
-        shippingAddress: {
-            fullName: 'Nguyễn Văn An',
-            phone: '0123456789',
-            address: '123 Đường ABC',
-            ward: 'Phường 1',
-            district: 'Quận 1',
-            province: 'TP. Hồ Chí Minh'
-        },
-        items: [
-            {
-                id: 1,
-                productId: 1,
-                productName: 'Áo Thun Nam Cổ Tròn Basic',
-                productImage: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100',
-                sku: 'ATN001',
-                price: 179000,
-                quantity: 2,
-                subtotal: 358000,
-                variant: { color: 'Đen', size: 'L' }
-            }
-        ],
-        subtotal: 358000,
-        shippingFee: 30000,
-        discount: 0,
-        total: 388000,
-        notes: 'Giao hàng nhanh',
-        createdAt: '2024-12-01',
-        updatedAt: '2024-12-05',
-        deliveredAt: '2024-12-05',
-        trackingNumber: 'TN001234567'
-    },
-    {
-        id: 2,
-        orderNumber: 'ORD002',
-        customerId: 2,
-        customerName: 'Trần Thị Bình',
-        customerEmail: 'tranthibinh@email.com',
-        customerPhone: '0987654321',
-        status: 'shipping',
-        paymentStatus: 'paid',
-        paymentMethod: 'credit_card',
-        shippingAddress: {
-            fullName: 'Trần Thị Bình',
-            phone: '0987654321',
-            address: '456 Đường XYZ',
-            ward: 'Phường 2',
-            district: 'Quận 3',
-            province: 'TP. Hồ Chí Minh'
-        },
-        items: [
-            {
-                id: 2,
-                productId: 2,
-                productName: 'Váy Maxi Hoa Nhí Nữ',
-                productImage: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=100',
-                sku: 'VMN002',
-                price: 315000,
-                quantity: 1,
-                subtotal: 315000
-            }
-        ],
-        subtotal: 315000,
-        shippingFee: 25000,
-        discount: 31500,
-        total: 308500,
-        notes: '',
-        createdAt: '2024-12-02',
-        updatedAt: '2024-12-04',
-        trackingNumber: 'TN001234568'
-    },
-    {
-        id: 3,
-        orderNumber: 'ORD003',
-        customerId: 3,
-        customerName: 'Lê Minh Cường',
-        customerEmail: 'leminhcuong@email.com',
-        customerPhone: '0345678912',
-        status: 'processing',
-        paymentStatus: 'paid',
-        paymentMethod: 'e_wallet',
-        shippingAddress: {
-            fullName: 'Lê Minh Cường',
-            phone: '0345678912',
-            address: '789 Đường DEF',
-            ward: 'Phường 5',
-            district: 'Quận 7',
-            province: 'TP. Hồ Chí Minh'
-        },
-        items: [
-            {
-                id: 3,
-                productId: 3,
-                productName: 'Quần Jeans Slim Fit Nam',
-                productImage: 'https://images.unsplash.com/photo-1542272454315-7ad9f6620c3c?w=100',
-                sku: 'QJN003',
-                price: 450000,
-                quantity: 1,
-                subtotal: 450000,
-                variant: { color: 'Xanh đậm', size: '32' }
-            },
-            {
-                id: 4,
-                productId: 1,
-                productName: 'Áo Thun Nam Cổ Tròn Basic',
-                productImage: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100',
-                sku: 'ATN001',
-                price: 179000,
-                quantity: 1,
-                subtotal: 179000,
-                variant: { color: 'Trắng', size: 'M' }
-            }
-        ],
-        subtotal: 629000,
-        shippingFee: 30000,
-        discount: 0,
-        total: 659000,
-        createdAt: '2024-12-03',
-        updatedAt: '2024-12-03'
-    },
-    {
-        id: 4,
-        orderNumber: 'ORD004',
-        customerId: 4,
-        customerName: 'Phạm Thị Dung',
-        customerEmail: 'phamthidung@email.com',
-        customerPhone: '0567891234',
-        status: 'pending',
-        paymentStatus: 'pending',
-        paymentMethod: 'cash',
-        shippingAddress: {
-            fullName: 'Phạm Thị Dung',
-            phone: '0567891234',
-            address: '321 Đường GHI',
-            ward: 'Phường 8',
-            district: 'Quận 10',
-            province: 'TP. Hồ Chí Minh'
-        },
-        items: [
-            {
-                id: 5,
-                productId: 4,
-                productName: 'Áo Blouse Nữ Tay Dài',
-                productImage: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=100',
-                sku: 'ABN004',
-                price: 280000,
-                quantity: 2,
-                subtotal: 560000
-            }
-        ],
-        subtotal: 560000,
-        shippingFee: 25000,
-        discount: 56000,
-        total: 529000,
-        notes: 'Khách hàng VIP',
-        createdAt: '2024-12-04',
-        updatedAt: '2024-12-04'
-    },
-    {
-        id: 5,
-        orderNumber: 'ORD005',
-        customerId: 5,
-        customerName: 'Hoàng Văn Em',
-        customerEmail: 'hoangvanem@email.com',
-        customerPhone: '0789123456',
-        status: 'cancelled',
-        paymentStatus: 'refunded',
-        paymentMethod: 'bank_transfer',
-        shippingAddress: {
-            fullName: 'Hoàng Văn Em',
-            phone: '0789123456',
-            address: '654 Đường JKL',
-            ward: 'Phường 12',
-            district: 'Quận Tân Bình',
-            province: 'TP. Hồ Chí Minh'
-        },
-        items: [
-            {
-                id: 6,
-                productId: 5,
-                productName: 'Giày Sneaker Nam Trắng',
-                productImage: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=100',
-                sku: 'GSN005',
-                price: 765000,
-                quantity: 1,
-                subtotal: 765000,
-                variant: { color: 'Trắng', size: '42' }
-            }
-        ],
-        subtotal: 765000,
-        shippingFee: 35000,
-        discount: 0,
-        total: 800000,
-        notes: 'Khách hàng hủy đơn',
-        createdAt: '2024-12-01',
-        updatedAt: '2024-12-02'
-    }
-];
+            
 
 const Orders: React.FC = () => {
-    const [orders, setOrders] = useState<Order[]>(initialOrders);
+    const [orders, setOrders] = useState<Order[]>([]);
     const [isViewModalVisible, setIsViewModalVisible] = useState(false);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
@@ -423,6 +215,13 @@ const Orders: React.FC = () => {
 
     // Table columns
     const columns = [
+        {
+            title: 'STT',
+            key: 'index',
+            width: 60,
+            align: 'center' as const,
+            render: (_: any, __: any, index: number) => index + 1,
+        },
         {
             title: 'Mã đơn hàng',
             dataIndex: 'orderNumber',
@@ -534,8 +333,7 @@ const Orders: React.FC = () => {
             width: 150,
             align: 'center' as const,
             render: (record: Order) => (
-                <div className="table-cell-container">
-                    <Space size="small">
+                <Space size="small">
                         <Button
                             type="text"
                             icon={<EyeOutlined />}
@@ -570,7 +368,6 @@ const Orders: React.FC = () => {
                             </Popconfirm>
                         )}
                     </Space>
-                </div>
             ),
         },
     ];
@@ -687,121 +484,92 @@ const Orders: React.FC = () => {
     };
 
     return (
-        <div className="orders-container">
-            {/* Header Section */}
-            <div className="orders-header">
-                <Row justify="space-between" align="middle">
-                    <Col>
-                        <Title level={1} style={{ margin: 0, color: 'white' }}>
-                            <ShoppingCartOutlined style={{ marginRight: '12px' }} />
-                            Quản lý Đơn hàng
-                        </Title>
-                        <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '16px' }}>
-                            Theo dõi và quản lý tất cả đơn hàng của cửa hàng
-                        </Text>
+        <div style={{ margin: 0, padding: 0 }}>
+            <style>{`
+                .ant-table-measure-row {
+                    display: none !important;
+                    height: 0 !important;
+                    visibility: hidden !important;
+                }
+                .ant-table-tbody > tr > td {
+                    height: 70px !important;
+                    vertical-align: middle !important;
+                    padding: 8px 16px !important;
+                }
+                .ant-table-tbody > tr {
+                    height: 70px !important;
+                }
+                .ant-table-tbody > tr:first-child > td {
+                    padding-top: 8px !important;
+                }
+                .ant-table-thead > tr > th {
+                    padding: 8px 16px !important;
+                }
+                .ant-table {
+                    margin-top: 0 !important;
+                }
+                .ant-card-body {
+                    padding: 16px !important;
+                }
+            `}</style>
+            <Title level={2} className="text-primary" style={{ marginBottom: '16px', marginTop: 0 }}>
+                Quản lý Đơn hàng
+            </Title>
+
+            {/* Statistics */}
+            <div style={{ marginBottom: '16px', marginTop: 0 }}>
+                <Row gutter={16}>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic
+                                title="Tổng đơn hàng"
+                                value={totalOrders}
+                                prefix={<ShoppingCartOutlined />}
+                                valueStyle={{ color: '#1890ff' }}
+                            />
+                        </Card>
                     </Col>
-                    <Col>
-                        <Space>
-                            <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                style={{
-                                    background: 'rgba(255, 255, 255, 0.2)',
-                                    borderColor: 'rgba(255, 255, 255, 0.3)',
-                                    color: 'white'
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic
+                                title="Chờ xử lý"
+                                value={pendingOrders}
+                                prefix={<ClockCircleOutlined />}
+                                valueStyle={{ color: '#faad14' }}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic
+                                title="Hoàn thành"
+                                value={deliveredOrders}
+                                prefix={<CheckCircleOutlined />}
+                                valueStyle={{ color: '#52c41a' }}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic
+                                title="Doanh thu"
+                                value={totalRevenue}
+                                formatter={(value) => {
+                                    const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+                                    return `${numValue.toLocaleString()}đ`;
                                 }}
-                            >
-                                Thêm đơn hàng
-                            </Button>
-                            <Button
-                                icon={<ReloadOutlined />}
-                                style={{
-                                    background: 'rgba(255, 255, 255, 0.1)',
-                                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                                    color: 'white'
-                                }}
-                                onClick={() => message.success('Đã làm mới dữ liệu!')}
-                            >
-                                Làm mới
-                            </Button>
-                        </Space>
+                                prefix={<DollarOutlined />}
+                                valueStyle={{ color: '#722ed1' }}
+                            />
+                        </Card>
                     </Col>
                 </Row>
             </div>
 
-            {/* Statistics Grid */}
-            <Row gutter={[16, 16]} className="stats-grid">
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="stat-card">
-                        <div className="stat-icon">
-                            <ShoppingCartOutlined />
-                        </div>
-                        <Statistic
-                            title="Tổng đơn hàng"
-                            value={totalOrders}
-                            valueStyle={{ color: '#1890ff', fontSize: '32px', fontWeight: 'bold' }}
-                        />
-                        <div style={{ marginTop: '8px', fontSize: '12px', color: '#52c41a' }}>
-                            <CheckCircleOutlined /> +12% so với tháng trước
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="stat-card">
-                        <div className="stat-icon">
-                            <ClockCircleOutlined />
-                        </div>
-                        <Statistic
-                            title="Chờ xử lý"
-                            value={pendingOrders}
-                            valueStyle={{ color: '#faad14', fontSize: '32px', fontWeight: 'bold' }}
-                        />
-                        <div style={{ marginTop: '8px', fontSize: '12px', color: '#faad14' }}>
-                            <ExclamationCircleOutlined /> Cần xử lý ngay
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="stat-card">
-                        <div className="stat-icon">
-                            <CheckCircleOutlined />
-                        </div>
-                        <Statistic
-                            title="Hoàn thành"
-                            value={deliveredOrders}
-                            valueStyle={{ color: '#52c41a', fontSize: '32px', fontWeight: 'bold' }}
-                        />
-                        <Progress
-                            percent={Math.round((deliveredOrders / totalOrders) * 100)}
-                            size="small"
-                            strokeColor="#52c41a"
-                            style={{ marginTop: '8px' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="stat-card">
-                        <div className="stat-icon">
-                            <DollarOutlined />
-                        </div>
-                        <Statistic
-                            title="Doanh thu"
-                            value={totalRevenue}
-                            suffix="đ"
-                            valueStyle={{ color: '#722ed1', fontSize: '32px', fontWeight: 'bold' }}
-                            formatter={(value) => `${Number(value).toLocaleString()}`}
-                        />
-                        <div style={{ marginTop: '8px', fontSize: '12px', color: '#722ed1' }}>
-                            <TruckOutlined /> Tháng này
-                        </div>
-                    </Card>
-                </Col>
-            </Row>
-
-            {/* Advanced Filters */}
-            <Card className="orders-filters">
-                <Row className="filter-row">
-                    <Col className="filter-item">
+            {/* Filters */}
+            <Card style={{ marginBottom: '16px', marginTop: 0 }}>
+                <Row gutter={16} align="middle">
+                    <Col flex="auto">
                         <Input
                             placeholder="Tìm kiếm theo mã đơn, tên khách hàng..."
                             prefix={<SearchOutlined />}
@@ -809,71 +577,40 @@ const Orders: React.FC = () => {
                             style={{ borderRadius: '8px' }}
                         />
                     </Col>
-                    <Col className="filter-item">
+                    <Col>
                         <Select
                             placeholder="Trạng thái đơn hàng"
-                            style={{ width: '100%', borderRadius: '8px' }}
+                            style={{ width: 150 }}
                             value={filterStatus === 'all' ? undefined : filterStatus}
                             onChange={(value) => setFilterStatus(value || 'all')}
                             allowClear
-                            suffixIcon={<FilterOutlined />}
                         >
-                            <Option value="pending">
-                                <Tag color="orange">Chờ xác nhận</Tag>
-                            </Option>
-                            <Option value="confirmed">
-                                <Tag color="blue">Đã xác nhận</Tag>
-                            </Option>
-                            <Option value="processing">
-                                <Tag color="cyan">Đang xử lý</Tag>
-                            </Option>
-                            <Option value="shipping">
-                                <Tag color="purple">Đang giao</Tag>
-                            </Option>
-                            <Option value="delivered">
-                                <Tag color="green">Đã giao</Tag>
-                            </Option>
-                            <Option value="cancelled">
-                                <Tag color="red">Đã hủy</Tag>
-                            </Option>
-                            <Option value="returned">
-                                <Tag color="magenta">Đã trả</Tag>
-                            </Option>
+                            <Option value="pending">Chờ xác nhận</Option>
+                            <Option value="confirmed">Đã xác nhận</Option>
+                            <Option value="processing">Đang xử lý</Option>
+                            <Option value="shipping">Đang giao</Option>
+                            <Option value="delivered">Đã giao</Option>
+                            <Option value="cancelled">Đã hủy</Option>
+                            <Option value="returned">Đã trả</Option>
                         </Select>
                     </Col>
-                    <Col className="filter-item">
+                    <Col>
                         <Select
-                            placeholder="Trạng thái thanh toán"
-                            style={{ width: '100%', borderRadius: '8px' }}
+                            placeholder="Thanh toán"
+                            style={{ width: 150 }}
                             value={filterPaymentStatus === 'all' ? undefined : filterPaymentStatus}
                             onChange={(value) => setFilterPaymentStatus(value || 'all')}
                             allowClear
-                            suffixIcon={<DollarOutlined />}
                         >
-                            <Option value="pending">
-                                <Tag color="orange">Chờ thanh toán</Tag>
-                            </Option>
-                            <Option value="paid">
-                                <Tag color="green">Đã thanh toán</Tag>
-                            </Option>
-                            <Option value="failed">
-                                <Tag color="red">Thất bại</Tag>
-                            </Option>
-                            <Option value="refunded">
-                                <Tag color="blue">Đã hoàn tiền</Tag>
-                            </Option>
+                            <Option value="pending">Chờ thanh toán</Option>
+                            <Option value="paid">Đã thanh toán</Option>
+                            <Option value="failed">Thất bại</Option>
+                            <Option value="refunded">Đã hoàn tiền</Option>
                         </Select>
                     </Col>
-                    <Col className="filter-item">
-                        <DatePicker.RangePicker
-                            placeholder={['Từ ngày', 'Đến ngày']}
-                            style={{ width: '100%', borderRadius: '8px' }}
-                        />
-                    </Col>
-                    <Col className="filter-actions">
+                    <Col>
                         <Space>
                             <Button
-                                type="default"
                                 icon={<ReloadOutlined />}
                                 onClick={() => {
                                     setFilterStatus('all');
@@ -887,11 +624,6 @@ const Orders: React.FC = () => {
                                 type="primary"
                                 icon={<DownloadOutlined />}
                                 onClick={handleExportExcel}
-                                style={{
-                                    background: 'linear-gradient(45deg, #1890ff, #722ed1)',
-                                    border: 'none',
-                                    borderRadius: '8px'
-                                }}
                             >
                                 Xuất Excel
                             </Button>
@@ -902,14 +634,12 @@ const Orders: React.FC = () => {
 
             {/* Bulk Actions */}
             {selectedRowKeys.length > 0 && (
-                <Card
-                    style={{
-                        marginBottom: '16px',
-                        background: 'linear-gradient(135deg, #e6f7ff 0%, #f0f9ff 100%)',
-                        border: '1px solid #1890ff',
-                        borderRadius: '12px'
-                    }}
-                >
+                <Card style={{ 
+                    marginBottom: '16px',
+                    marginTop: 0,
+                    background: 'linear-gradient(135deg, #e6f7ff 0%, #f0f9ff 100%)',
+                    border: '1px solid #1890ff'
+                }}>
                     <Row justify="space-between" align="middle">
                         <Col>
                             <Space>
@@ -929,14 +659,12 @@ const Orders: React.FC = () => {
                         <Col>
                             <Space>
                                 <Button
-                                    type="default"
                                     icon={<PrinterOutlined />}
                                     onClick={() => message.success('Đang in hóa đơn hàng loạt...')}
                                 >
                                     In hóa đơn
                                 </Button>
                                 <Button
-                                    type="default"
                                     icon={<MailOutlined />}
                                     onClick={() => message.success('Đang gửi email thông báo...')}
                                 >
@@ -944,7 +672,6 @@ const Orders: React.FC = () => {
                                 </Button>
                                 <Button
                                     onClick={() => setSelectedRowKeys([])}
-                                    style={{ borderRadius: '8px' }}
                                 >
                                     Bỏ chọn
                                 </Button>
@@ -954,68 +681,8 @@ const Orders: React.FC = () => {
                 </Card>
             )}
 
-            {/* Quick Stats Bar */}
-            <Card style={{ marginBottom: '16px', background: '#fafafa' }}>
-                <Row gutter={16} justify="center">
-                    <Col span={4} style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1890ff' }}>
-                            {filteredOrders.length}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>Tổng đơn</div>
-                    </Col>
-                    <Col span={4} style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#52c41a' }}>
-                            {filteredOrders.reduce((sum, order) => sum + order.total, 0).toLocaleString()}đ
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>Tổng giá trị</div>
-                    </Col>
-                    <Col span={4} style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#faad14' }}>
-                            {filteredOrders.filter(o => o.status === 'pending').length}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>Chờ xử lý</div>
-                    </Col>
-                    <Col span={4} style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#722ed1' }}>
-                            {filteredOrders.filter(o => o.status === 'shipping').length}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>Đang giao</div>
-                    </Col>
-                    <Col span={4} style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#13c2c2' }}>
-                            {Math.round((filteredOrders.filter(o => o.status === 'delivered').length / filteredOrders.length) * 100) || 0}%
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>Tỷ lệ hoàn thành</div>
-                    </Col>
-                </Row>
-            </Card>
-
-            {/* Orders Table */}
-            <Card className="orders-table">
-                <div style={{ marginBottom: '16px' }}>
-                    <Row justify="space-between" align="middle">
-                        <Col>
-                            <Title level={4} style={{ margin: 0 }}>
-                                <FileTextOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-                                Danh sách đơn hàng
-                            </Title>
-                        </Col>
-                        <Col>
-                            <Space>
-                                <Tooltip title="Làm mới dữ liệu">
-                                    <Button
-                                        icon={<SyncOutlined />}
-                                        onClick={() => message.success('Đã làm mới!')}
-                                    />
-                                </Tooltip>
-                                <Tooltip title="Cài đặt cột hiển thị">
-                                    <Button icon={<SettingOutlined />} />
-                                </Tooltip>
-                            </Space>
-                        </Col>
-                    </Row>
-                </div>
-
+            {/* Table */}
+            <Card style={{ marginTop: 0 }}>
                 <Table
                     columns={columns}
                     dataSource={filteredOrders}

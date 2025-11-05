@@ -1,0 +1,368 @@
+/* Login Page - BEM Structure */
+
+.login {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 20px;
+    background-color: #f9f9f9;
+    min-height: 70vh;
+}
+
+.login__container {
+    width: 100%;
+    max-width: 450px;
+    padding: 40px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.login__container:hover {
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+}
+
+/* Header Section */
+.login__header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login__title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ff6347;
+    margin-bottom: 10px;
+}
+
+.login__subtitle {
+    font-size: 16px;
+    color: #666;
+}
+
+/* Login Options (tabs) */
+.login__options {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 25px;
+    gap: 20px;
+    border-bottom: 1px solid #eaeaea;
+    padding-bottom: 15px;
+}
+
+.login__option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 20px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    position: relative;
+    color: #666;
+}
+
+.login__option:hover {
+    background-color: rgba(255, 99, 71, 0.05);
+    color: #ff6347;
+}
+
+.login__option--active {
+    color: #ff6347;
+}
+
+.login__option--active::after {
+    content: '';
+    position: absolute;
+    bottom: -16px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: #ff6347;
+    border-radius: 3px 3px 0 0;
+}
+
+.login__option-icon {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+/* Form Section */
+.login__form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.login__form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.login__label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.login__input {
+    padding: 12px 16px;
+    border: 1px solid #e5e5e5;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.login__input:focus {
+    outline: none;
+    border-color: #ff6347;
+    box-shadow: 0 0 0 2px rgba(255, 99, 71, 0.2);
+}
+
+.login__input:disabled {
+    background-color: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+    border-color: #e0e0e0;
+}
+
+/* Form Options (Remember me + Forgot password) */
+.login__form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.login__remember {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #555;
+}
+
+.login__checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: #ff6347;
+}
+
+.login__checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.login__forgot-link {
+    color: #ff6347;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.login__forgot-link:hover {
+    text-decoration: underline;
+}
+
+/* Login Button */
+.login__button {
+    background-color: #ff6347;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 15px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.login__button:hover {
+    background-color: #e55a40;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 99, 71, 0.3);
+}
+
+.login__button:active {
+    transform: translateY(0);
+}
+
+.login__button:disabled {
+    background-color: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Facebook Login Section */
+.login__facebook-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.login__facebook-info {
+    text-align: center;
+    color: #666;
+    font-size: 15px;
+    margin: 10px 0;
+}
+
+.login__facebook-button {
+    background-color: #1877f2;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 15px 14px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.login__facebook-button:hover {
+    background-color: #166fe5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+}
+
+.login__facebook-button:active {
+    transform: translateY(0);
+}
+
+.login__facebook-icon {
+    font-size: 20px;
+}
+
+/* Google Login Section */
+.login__google-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.login__google-info {
+    text-align: center;
+    color: #666;
+    font-size: 15px;
+    margin: 10px 0;
+    line-height: 1.4;
+}
+
+.login__google-button {
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #dadce0;
+    border-radius: 5px;
+    padding: 15px 14px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.login__google-button:hover {
+    background-color: #f8f9fa;
+    border-color: #c6c8ca;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.login__google-button:active {
+    background-color: #f1f3f4;
+    transform: translateY(0);
+}
+
+.login__google-icon {
+    font-size: 20px;
+    color: #4285f4;
+}
+
+/* Footer Section */
+.login__footer {
+    margin-top: 25px;
+    text-align: center;
+    font-size: 15px;
+    color: #666;
+}
+
+.login__register-link {
+    color: #ff6347;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.login__register-link:hover {
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 576px) {
+    .login__container {
+        padding: 25px;
+        margin: 0 10px;
+    }
+
+    .login__title {
+        font-size: 24px;
+    }
+
+    .login__options {
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: space-around;
+    }
+
+    .login__option {
+        padding: 8px 12px;
+        min-width: 80px;
+    }
+
+    .login__option-icon {
+        font-size: 20px;
+    }
+
+    .login__form-options {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .login__button,
+    .login__facebook-button,
+    .login__google-button {
+        padding: 12px;
+        font-size: 15px;
+    }
+
+    .login__facebook-info,
+    .login__google-info {
+        font-size: 14px;
+        margin: 5px 0;
+    }
+}
+

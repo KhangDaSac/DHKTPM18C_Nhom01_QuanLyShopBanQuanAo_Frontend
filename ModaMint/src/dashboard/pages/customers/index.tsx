@@ -4,6 +4,7 @@ import {
     Button,
     Space,
     Tag,
+    Badge,
     Modal,
     Form,
     Input,
@@ -15,11 +16,11 @@ import {
     Statistic,
     Typography,
     Popconfirm,
-    Avatar
+    Avatar,
+    Spin
 } from 'antd';
 import './style.css';
 import {
-    PlusOutlined,
     EditOutlined,
     DeleteOutlined,
     EyeOutlined,
@@ -32,6 +33,9 @@ import {
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import '../../components/common-styles.css';
+import { customerService } from '../../../services/customer';
+import { addressService, type Province, type District, type Ward } from '../../../services/address';
+import { toast } from 'react-toastify';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -40,154 +44,191 @@ const { TextArea } = Input;
 // Interface cho Customer
 interface Customer {
     id: number;
+    userId?: string; // userId từ backend
+    username?: string;
     name: string;
     email: string;
-    phone: string;
-    address: string;
-    city: string;
-    district: string;
-    ward: string;
-    gender: 'male' | 'female' | 'other';
+    phone?: string;
+    addressDetail?: string;
+    city?: string;
+    district?: string;
+    ward?: string;
+    gender?: 'male' | 'female' | 'other';
     dateOfBirth?: string;
-    status: 'active' | 'inactive' | 'blocked';
+    status: 'active' | 'blocked';
     customerType: 'regular' | 'vip' | 'premium';
     totalOrders: number;
     totalSpent: number;
     lastOrderDate?: string;
-    createdAt: string;
+    createdAt?: string;
     notes?: string;
     avatar?: string;
+    firstName?: string;
+    lastName?: string;
 }
 
-// Mock data - Khách hàng mẫu
-const initialCustomers: Customer[] = [
-    {
-        id: 1, name: 'Nguyễn Văn An', email: 'vanan@gmail.com', phone: '0901234567',
-        address: '123 Đường ABC', city: 'Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Bến Nghé',
-        gender: 'male', dateOfBirth: '1990-05-15', status: 'active', customerType: 'vip',
-        totalOrders: 25, totalSpent: 15000000, lastOrderDate: '2024-02-20',
-        createdAt: '2023-06-01', notes: 'Khách hàng VIP, thường mua hàng cao cấp',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face'
-    },
-    {
-        id: 2, name: 'Trần Thị Bình', email: 'thithbinh@yahoo.com', phone: '0912345678',
-        address: '456 Đường XYZ', city: 'Hà Nội', district: 'Quận Ba Đình', ward: 'Phường Điện Biên',
-        gender: 'female', dateOfBirth: '1985-08-22', status: 'active', customerType: 'premium',
-        totalOrders: 45, totalSpent: 32000000, lastOrderDate: '2024-02-25',
-        createdAt: '2023-03-15', notes: 'Khách hàng thân thiết, hay giới thiệu bạn bè',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b190?w=80&h=80&fit=crop&crop=face'
-    },
-    {
-        id: 3, name: 'Lê Minh Cường', email: 'minhcuong@outlook.com', phone: '0923456789',
-        address: '789 Đường DEF', city: 'Đà Nẵng', district: 'Quận Hải Châu', ward: 'Phường Thạch Thang',
-        gender: 'male', status: 'active', customerType: 'regular',
-        totalOrders: 8, totalSpent: 2500000, lastOrderDate: '2024-02-18',
-        createdAt: '2024-01-10', notes: 'Khách hàng mới, tiềm năng phát triển'
-    },
-    {
-        id: 4, name: 'Phạm Thị Dung', email: 'thidung@gmail.com', phone: '0934567890',
-        address: '321 Đường GHI', city: 'Cần Thơ', district: 'Quận Ninh Kiều', ward: 'Phường An Cư',
-        gender: 'female', dateOfBirth: '1992-12-03', status: 'inactive', customerType: 'regular',
-        totalOrders: 3, totalSpent: 850000, lastOrderDate: '2023-11-15',
-        createdAt: '2023-09-20', notes: 'Chưa mua hàng trong thời gian dài'
-    },
-    {
-        id: 5, name: 'Hoàng Văn Em', email: 'vanem@hotmail.com', phone: '0945678901',
-        address: '654 Đường JKL', city: 'Hải Phòng', district: 'Quận Ngô Quyền', ward: 'Phường Máy Chai',
-        gender: 'male', status: 'blocked', customerType: 'regular',
-        totalOrders: 2, totalSpent: 450000, lastOrderDate: '2023-08-10',
-        createdAt: '2023-07-05', notes: 'Bị khóa do vi phạm chính sách đổi trả',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face'
-    }
-];
-
-const cities = ['Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng', 'Cần Thơ', 'Hải Phòng', 'Nha Trang', 'Huế', 'Quy Nhon'];
 
 const Customers: React.FC = () => {
-    const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+    const [customers, setCustomers] = useState<Customer[]>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isViewModalVisible, setIsViewModalVisible] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
     const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
+    
+    // State cho địa chỉ
+    const [provinces, setProvinces] = useState<Province[]>([]);
+    const [districts, setDistricts] = useState<District[]>([]);
+    const [wards, setWards] = useState<Ward[]>([]);
+    const [selectedProvinceCode, setSelectedProvinceCode] = useState<string | undefined>();
+    const [selectedDistrictCode, setSelectedDistrictCode] = useState<string | undefined>();
+    const [loadingProvinces, setLoadingProvinces] = useState(false);
+    const [loadingDistricts, setLoadingDistricts] = useState(false);
+    const [loadingWards, setLoadingWards] = useState(false);
 
-    // Inject CSS để fix table spacing
+    // Load customers từ API và provinces
     useEffect(() => {
-        const styleId = 'custom-table-fix';
-        let existingStyle = document.getElementById(styleId);
-
-        if (existingStyle) {
-            existingStyle.remove();
-        }
-
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = `
-            .custom-customers-table .ant-table-thead {
-                position: sticky !important;
-                top: 0 !important;
-                z-index: 2 !important;
-            }
-            
-            .custom-customers-table .ant-table-tbody {
-                margin-top: 0 !important;
-                padding-top: 0 !important;
-            }
-            
-            .custom-customers-table .ant-table-thead > tr > th {
-                vertical-align: middle !important;
-                text-align: center !important;
-                font-weight: 600 !important;
-                padding: 8px 16px !important;
-                border-bottom: 1px solid #f0f0f0 !important;
-                background-color: #fafafa !important;
-                height: 40px !important;
-                margin: 0 !important;
-                border-top: none !important;
-            }
-            
-            .custom-customers-table .ant-table-tbody > tr > td {
-                vertical-align: middle !important;
-                padding: 8px 16px !important;
-                height: 60px !important;
-                border-bottom: 1px solid #f0f0f0 !important;
-                margin: 0 !important;
-                border-top: none !important;
-            }
-            
-            .custom-customers-table .ant-table-container {
-                border: none !important;
-            }
-            
-            .custom-customers-table .ant-table {
-                border-collapse: collapse !important;
-                border-spacing: 0 !important;
-            }
-            
-            .custom-customers-table .ant-table-thead > tr > th.ant-table-selection-column {
-                padding: 8px !important;
-                width: 50px !important;
-                text-align: center !important;
-                background-color: #fafafa !important;
-            }
-            
-            .custom-customers-table .ant-table-tbody > tr > td.ant-table-selection-column {
-                padding: 8px !important;
-                width: 50px !important;
-                text-align: center !important;
-            }
-        `;
-
-        document.head.appendChild(style);
-
-        return () => {
-            const styleToRemove = document.getElementById(styleId);
-            if (styleToRemove) {
-                styleToRemove.remove();
-            }
-        };
+        loadCustomers();
+        loadProvinces();
     }, []);
+
+    // Load provinces
+    const loadProvinces = async () => {
+        setLoadingProvinces(true);
+        try {
+            const data = await addressService.getProvinces();
+            console.log('Loaded provinces:', data);
+            if (data && data.length > 0) {
+                setProvinces(data);
+            } else {
+                console.warn('No provinces data received');
+                toast.warning('Không thể tải danh sách tỉnh/thành phố từ API. Vui lòng thử lại sau.');
+            }
+        } catch (error) {
+            console.error('Error loading provinces:', error);
+            toast.error('Không thể tải danh sách tỉnh/thành phố. Vui lòng kiểm tra kết nối mạng.');
+        } finally {
+            setLoadingProvinces(false);
+        }
+    };
+
+    // Load districts khi chọn province
+    const handleProvinceChange = async (provinceName: string) => {
+        // Tìm province code từ name
+        const province = provinces.find(p => p.name === provinceName);
+        if (!province) {
+            console.error('Province not found:', provinceName);
+            return;
+        }
+        
+        const provinceCode = province.code;
+        setSelectedProvinceCode(provinceCode);
+        setSelectedDistrictCode(undefined);
+        setDistricts([]);
+        setWards([]);
+        form.setFieldsValue({ district: undefined, ward: undefined });
+        
+        if (provinceCode) {
+            setLoadingDistricts(true);
+            try {
+                const data = await addressService.getDistrictsByProvince(provinceCode);
+                setDistricts(data);
+            } catch (error) {
+                console.error('Error loading districts:', error);
+                toast.error('Không thể tải danh sách quận/huyện');
+            } finally {
+                setLoadingDistricts(false);
+            }
+        }
+    };
+
+    // Load wards khi chọn district
+    const handleDistrictChange = async (districtName: string) => {
+        // Tìm district code từ name
+        const district = districts.find(d => d.name === districtName);
+        if (!district) {
+            console.error('District not found:', districtName);
+            return;
+        }
+        
+        const districtCode = district.code;
+        setSelectedDistrictCode(districtCode);
+        setWards([]);
+        form.setFieldsValue({ ward: undefined });
+        
+        if (districtCode) {
+            setLoadingWards(true);
+            try {
+                const data = await addressService.getWardsByDistrict(districtCode);
+                setWards(data);
+            } catch (error) {
+                console.error('Error loading wards:', error);
+                toast.error('Không thể tải danh sách phường/xã');
+            } finally {
+                setLoadingWards(false);
+            }
+        }
+    };
+
+    const loadCustomers = async () => {
+        setLoading(true);
+        try {
+            console.log('🔄 Đang gọi API getAllCustomers...');
+            const result = await customerService.getAllCustomers();
+            console.log('📦 Kết quả từ API:', result);
+            
+            if (result.success && result.data) {
+                console.log('✅ Dữ liệu customers:', result.data);
+                // Chuyển đổi customer response sang customer format cho display
+                const customersData: Customer[] = result.data
+                    .filter(customer => customer && customer.user) // Lọc các customer có user data
+                    .map((customer, index) => {
+                        const user = customer.user!; // Safe vì đã filter
+                        const primaryAddress = customer.addresses && customer.addresses.length > 0 
+                            ? customer.addresses[0] 
+                            : null;
+                        const orders = customer.orders || [];
+                        const totalSpent = orders.reduce((sum, order) => sum + (parseFloat(order.id.toString()) || 0), 0);
+                        
+                    return {
+                        id: index + 1,
+                        userId: customer.userId, // Lưu userId từ backend
+                        username: user.username || '',
+                        name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Chưa có tên',
+                        email: user.email || '',
+                        phone: user.phone || '',
+                        addressDetail: primaryAddress?.addressDetail || 'Chưa cập nhật',
+                        city: primaryAddress?.city || 'Chưa cập nhật',
+                        district: primaryAddress?.district || 'Chưa cập nhật',
+                        ward: primaryAddress?.ward || 'Chưa cập nhật',
+                        gender: (user.gender?.toLowerCase() === 'male' ? 'male' : 
+                                 user.gender?.toLowerCase() === 'female' ? 'female' : 'other') as 'male' | 'female' | 'other',
+                        dateOfBirth: user.dob || '',
+                        status: 'active' as const,
+                        customerType: 'regular' as const,
+                        totalOrders: orders.length,
+                        totalSpent: totalSpent,
+                        createdAt: new Date().toISOString().split('T')[0],
+                        firstName: user.firstName || '',
+                        lastName: user.lastName || '',
+                        avatar: user.image || ''
+                    };
+                    });
+                console.log('👥 Customers data mapped:', customersData);
+                console.log('👥 Total customers:', customersData.length);
+                setCustomers(customersData);
+            } else {
+                console.error('❌ Lỗi:', result.message);
+                toast.error(result.message || 'Không thể tải danh sách khách hàng');
+            }
+        } catch (err) {
+            console.error('❌ Exception:', err);
+            toast.error('Lỗi kết nối đến server');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // States cho filtering
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -209,56 +250,83 @@ const Customers: React.FC = () => {
 
     const columns = [
         {
-            title: 'Khách hàng',
-            key: 'customer',
-            width: 250,
+            title: 'STT',
+            key: 'index',
+            width: 60,
+            align: 'center' as const,
+            render: (_: any, __: any, index: number) => index + 1,
+        },
+        {
+            title: 'Hình ảnh',
+            key: 'avatar',
+            width: 100,
+            align: 'center' as const,
             render: (record: Customer) => (
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
-                    padding: '8px 0',
-                    minHeight: '60px'
+                    justifyContent: 'center',
+                    height: '70px',
+                    padding: '8px 0'
                 }}>
                     <Avatar
                         src={record.avatar}
                         icon={<UserOutlined />}
-                        size={40}
-                        style={{ flexShrink: 0 }}
+                        size={45}
+                        style={{ border: '1px solid #f0f0f0' }}
                     />
-                    <div style={{ flex: 1 }}>
-                        <div style={{
-                            fontWeight: 'bold',
-                            marginBottom: '4px',
-                            lineHeight: '1.2',
-                            fontSize: '14px'
-                        }}>
-                            {record.name}
-                            {record.customerType === 'vip' &&
-                                <CrownOutlined style={{ color: '#faad14', marginLeft: '6px' }} />
-                            }
-                            {record.customerType === 'premium' &&
-                                <CrownOutlined style={{ color: '#722ed1', marginLeft: '6px' }} />
-                            }
-                        </div>
-                        <div style={{
-                            fontSize: '12px',
-                            color: '#666',
-                            lineHeight: '1.3',
-                            marginBottom: '2px'
-                        }}>
-                            <MailOutlined style={{ marginRight: '4px' }} />
-                            {record.email}
-                        </div>
-                        <div style={{
-                            fontSize: '12px',
-                            color: '#666',
-                            lineHeight: '1.3'
-                        }}>
-                            <PhoneOutlined style={{ marginRight: '4px' }} />
-                            {record.phone}
-                        </div>
+                </div>
+            ),
+        },
+        {
+            title: 'Thông tin khách hàng',
+            key: 'customer',
+            width: 300,
+            render: (record: Customer) => (
+                <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'center',
+                    height: '70px',
+                    padding: '8px 0'
+                }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '3px', fontSize: '14px', lineHeight: '1.3' }}>
+                        {record.name}
+                        {record.customerType === 'vip' &&
+                            <CrownOutlined style={{ color: '#faad14', marginLeft: '6px' }} />
+                        }
+                        {record.customerType === 'premium' &&
+                            <CrownOutlined style={{ color: '#722ed1', marginLeft: '6px' }} />
+                        }
                     </div>
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '1px', lineHeight: '1.2' }}>
+                        <MailOutlined style={{ marginRight: '4px' }} />
+                        {record.email}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.2' }}>
+                        <PhoneOutlined style={{ marginRight: '4px' }} />
+                        {record.phone}
+                    </div>
+                </div>
+            ),
+        },
+        {
+            title: 'Giới tính',
+            dataIndex: 'gender',
+            key: 'gender',
+            width: 100,
+            align: 'center' as const,
+            render: (gender: string) => (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '70px',
+                    padding: '8px 0'
+                }}>
+                    <Tag color={gender === 'male' ? 'blue' : gender === 'female' ? 'pink' : 'default'}>
+                        {gender === 'male' ? 'Nam' : gender === 'female' ? 'Nữ' : 'Khác'}
+                    </Tag>
                 </div>
             ),
         },
@@ -268,37 +336,20 @@ const Customers: React.FC = () => {
             width: 200,
             render: (record: Customer) => (
                 <div style={{
-                    padding: '8px 0',
-                    minHeight: '60px',
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    height: '70px',
+                    padding: '8px 0'
                 }}>
-                    <div style={{
-                        fontWeight: 'bold',
-                        marginBottom: '4px',
-                        fontSize: '14px',
-                        lineHeight: '1.2'
-                    }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '3px', fontSize: '14px', lineHeight: '1.3' }}>
                         {record.city}
                     </div>
-                    <div style={{
-                        fontSize: '12px',
-                        color: '#666',
-                        marginBottom: '2px',
-                        lineHeight: '1.3'
-                    }}>
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '1px', lineHeight: '1.2' }}>
                         {record.district}, {record.ward}
                     </div>
-                    <div style={{
-                        fontSize: '12px',
-                        color: '#999',
-                        lineHeight: '1.3',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                    }}>
-                        {record.address}
+                    <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {record.addressDetail}
                     </div>
                 </div>
             ),
@@ -318,11 +369,11 @@ const Customers: React.FC = () => {
                 const { color, text } = config[type as keyof typeof config];
                 return (
                     <div style={{
-                        padding: '8px 0',
-                        minHeight: '60px',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        height: '70px',
+                        padding: '8px 0'
                     }}>
                         <Tag color={color}>{text}</Tag>
                     </div>
@@ -338,11 +389,11 @@ const Customers: React.FC = () => {
             sorter: (a: Customer, b: Customer) => a.totalOrders - b.totalOrders,
             render: (orders: number) => (
                 <div style={{
-                    padding: '8px 0',
-                    minHeight: '60px',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    height: '70px',
+                    padding: '8px 0'
                 }}>
                     <span style={{ fontWeight: 'bold', color: '#1890ff', fontSize: '14px' }}>{orders}</span>
                 </div>
@@ -357,11 +408,11 @@ const Customers: React.FC = () => {
             sorter: (a: Customer, b: Customer) => a.totalSpent - b.totalSpent,
             render: (amount: number) => (
                 <div style={{
-                    padding: '8px 0',
-                    minHeight: '60px',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'flex-end'
+                    justifyContent: 'flex-end',
+                    height: '70px',
+                    padding: '8px 0'
                 }}>
                     <span style={{
                         fontWeight: 'bold',
@@ -379,40 +430,12 @@ const Customers: React.FC = () => {
             key: 'status',
             width: 120,
             align: 'center' as const,
-            render: (status: string, record: Customer) => {
-                const handleToggleStatus = () => {
-                    let newStatus: 'active' | 'inactive' | 'blocked';
-                    if (status === 'active') newStatus = 'inactive';
-                    else if (status === 'inactive') newStatus = 'active';
-                    else newStatus = 'active'; // unblock
-
-                    setCustomers(customers.map(c =>
-                        c.id === record.id ? { ...c, status: newStatus } : c
-                    ));
-                    message.success(`Đã cập nhật trạng thái khách hàng`);
-                };
-
-                const getText = () => {
-                    switch (status) {
-                        case 'active': return 'Hoạt động';
-                        case 'inactive': return 'Không hoạt động';
-                        case 'blocked': return 'Bị khóa';
-                        default: return status;
-                    }
-                };
-
-                return (
-                    <div className="status-button-container">
-                        <Button
-                            size="small"
-                            onClick={handleToggleStatus}
-                            className={`status-button ${status}`}
-                        >
-                            {getText()}
-                        </Button>
-                    </div>
-                );
-            },
+            render: (status: string) => (
+                <Badge 
+                    status={status === 'active' ? 'success' : 'error'} 
+                    text={status === 'active' ? 'Hoạt động' : 'Bị khóa'} 
+                />
+            ),
         },
         {
             title: 'Thao tác',
@@ -420,14 +443,7 @@ const Customers: React.FC = () => {
             width: 150,
             align: 'center' as const,
             render: (record: Customer) => (
-                <div style={{
-                    padding: '8px 0',
-                    minHeight: '60px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <Space size="small">
+                <Space size="small">
                         <Button
                             type="text"
                             icon={<EyeOutlined />}
@@ -454,19 +470,40 @@ const Customers: React.FC = () => {
                             />
                         </Popconfirm>
                     </Space>
-                </div>
             ),
         },
     ];
 
-    const handleAdd = () => {
-        setEditingCustomer(null);
-        form.resetFields();
-        setIsModalVisible(true);
-    };
-
-    const handleEdit = (customer: Customer) => {
+    const handleEdit = async (customer: Customer) => {
         setEditingCustomer(customer);
+        
+        // Reset address dropdowns
+        setSelectedProvinceCode(undefined);
+        setSelectedDistrictCode(undefined);
+        setDistricts([]);
+        setWards([]);
+        
+        // Load districts và wards nếu có city và district
+        if (customer.city && customer.city !== 'Chưa cập nhật') {
+            // Tìm province từ name
+            const province = provinces.find(p => p.name === customer.city);
+            if (province) {
+                await handleProvinceChange(customer.city);
+                
+                // Load districts và tìm district
+                if (customer.district && customer.district !== 'Chưa cập nhật') {
+                    setTimeout(async () => {
+                        const districtsData = await addressService.getDistrictsByProvince(province.code);
+                        setDistricts(districtsData);
+                        const district = districtsData.find(d => d.name === customer.district);
+                        if (district) {
+                            await handleDistrictChange(customer.district);
+                        }
+                    }, 500);
+                }
+            }
+        }
+        
         form.setFieldsValue({
             ...customer,
             dateOfBirth: customer.dateOfBirth ? customer.dateOfBirth : undefined
@@ -479,9 +516,43 @@ const Customers: React.FC = () => {
         setIsViewModalVisible(true);
     };
 
-    const handleDelete = (id: number) => {
-        setCustomers(customers.filter(c => c.id !== id));
-        message.success('Đã xóa khách hàng thành công');
+    const handleDelete = async (id: number) => {
+        try {
+            setLoading(true);
+            // Tìm customer theo id
+            const customerToDelete = customers.find(c => c.id === id);
+            
+            if (!customerToDelete) {
+                toast.error('Không tìm thấy khách hàng');
+                return;
+            }
+
+            // Gọi API xóa customer (sử dụng userId từ backend)
+            const userIdToDelete = customerToDelete.userId;
+            console.log('🗑️ Attempting to delete customer with userId:', userIdToDelete);
+            
+            if (!userIdToDelete) {
+                toast.error('Không có userId để xóa');
+                return;
+            }
+            
+            const result = await customerService.deleteCustomer(userIdToDelete);
+            console.log('🗑️ Delete result:', result);
+            
+            if (result.success) {
+                setCustomers(customers.filter(c => c.id !== id));
+                console.log('✅ Showing success message');
+                toast.success(result.message || 'Đã xóa khách hàng thành công');
+            } else {
+                console.log('❌ Showing error message');
+                toast.error(result.message || 'Xóa khách hàng thất bại');
+            }
+        } catch (err) {
+            console.error('❌ Delete customer error:', err);
+            toast.error('Lỗi khi xóa khách hàng');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSave = async (values: any) => {
@@ -507,6 +578,10 @@ const Customers: React.FC = () => {
 
             setIsModalVisible(false);
             form.resetFields();
+            setSelectedProvinceCode(undefined);
+            setSelectedDistrictCode(undefined);
+            setDistricts([]);
+            setWards([]);
         } catch (error) {
             message.error('Có lỗi xảy ra');
         } finally {
@@ -527,7 +602,7 @@ const Customers: React.FC = () => {
             'Phường/Xã': customer.ward,
             'Giới tính': customer.gender === 'male' ? 'Nam' : customer.gender === 'female' ? 'Nữ' : 'Khác',
             'Ngày sinh': customer.dateOfBirth || '',
-            'Trạng thái': customer.status === 'active' ? 'Hoạt động' : customer.status === 'inactive' ? 'Không hoạt động' : 'Bị khóa',
+            'Trạng thái': customer.status === 'active' ? 'Hoạt động' : 'Bị khóa',
             'Loại khách hàng': customer.customerType === 'regular' ? 'Thường' : customer.customerType === 'vip' ? 'VIP' : 'Premium',
             'Tổng đơn hàng': customer.totalOrders,
             'Tổng chi tiêu': customer.totalSpent,
@@ -611,7 +686,6 @@ const Customers: React.FC = () => {
                                 allowClear
                             >
                                 <Option value="active">Hoạt động</Option>
-                                <Option value="inactive">Không hoạt động</Option>
                                 <Option value="blocked">Bị khóa</Option>
                             </Select>
                             <Select
@@ -635,14 +709,6 @@ const Customers: React.FC = () => {
                                 onClick={handleExportExcel}
                             >
                                 Xuất Excel
-                            </Button>
-                            <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={handleAdd}
-                                className="btn-primary"
-                            >
-                                Thêm khách hàng
                             </Button>
                         </Space>
                     </Col>
@@ -668,27 +734,75 @@ const Customers: React.FC = () => {
             )}
 
             {/* Customers Table */}
-            <Card>
-                <Table
-                    columns={columns}
-                    dataSource={filteredCustomers}
-                    rowKey="id"
-                    size="small"
-                    className="custom-customers-table"
-                    rowSelection={{
-                        selectedRowKeys,
-                        onChange: setSelectedRowKeys,
-                        columnWidth: 50,
-                        fixed: true,
-                    }}
-                    pagination={{
-                        pageSize: 10,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                        showTotal: (total) => `Tổng ${total} khách hàng`,
-                    }}
-                    scroll={{ x: 1200 }}
-                />
+            <Card style={{ marginTop: 0 }}>
+                <style>{`
+                    .ant-table-measure-row {
+                        display: none !important;
+                        height: 0 !important;
+                        visibility: hidden !important;
+                    }
+                    .ant-table-tbody > tr > td {
+                        height: 70px !important;
+                        vertical-align: middle !important;
+                        padding: 8px 16px !important;
+                    }
+                    .ant-table-tbody > tr {
+                        height: 70px !important;
+                    }
+                    .ant-table-tbody > tr:first-child > td {
+                        padding-top: 8px !important;
+                    }
+                    .ant-table-thead > tr > th {
+                        padding: 8px 16px !important;
+                    }
+                    .ant-table {
+                        margin-top: 0 !important;
+                    }
+                    .ant-table-container {
+                        margin-top: 0 !important;
+                    }
+                    .ant-card-body {
+                        padding: 16px !important;
+                    }
+                    .ant-table-thead {
+                        margin-top: 0 !important;
+                    }
+                    .ant-table-thead > tr {
+                        margin-top: 0 !important;
+                    }
+                `}</style>
+                <Spin spinning={loading}>
+                    <Table
+                        columns={columns}
+                        dataSource={filteredCustomers}
+                        rowKey="id"
+                        size="small"
+                        rowSelection={{
+                            selectedRowKeys,
+                            onChange: setSelectedRowKeys,
+                            getCheckboxProps: () => ({
+                                disabled: false
+                            })
+                        }}
+                        pagination={{
+                            pageSize: 10,
+                            showSizeChanger: true,
+                            showQuickJumper: true,
+                            showTotal: (total) => `Tổng ${total} khách hàng`,
+                        }}
+                        scroll={{ x: 1200 }}
+                        style={{
+                            '--ant-table-row-height': '70px'
+                        } as React.CSSProperties}
+                        components={{
+                            body: {
+                                row: (props: any) => (
+                                    <tr {...props} style={{ height: '70px', verticalAlign: 'middle' }} />
+                                )
+                            }
+                        }}
+                    />
+                </Spin>
             </Card>
 
             {/* Add/Edit Modal */}
@@ -696,7 +810,14 @@ const Customers: React.FC = () => {
                 title={editingCustomer ? 'Chỉnh sửa khách hàng' : 'Thêm khách hàng mới'}
                 open={isModalVisible}
                 onOk={() => form.submit()}
-                onCancel={() => setIsModalVisible(false)}
+                onCancel={() => {
+                    setIsModalVisible(false);
+                    form.resetFields();
+                    setSelectedProvinceCode(undefined);
+                    setSelectedDistrictCode(undefined);
+                    setDistricts([]);
+                    setWards([]);
+                }}
                 confirmLoading={loading}
                 width={800}
             >
@@ -750,27 +871,82 @@ const Customers: React.FC = () => {
                     </Row>
                     <Row gutter={16}>
                         <Col span={8}>
-                            <Form.Item name="city" label="Thành phố">
-                                <Select placeholder="Chọn thành phố">
-                                    {cities.map(city => (
-                                        <Option key={city} value={city}>{city}</Option>
+                            <Form.Item 
+                                name="city" 
+                                label="Tỉnh/Thành phố"
+                                rules={[{ required: true, message: 'Vui lòng chọn tỉnh/thành phố' }]}
+                            >
+                                <Select 
+                                    placeholder="Chọn tỉnh/thành phố"
+                                    loading={loadingProvinces}
+                                    onChange={handleProvinceChange}
+                                    showSearch
+                                    filterOption={(input, option) =>
+                                        (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                                    }
+                                >
+                                    {provinces.map(province => (
+                                        <Option key={province.code} value={province.name}>
+                                            {province.name}
+                                        </Option>
                                     ))}
                                 </Select>
                             </Form.Item>
                         </Col>
                         <Col span={8}>
-                            <Form.Item name="district" label="Quận/Huyện">
-                                <Input placeholder="Nhập quận/huyện" />
+                            <Form.Item 
+                                name="district" 
+                                label="Quận/Huyện"
+                                rules={[{ required: true, message: 'Vui lòng chọn quận/huyện' }]}
+                            >
+                                <Select 
+                                    placeholder="Chọn quận/huyện"
+                                    loading={loadingDistricts}
+                                    disabled={!selectedProvinceCode || districts.length === 0}
+                                    onChange={handleDistrictChange}
+                                    showSearch
+                                    filterOption={(input, option) =>
+                                        (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                                    }
+                                >
+                                    {districts.map(district => (
+                                        <Option key={district.code} value={district.name}>
+                                            {district.name}
+                                        </Option>
+                                    ))}
+                                </Select>
                             </Form.Item>
                         </Col>
                         <Col span={8}>
-                            <Form.Item name="ward" label="Phường/Xã">
-                                <Input placeholder="Nhập phường/xã" />
+                            <Form.Item 
+                                name="ward" 
+                                label="Phường/Xã"
+                                rules={[{ required: true, message: 'Vui lòng chọn phường/xã' }]}
+                            >
+                                <Select 
+                                    placeholder="Chọn phường/xã"
+                                    loading={loadingWards}
+                                    disabled={!selectedDistrictCode || wards.length === 0}
+                                    showSearch
+                                    filterOption={(input, option) =>
+                                        (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                                    }
+                                >
+                                    {wards.map(ward => (
+                                        <Option key={ward.code} value={ward.name}>
+                                            {ward.name}
+                                        </Option>
+                                    ))}
+                                </Select>
                             </Form.Item>
                         </Col>
                     </Row>
-                    <Form.Item name="address" label="Địa chỉ chi tiết">
-                        <Input placeholder="Nhập địa chỉ chi tiết" />
+                    <Form.Item 
+                        name="addressDetail" 
+                        label="Địa chỉ chi tiết"
+                        rules={[{ required: true, message: 'Vui lòng nhập địa chỉ chi tiết' }]}
+                    >
+                        <TextArea rows={3} placeholder="Nhập địa chỉ chi tiết (số nhà, tên đường, ...)" />
                     </Form.Item>
                     <Row gutter={16}>
                         <Col span={12}>
@@ -786,7 +962,6 @@ const Customers: React.FC = () => {
                             <Form.Item name="status" label="Trạng thái">
                                 <Select placeholder="Chọn trạng thái">
                                     <Option value="active">Hoạt động</Option>
-                                    <Option value="inactive">Không hoạt động</Option>
                                     <Option value="blocked">Bị khóa</Option>
                                 </Select>
                             </Form.Item>
@@ -843,17 +1018,15 @@ const Customers: React.FC = () => {
                                 }</p>
                                 <p><strong>Ngày sinh:</strong> {viewingCustomer.dateOfBirth || 'Chưa cập nhật'}</p>
                                 <p><strong>Địa chỉ:</strong><br />
-                                    {viewingCustomer.address}<br />
+                                    {viewingCustomer.addressDetail}<br />
                                     {viewingCustomer.ward}, {viewingCustomer.district}<br />
                                     {viewingCustomer.city}
                                 </p>
                                 <p><strong>Trạng thái:</strong>
                                     <Tag color={
-                                        viewingCustomer.status === 'active' ? 'green' :
-                                            viewingCustomer.status === 'inactive' ? 'default' : 'red'
+                                        viewingCustomer.status === 'active' ? 'green' : 'red'
                                     }>
-                                        {viewingCustomer.status === 'active' ? 'Hoạt động' :
-                                            viewingCustomer.status === 'inactive' ? 'Không hoạt động' : 'Bị khóa'}
+                                        {viewingCustomer.status === 'active' ? 'Hoạt động' : 'Bị khóa'}
                                     </Tag>
                                 </p>
                             </Col>

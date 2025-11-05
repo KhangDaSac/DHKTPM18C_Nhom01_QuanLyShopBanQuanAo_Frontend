@@ -1,0 +1,45 @@
+.checkout-page {
+  padding: 28px;
+  background: #f6f7f8;
+  min-height: calc(100vh - 40px);
+  box-sizing: border-box;
+  font-family: "Inter", "Segoe UI", Roboto, -apple-system, "Helvetica Neue", Arial;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  color: #66676b;
+  margin-bottom: 18px;
+  font-size: 14px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.current {
+  color: #ff6c52; /* accent */
+}
+
+/* Main card */
+.checkout-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 22px;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-shadow: 0 6px 18px rgba(31, 41, 55, 0.06);
+  box-sizing: border-box;
+}
+
+/* Header */
+.checkout-header {
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.checkout-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+}

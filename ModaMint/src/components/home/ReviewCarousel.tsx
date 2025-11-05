@@ -2,6 +2,7 @@ import type React from "react";
 import { useState } from "react";
 import { ReviewCard } from "./item-components/ReviewCard";
 import {CircleChevronRight, CircleChevronLeft} from 'lucide-react';
+import styles from './styles.module.css'
 
 interface Review {
   id: number;
@@ -35,49 +36,49 @@ export const ReviewCarousel: React.FC<ReviewCarouselProps> = ({reviews}) => {
   };
 
   return (
-    <>
-      <div className="rv-carousel-container">
-        <div className="carousel-wrapper">
-          <div 
-            className="carousel-content"
-            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-          >
-            {reviews.map((review) => (
-              <div key={review.id} className="carousel-item">
-                <ReviewCard review={review} />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="carousel-controls">
-          <button 
-            className="control-btn" 
-            onClick={prevSlide}
-            aria-label="Previous review"
-          >
-            <CircleChevronLeft/>
-          </button>
-
-          <div className="dots-container">
-            {reviews.map((_, index) => (
-              <div
-                key={index}
-                className={`dot ${index === currentIndex ? 'active' : ''}`}
-                onClick={() => goToSlide(index)}
-              />
-            ))}
-          </div>
-
-          <button 
-            className="control-btn" 
-            onClick={nextSlide}
-            aria-label="Next review"
-          >
-            <CircleChevronRight/>
-          </button>
+  <>
+    <div className={styles.review_carousel__container}>
+      <div className={styles.review_carousel__wrapper}>
+        <div
+          className={styles.review_carousel__content}
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+        >
+          {reviews.map((review) => (
+            <div key={review.id} className={styles.review_carousel__item}>
+              <ReviewCard review={review} />
+            </div>
+          ))}
         </div>
       </div>
-    </>
+
+      <div className={styles.review_carousel__controls}>
+        <button
+          className={styles.review_carousel__control_btn}
+          onClick={prevSlide}
+          aria-label="Previous review"
+        >
+          <CircleChevronLeft />
+        </button>
+
+        <div className={styles.review_carousel__dots_container}>
+          {reviews.map((_, index) => (
+            <div
+              key={index}
+              className={`${styles.review_carousel__dot} ${index === currentIndex ? styles["review_carousel__dot--active"] : ""}`}
+              onClick={() => goToSlide(index)}
+            />
+          ))}
+        </div>
+
+        <button
+          className={styles.review_carousel__control_btn}
+          onClick={nextSlide}
+          aria-label="Next review"
+        >
+          <CircleChevronRight />
+        </button>
+      </div>
+    </div>
+  </>
   );
 };
