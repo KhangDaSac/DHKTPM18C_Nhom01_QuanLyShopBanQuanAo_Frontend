@@ -66,34 +66,48 @@ export default function Login() {
                         };
                         localStorage.setItem("authData", JSON.stringify(tempAuthData));
 
+                        console.log('📡 Calling getCurrentUser API...');
                         const userResult = await authenticationService.getCurrentUser();
+                        console.log('👤 getCurrentUser result:', userResult);
 
                         if (userResult.success && userResult.data) {
                             userData = userResult.data;
+                            console.log('✅ User data loaded successfully:', userData);
                         } else {
-                            // Tạo user data cơ bản từ thông tin có sẵn nếu API không hoạt động
+                            console.warn('⚠️ getCurrentUser failed, extracting from token');
+                            // Lấy user info từ JWT token
+                            const { getUserInfoFromToken } = await import('@/utils/apiAuthUtils');
+                            const tokenInfo = getUserInfoFromToken(result.data.accessToken);
+                            console.log('🔍 Token info:', tokenInfo);
+                            
                             userData = {
-                                id: 'temp-id',
-                                username: username, // Từ form đăng nhập
-                                email: '',
+                                id: tokenInfo?.id || 'unknown-id',
+                                username: tokenInfo?.username || username,
+                                email: tokenInfo?.email || '',
                                 firstName: '',
                                 lastName: '',
                                 phone: '',
                                 dob: ''
                             };
+                            console.log('📝 Created user data from token:', userData);
                         }
                     } catch (error) {
-                        console.error('Error getting user data:', error);
-                        // Tạo user data cơ bản khi có lỗi
+                        console.error('❌ Error getting user data:', error);
+                        // Lấy user info từ JWT token khi có lỗi
+                        const { getUserInfoFromToken } = await import('@/utils/apiAuthUtils');
+                        const tokenInfo = getUserInfoFromToken(result.data.accessToken);
+                        console.log('🔍 Token info (from catch):', tokenInfo);
+                        
                         userData = {
-                            id: 'temp-id',
-                            username: username,
-                            email: '',
+                            id: tokenInfo?.id || 'unknown-id',
+                            username: tokenInfo?.username || username,
+                            email: tokenInfo?.email || '',
                             firstName: '',
                             lastName: '',
                             phone: '',
                             dob: ''
                         };
+                        console.log('📝 Created user data from token (catch):', userData);
                     }
 
                     // Chỉ gọi login() MỘT LẦN duy nhất với đầy đủ thông tin

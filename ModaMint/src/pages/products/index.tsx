@@ -224,6 +224,11 @@ const ProductList: React.FC = () => {
     try {
       setLoading(true);
       const res = await axios.get<{code: number; result: any[]; message: string}>("http://localhost:8080/api/v1/products");
+      
+      // Debug: Log response để xem cấu trúc dữ liệu
+      console.log('📦 API Response:', res.data);
+      console.log('📦 First product:', res.data.result?.[0]);
+      
       // Map dữ liệu từ API sang format Product local
       const mappedProducts: Product[] = (res.data.result ?? []).map((p: any) => {
         // Thử lấy variantId từ nhiều nguồn khác nhau
@@ -257,6 +262,17 @@ const ProductList: React.FC = () => {
           currentPriceNum = basePrice; // Không có discount thì giá bằng nhau
         }
         
+        // Debug log for first product
+        if (p.id === res.data.result?.[0]?.id) {
+          console.log('🔍 Mapping first product:', {
+            'p.images': p.images,
+            'p.price': p.price,
+            'variantPrice': variantPrice,
+            'basePrice': basePrice,
+            'imageResult': p.images && p.images.length > 0 ? p.images[0] : 'NO IMAGE'
+          });
+        }
+        
         return {
           id: p.id,
           name: p.name || '',
@@ -281,6 +297,8 @@ const ProductList: React.FC = () => {
 
   // Xử lý thêm vào giỏ hàng
   const handleAddToCart = async (product: any) => {
+    console.log('🛒 Adding to cart, product:', product);
+    
     if (!isAuthenticated) {
       toast.warning('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
       return;
@@ -288,19 +306,24 @@ const ProductList: React.FC = () => {
 
     // Lấy variantId từ product
     let variantId = product.variantId;
+    console.log('🔑 variantId from product:', variantId);
     
     // Nếu không có variantId, thử lấy từ API
     if (!variantId) {
+      console.log('⚠️ No variantId, fetching from API for product:', product.id);
       try {
         const variantsResult = await productVariantService.getProductVariantsByProductId(product.id);
+        console.log('📦 Variants result:', variantsResult);
         
         if (variantsResult.success && variantsResult.data && variantsResult.data.length > 0) {
           variantId = variantsResult.data[0].id;
+          console.log('✅ Got variantId from API:', variantId);
         } else {
           toast.error('Sản phẩm này chưa có biến thể. Vui lòng chọn từ trang chi tiết.');
           return;
         }
       } catch (error: any) {
+        console.error('❌ Error fetching variants:', error);
         toast.error('Không thể lấy thông tin biến thể sản phẩm. Vui lòng thử lại.');
         return;
       }
@@ -311,6 +334,7 @@ const ProductList: React.FC = () => {
       return;
     }
 
+    console.log('📤 Calling cartService.addItem with variantId:', variantId);
     try {
       const result = await cartService.addItem({ 
         variantId: variantId, 
