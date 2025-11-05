@@ -14,20 +14,24 @@ import {
     Image,
     Tabs,
     Spin,
-    Alert
+    Alert,
+    Modal,
+    Descriptions
 } from 'antd';
+
+const { PreviewGroup } = Image;
 import {
     DollarOutlined,
     UserOutlined,
     RiseOutlined,
     EyeOutlined,
-    EditOutlined,
-    DeleteOutlined,
+    
     StarFilled,
     ShoppingOutlined,
     ReloadOutlined
 } from '@ant-design/icons';
 import { useProducts } from '../hooks/useProducts';
+import './style.css';
 
 const { Title, Text } = Typography;
 
@@ -41,14 +45,18 @@ interface Product {
     sold: number;
     rating: number;
     status: 'active' | 'inactive' | 'out_of_stock';
-    image: string;
+    image?: string;
+    images?: string[]; // Mảng ảnh của sản phẩm
 }
 
 const Dashboard: React.FC = () => {
     const location = useLocation();
     const [activeTab, setActiveTab] = useState('overview');
     const { products: apiProducts, loading: apiLoading, error: apiError, refetch } = useProducts();
-    const [localProducts, setLocalProducts] = useState<Product[]>([]);
+    const [localProducts] = useState<Product[]>([]);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [isViewModalVisible, setIsViewModalVisible] = useState(false);
+    
     // Reset tab to overview when component mounts or route changes
     useEffect(() => {
         setActiveTab('overview');
@@ -56,6 +64,11 @@ const Dashboard: React.FC = () => {
 
     const handleTabChange = (key: string) => {
         setActiveTab(key);
+    };
+
+    const handleViewProduct = (product: Product) => {
+        setSelectedProduct(product);
+        setIsViewModalVisible(true);
     };
 
     
@@ -68,11 +81,12 @@ const Dashboard: React.FC = () => {
             name: apiProduct.name,
             category: apiProduct.categoryName || 'API Product',
             price: apiProduct.price,
-            stock: 100, // Mock stock cho API products
+            stock: apiProduct.quantity || 100, // Lấy từ API hoặc dùng mock
             sold: Math.floor(Math.random() * 50), // Mock sold
             rating: 4.0 + Math.random(), // Mock rating
             status: apiProduct.active ? 'active' as const : 'inactive' as const,
-            image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop'
+            image: apiProduct.images && apiProduct.images.length > 0 ? apiProduct.images[0] : 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop',
+            images: apiProduct.images || []
         })),
         ...localProducts
     ];
@@ -84,28 +98,87 @@ const Dashboard: React.FC = () => {
 
     const columns = [
         {
+            title: 'STT',
+            key: 'index',
+            width: 60,
+            align: 'center' as const,
+            render: (_: any, __: any, index: number) => index + 1,
+        },
+        {
             title: 'Sản phẩm',
             dataIndex: 'name',
             key: 'name',
-            render: (text: string, record: Product) => (
-                <Space>
-                    <Image
-                        width={60}
-                        height={60}
-                        src={record.image}
-                        style={{ borderRadius: '8px', objectFit: 'cover' }}
-                        preview={{
-                            mask: 'Xem ảnh'
-                        }}
-                    />
-                    <div>
-                        <div style={{ fontWeight: 500, marginBottom: '4px' }}>{text}</div>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                            ID: {record.id}
-                        </Text>
-                    </div>
-                </Space>
-            ),
+            render: (text: string, record: Product) => {
+                if (record.images && record.images.length > 1) {
+                    return (
+                        <Space>
+                            <div style={{ position: 'relative', display: 'inline-block' }}>
+                                <PreviewGroup>
+                                    {record.images.map((img, idx) => (
+                                        <Image
+                                            key={idx}
+                                            width={idx === 0 ? 60 : 0}
+                                            height={idx === 0 ? 60 : 0}
+                                            src={img}
+                                            style={{ 
+                                                borderRadius: '8px', 
+                                                objectFit: 'cover',
+                                                display: idx === 0 ? 'block' : 'none'
+                                            }}
+                                            preview={{
+                                                mask: idx === 0 ? `Xem ${record.images!.length} ảnh` : false
+                                            }}
+                                        />
+                                    ))}
+                                </PreviewGroup>
+                                {record.images.length > 1 && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        bottom: 2,
+                                        right: 2,
+                                        background: 'rgba(0, 0, 0, 0.6)',
+                                        color: 'white',
+                                        borderRadius: '4px',
+                                        padding: '2px 6px',
+                                        fontSize: '10px',
+                                        fontWeight: 'bold'
+                                    }}>
+                                        +{record.images.length}
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <div style={{ fontWeight: 500, marginBottom: '4px' }}>{text}</div>
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    ID: {record.id}
+                                </Text>
+                            </div>
+                        </Space>
+                    );
+                }
+                return (
+                    <Space>
+                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                            <Image
+                                width={60}
+                                height={60}
+                                src={record.image}
+                                style={{ borderRadius: '8px', objectFit: 'cover' }}
+                                preview={{
+                                    mask: 'Xem ảnh',
+                                    getContainer: false
+                                }}
+                            />
+                        </div>
+                        <div>
+                            <div style={{ fontWeight: 500, marginBottom: '4px' }}>{text}</div>
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                                ID: {record.id}
+                            </Text>
+                        </div>
+                    </Space>
+                );
+            },
         },
         {
             title: 'Danh mục',
@@ -156,7 +229,7 @@ const Dashboard: React.FC = () => {
             render: (rating: number) => (
                 <Space>
                     <StarFilled style={{ color: '#faad14' }} />
-                    <span style={{ fontWeight: 500 }}>{rating}</span>
+                    <span style={{ fontWeight: 500 }}>{rating.toFixed(2)}</span>
                 </Space>
             ),
         },
@@ -177,28 +250,16 @@ const Dashboard: React.FC = () => {
         {
             title: 'Thao tác',
             key: 'action',
-            render: () => (
-                <Space size="middle">
-                    <Button
-                        type="text"
-                        icon={<EyeOutlined />}
-                        size="small"
-                        title="Xem chi tiết"
-                    />
-                    <Button
-                        type="text"
-                        icon={<EditOutlined />}
-                        size="small"
-                        title="Chỉnh sửa"
-                    />
-                    <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        size="small"
-                        title="Xóa"
-                    />
-                </Space>
+            width: 140,
+            render: (_: unknown, record: Product) => (
+                <Button
+                    icon={<EyeOutlined />}
+                    size="small"
+                    className="btn-view-details"
+                    onClick={() => handleViewProduct(record)}
+                >
+                    Xem chi tiết
+                </Button>
             ),
         },
     ];
@@ -216,10 +277,10 @@ const Dashboard: React.FC = () => {
                                 <Statistic
                                     title="Tổng sản phẩm"
                                     value={totalProducts}
-                                    valueStyle={{ color: '#3f8600' }}
+                                    valueStyle={{ color: '#1890ff' }}
                                     prefix={<ShoppingOutlined />}
                                 />
-                                <Text type="success" style={{ fontSize: '12px' }}>
+                                <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
                                     {activeProducts} sản phẩm hoạt động
                                 </Text>
                             </Card>
@@ -230,10 +291,10 @@ const Dashboard: React.FC = () => {
                                 <Statistic
                                     title="Sản phẩm hoạt động"
                                     value={activeProducts}
-                                    valueStyle={{ color: '#1677ff' }}
+                                    valueStyle={{ color: '#52c41a' }}
                                     prefix={<UserOutlined />}
                                 />
-                                <Text style={{ color: '#1677ff', fontSize: '12px' }}>
+                                <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
                                     {totalProducts > 0 ? Math.round((activeProducts / totalProducts) * 100) : 0}% tổng sản phẩm
                                 </Text>
                             </Card>
@@ -252,7 +313,7 @@ const Dashboard: React.FC = () => {
                                         new Intl.NumberFormat('vi-VN').format(Number(value))
                                     }
                                 />
-                                <Text style={{ color: '#722ed1', fontSize: '12px' }}>
+                                <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
                                     Giá trị trung bình: {totalProducts > 0 ? new Intl.NumberFormat('vi-VN', {
                                         style: 'currency',
                                         currency: 'VND'
@@ -267,11 +328,11 @@ const Dashboard: React.FC = () => {
                                     title="Tỷ lệ hoạt động"
                                     value={totalProducts > 0 ? Math.round((activeProducts / totalProducts) * 100) : 0}
                                     precision={1}
-                                    valueStyle={{ color: '#cf1322' }}
+                                    valueStyle={{ color: '#faad14' }}
                                     prefix={<RiseOutlined />}
                                     suffix="%"
                                 />
-                                <Text style={{ color: '#cf1322', fontSize: '12px' }}>
+                                <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
                                     {totalProducts - activeProducts} sản phẩm ngừng hoạt động
                                 </Text>
                             </Card>
@@ -284,9 +345,8 @@ const Dashboard: React.FC = () => {
                         style={{ marginBottom: '24px' }}
                         extra={
                             <Button
-                                type="primary"
                                 onClick={() => setActiveTab('all-products')}
-                                className="btn btn-primary"
+                                className="btn-view-all"
                             >
                                 Xem tất cả
                             </Button>
@@ -343,7 +403,7 @@ const Dashboard: React.FC = () => {
                                         <Statistic
                                             title="Tổng sản phẩm"
                                             value={totalProducts}
-                                            valueStyle={{ fontSize: '20px', color: '#1677ff' }}
+                                            valueStyle={{ fontSize: '20px', color: '#1890ff' }}
                                         />
                                     </Col>
                                     <Col span={12}>
@@ -357,7 +417,7 @@ const Dashboard: React.FC = () => {
                                         <Statistic
                                             title="Hết hàng"
                                             value={allProducts.filter(p => p.stock === 0).length}
-                                            valueStyle={{ fontSize: '20px', color: '#cf1322' }}
+                                            valueStyle={{ fontSize: '20px', color: '#faad14' }}
                                         />
                                     </Col>
                                     <Col span={12} style={{ marginTop: '16px' }}>
@@ -381,12 +441,7 @@ const Dashboard: React.FC = () => {
                 <Card
                     title={`Danh sách tất cả sản phẩm (${allProducts.length} sản phẩm)`}
                     extra={
-                        <Space>
-                            <Button type="primary" className="btn btn-primary">
-                                Thêm sản phẩm
-                            </Button>
-                            <Button>Xuất Excel</Button>
-                        </Space>
+                        <Button>Xuất Excel</Button>
                     }
                 >
                     <Table
@@ -474,6 +529,109 @@ const Dashboard: React.FC = () => {
                     }
                 `}
             </style>
+
+            {/* Product View Modal */}
+            <Modal
+                title="Chi tiết sản phẩm"
+                open={isViewModalVisible}
+                onCancel={() => setIsViewModalVisible(false)}
+                footer={[
+                    <Button key="close" onClick={() => setIsViewModalVisible(false)}>
+                        Đóng
+                    </Button>
+                ]}
+                width={700}
+            >
+                {selectedProduct && (
+                    <div>
+                        <Row gutter={24}>
+                            <Col span={8}>
+                                <PreviewGroup>
+                                    {selectedProduct.images && selectedProduct.images.length > 1 ? (
+                                        selectedProduct.images.map((img, idx) => (
+                                            <Image
+                                                key={idx}
+                                                width={idx === 0 ? '100%' : 0}
+                                                src={img}
+                                                fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+                                                style={{ 
+                                                    borderRadius: '8px',
+                                                    display: idx === 0 ? 'block' : 'none'
+                                                }}
+                                                preview={{
+                                                    mask: idx === 0 ? `Xem ${selectedProduct.images?.length} ảnh` : false
+                                                }}
+                                            />
+                                        ))
+                                    ) : (
+                                        <Image
+                                            width="100%"
+                                            src={selectedProduct.image}
+                                            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+                                            style={{ borderRadius: '8px' }}
+                                            preview={false}
+                                        />
+                                    )}
+                                </PreviewGroup>
+                                {selectedProduct.images && selectedProduct.images.length > 1 && (
+                                    <div style={{ marginTop: '8px', textAlign: 'center' }}>
+                                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                                            {selectedProduct.images.length} ảnh (Click để xem tất cả)
+                                        </Text>
+                                    </div>
+                                )}
+                            </Col>
+                            <Col span={16}>
+                                <Title level={3} style={{ marginBottom: '16px' }}>
+                                    {selectedProduct.name}
+                                </Title>
+                                
+                                <Descriptions column={1} size="small">
+                                    <Descriptions.Item label="ID">
+                                        <Text code>{selectedProduct.id}</Text>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Danh mục">
+                                        <Tag color="blue">{selectedProduct.category}</Tag>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Giá">
+                                        <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+                                            {new Intl.NumberFormat('vi-VN', {
+                                                style: 'currency',
+                                                currency: 'VND'
+                                            }).format(selectedProduct.price)}
+                                        </Text>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Tồn kho">
+                                        <Text style={{ 
+                                            color: selectedProduct.stock > 50 ? '#52c41a' : 
+                                                   selectedProduct.stock > 0 ? '#faad14' : '#ff4d4f',
+                                            fontWeight: 'bold'
+                                        }}>
+                                            {selectedProduct.stock}
+                                        </Text>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Đã bán">
+                                        <Text strong style={{ fontSize: '16px', color: '#1677ff' }}>
+                                            {selectedProduct.sold}
+                                        </Text>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Đánh giá">
+                                        <Space>
+                                            <Text style={{ fontSize: '16px', color: '#faad14' }}>★★★★★</Text>
+                                            <Text strong>{selectedProduct.rating?.toFixed(1)}</Text>
+                                        </Space>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Trạng thái">
+                                        <Tag color={selectedProduct.status === 'active' ? 'green' : 'red'}>
+                                            {selectedProduct.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
+                                        </Tag>
+                                    </Descriptions.Item>
+                                </Descriptions>
+                            </Col>
+                        </Row>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };

@@ -5,6 +5,7 @@ import Sidebar from './sidebar';
 import Header from './header';
 import { useTheme } from '../hooks/useTheme';
 import 'antd/dist/reset.css';
+import '../styles/index.css';
 
 const { Content } = Layout;
 

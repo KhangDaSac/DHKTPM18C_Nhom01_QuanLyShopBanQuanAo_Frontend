@@ -1,4 +1,4 @@
-import type { Category } from "../../services/category";
+import type { Category } from "@/services/category";
 import { CategoryComponent } from "./item-components/CategoryComponent";
 import styles from './styles.module.css'
 

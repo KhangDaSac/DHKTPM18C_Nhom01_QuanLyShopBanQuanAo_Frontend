@@ -1,7 +1,5 @@
 import { Star } from "lucide-react";
-import styles from './styles.module.css'
-// import React, { useState } from 'react'; // Not used
-
+import styles from "./styles.module.css"
 interface Review {
   id: number;
   text: string;
@@ -25,6 +23,7 @@ export const ReviewCard = ({ review }: { review: Review }) => {
 
       <div className={styles.reviewer_info}>
         <div className={styles.avatar_container}>
+
           <img
             src={review.avatar}
             alt={review.name}

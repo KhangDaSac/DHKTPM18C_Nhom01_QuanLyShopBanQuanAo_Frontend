@@ -30,9 +30,12 @@
   background: rgb(255, 255, 255);
   box-shadow: 0px 0px 15px 0px rgb(177, 177, 177);
   border-radius: 8px;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
 }
+
 
 .sale_banner__overlay::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
@@ -40,6 +43,7 @@
 
 /* Category List */
 .category_list {
+
   margin: auto;
   margin-top: 150px;
   display: flex;
@@ -63,6 +67,7 @@
 }
 
 /* List Products */
+
 .product_list__container {
   width: 100%;
   display: flex;
@@ -71,6 +76,7 @@
 }
 
 .product_list {
+
   margin: auto;
   display: flex;
   justify-content: space-around;
@@ -101,14 +107,27 @@
 .product_list_view_all {
   display: block;
   margin: 0 auto;
-  padding: 10px 10px;
+  padding: 10px 20px;
   background: #ff6347;
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 25px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 600;
   text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.product_list__view_all:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.product_list__view_all:active {
+  transform: translateY(0);
 }
 
 /* Suggestion Today */
@@ -182,6 +201,7 @@
   0%, 100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.15);
   }

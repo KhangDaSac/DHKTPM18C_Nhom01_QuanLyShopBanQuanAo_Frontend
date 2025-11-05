@@ -11,7 +11,6 @@ export const useProducts = () => {
         // Kiểm tra token trước khi gọi API
         const authDataStr = localStorage.getItem("authData");
         if (!authDataStr) {
-            console.log('⚠️ No auth token found, skipping API call');
             return;
         }
 
@@ -19,22 +18,17 @@ export const useProducts = () => {
         setError(null);
         
         try {
-            console.log('🔄 Fetching products...');
             const result = await productService.getAllProducts();
-            console.log('📦 API Response:', result);
             
             if (result.success && result.data) {
                 setProducts(result.data);
-                console.log('✅ Products loaded:', result.data.length);
             } else {
                 const errorMsg = result.message || 'Không thể lấy danh sách sản phẩm';
                 setError(errorMsg);
-                console.error('❌ API Error:', errorMsg);
             }
         } catch (err) {
             const errorMsg = 'Lỗi khi tải dữ liệu sản phẩm';
             setError(errorMsg);
-            console.error('💥 Fetch Error:', err);
         } finally {
             setLoading(false);
         }

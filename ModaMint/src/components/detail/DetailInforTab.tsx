@@ -4,9 +4,11 @@ import { Package, RefreshCcw, Star } from 'lucide-react';
 // Import file CSS Module
 import styles from './styles.module.css';
 import { ProductReview } from './ReviewProduct';
+import { useAuth } from '@/contexts/authContext';
 
 
 const ProductTabs = () => {
+  const {user} = useAuth();
   const [activeTab, setActiveTab] = useState('info');
   const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({ // Sửa state
     info: false,
@@ -157,7 +159,7 @@ Sản phẩm của chúng tôi được tuyển chọn kỹ lưỡng từ các n
 
         {/* Product Review Component */}
         {currentTab && currentTab.id === 'reviews' && (
-          <ProductReview productId={1} customerId={'1'} orderItemId={1} />
+          <ProductReview productId={1} customerId={'1db47544-d17c-427a-aab5-b5356fd2c8e7'} orderItemId={1} />
         )}
       </div>
     </div>

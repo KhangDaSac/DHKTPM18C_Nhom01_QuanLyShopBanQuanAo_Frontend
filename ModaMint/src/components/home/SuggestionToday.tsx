@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import {ProductCard} from '../home/item-components/ProductCard';
+import { ProductCard } from '@/components/product';
 import styles from './styles.module.css';
 
 interface Product {
@@ -55,7 +55,7 @@ const SuggestionToday: React.FC<SuggestionTodayProps> = ({ products, tabs }) => 
       </div>
       <div className={styles.suggestion_today__product_grid}>
         {filteredProducts.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard key={product.id} product={product} buttonText="Tùy chọn" />
         ))}
       </div>
     </div>

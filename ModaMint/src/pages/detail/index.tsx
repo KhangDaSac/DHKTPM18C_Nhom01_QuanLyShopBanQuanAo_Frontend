@@ -1,166 +1,70 @@
-import React, { useState } from 'react';
-import { Heart, Share2, ChevronLeft, ChevronRight, Zap, Award, Package, Clock, Star } from 'lucide-react';
-import ProductTabs from '../../components/detail/DetailInforTab';
-
-// Import file CSS Module
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Heart, Share2, Zap, Award, Package, Clock, X } from 'lucide-react';
 import styles from './styles.module.css';
+import type { ProductResponse } from '@/services/product';
+import type { ProductVariant } from '@/services/productVariant';
+import { productService } from '@/services/product';
+import { productVariantService } from '@/services/productVariant';
+import ProductTabs from '@/components/detail/DetailInforTab';
 
-// Interfaces
-interface ProductColor {
-  id: string;
-  name: string;
-  code: string;
-  image: string;
-}
-
-interface ProductVariant {
-  id: string;
-  colorId: string;
-  size: string;
-  stock: number;
-  price: number;
-  sku: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  brand: string;
-  status: string;
+// Lightbox Component (Đã refactor)
+const ImageLightbox: React.FC<{
   images: string[];
-  description: string;
-  currentPrice: number;
-  originalPrice: number;
-  discount: number;
-  colors: ProductColor[];
-  sizes: string[];
-  variants: ProductVariant[];
-  rating: number;
-  reviewCount: number;
-  soldCount: number;
-  inCartCount: number;
-  viewingCount: number;
-}
+  currentIndex: number;
+  onClose: () => void;
+  onNavigate: (direction: 'prev' | 'next') => void;
+}> = ({ images, currentIndex, onClose, onNavigate }) => {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') onNavigate('prev');
+      if (e.key === 'ArrowRight') onNavigate('next');
+    };
 
-interface RelatedProduct {
-  id: string;
-  name: string;
-  image: string;
-  price: number;
-  originalPrice: number;
-  sizes: string[];
-  colors: string[];
-}
-
-// Mock Data
-const mockProduct: Product = {
-  id: 'ND008',
-  name: 'Áo polo nam phối màu ND008',
-  brand: 'Canifa',
-  status: 'Còn hàng',
-  images: [
-    'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=500&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1621072156002-e2fccdc0b176?w=500&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=500&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1622445275463-afa2ab738c34?w=500&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=500&h=600&fit=crop'
-  ],
-  description: 'Áo t-shirt cổ bẻ, họa tiết cài cúc chi tiết cổ áo phối 2 màu mang đến sự kết hợp hoàn hảo giữa phong cách thể thao và sự thanh lịch. Thiết kế tỉ mỉ, hiện đại, dễ dàng phối hợp với nhiều loại trang phục khác nhau như quần jean, chinos hay short. Chất liệu vải mềm mại, thoáng khí tạo cảm giác thoải mái suốt ngày dài. Đây là lựa chọn lý tưởng cho các dịp dạo phố, đi làm hay gặp gỡ bạn bè, giúp bạn luôn tự tin và năng động.',
-  currentPrice: 450000,
-  originalPrice: 680000,
-  discount: 34,
-  colors: [
-    { id: 'c1', name: 'Be Xám', code: '#E8DDD0', image: 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=100&h=100&fit=crop' },
-    { id: 'c2', name: 'Đen', code: '#2C2C2C', image: 'https://images.unsplash.com/photo-1621072156002-e2fccdc0b176?w=100&h=100&fit=crop' },
-    { id: 'c3', name: 'Đỏ', code: '#E74C3C', image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=100&h=100&fit=crop' }
-  ],
-  sizes: ['S', 'M', 'L', 'XL'],
-  variants: [
-    { id: 'v1', colorId: 'c1', size: 'S', stock: 10, price: 450000, sku: 'ND00801' },
-    { id: 'v2', colorId: 'c1', size: 'M', stock: 15, price: 450000, sku: 'ND00802' },
-    { id: 'v3', colorId: 'c1', size: 'L', stock: 8, price: 450000, sku: 'ND00803' },
-    { id: 'v4', colorId: 'c1', size: 'XL', stock: 5, price: 450000, sku: 'ND00804' },
-    { id: 'v5', colorId: 'c2', size: 'S', stock: 12, price: 450000, sku: 'ND00805' },
-    { id: 'v6', colorId: 'c2', size: 'M', stock: 20, price: 450000, sku: 'ND00806' },
-    { id: 'v7', colorId: 'c2', size: 'L', stock: 10, price: 450000, sku: 'ND00807' },
-    { id: 'v8', colorId: 'c2', size: 'XL', stock: 7, price: 450000, sku: 'ND00808' },
-    { id: 'v9', colorId: 'c3', size: 'S', stock: 8, price: 450000, sku: 'ND00809' },
-    { id: 'v10', colorId: 'c3', size: 'M', stock: 18, price: 450000, sku: 'ND00810' },
-    { id: 'v11', colorId: 'c3', size: 'L', stock: 12, price: 450000, sku: 'ND00811' },
-    { id: 'v12', colorId: 'c3', size: 'XL', stock: 6, price: 450000, sku: 'ND00812' },
-  ],
-  rating: 4.5,
-  reviewCount: 128,
-  soldCount: 234,
-  inCartCount: 5,
-  viewingCount: 10
-};
-
-const relatedProducts: RelatedProduct[] = [
-  {
-    id: 'P001',
-    name: 'Bạn đang xem: Áo polo nam phối màu ND008',
-    image: 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=300&h=300&fit=crop',
-    price: 450000,
-    originalPrice: 680000,
-    sizes: ['S', 'M', 'L'],
-    colors: ['Be Xám', 'Đen']
-  },
-  {
-    id: 'P002',
-    name: 'Quần Jeans Nam Slim Denim Like Có Bản',
-    image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=300&h=300&fit=crop',
-    price: 680000,
-    originalPrice: 890000,
-    sizes: ['28', '29', '30'],
-    colors: ['Tím than']
-  },
-  {
-    id: 'P003',
-    name: 'Thắt Lưng Nam Khóa Cài Kim Loại Viền Vuông',
-    image: 'https://images.unsplash.com/photo-1624222247344-424b8c6e8f8f?w=300&h=300&fit=crop',
-    price: 368000,
-    originalPrice: 450000,
-    sizes: ['Đen'],
-    colors: ['Đen']
-  },
-];
-
-// Sub-Components
-const ProductCard: React.FC<{ product: RelatedProduct; isSelected?: boolean }> = ({ product, isSelected }) => {
-  const [selectedSize, setSelectedSize] = useState(product.sizes[0]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, onNavigate]);
 
   return (
-    <div className={styles.product_card}>
-      {isSelected && (
-        <div className={styles.product_card_selected_badge}>✓</div>
-      )}
-      <img
-        src={product.image}
-        alt={product.name}
-        className={styles.product_card_image}
-      />
-      <div className={styles.product_card_content}>
-        <p className={styles.product_card_name}>
-          {product.name}
-        </p>
-        <select
-          value={selectedSize}
-          onChange={(e) => setSelectedSize(e.target.value)}
-          className={styles.product_card_select}
+    <div onClick={onClose} className={styles.lightbox_overlay}>
+      <button onClick={onClose} className={styles.lightbox_close_button}>
+        <X size={24} color="#fff" />
+      </button>
+
+      {images.length > 1 && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate('prev');
+          }}
+          className={`${styles.lightbox_nav_button} ${styles.lightbox_nav_button_prev}`}
         >
-          {product.sizes.map(size => (
-            <option key={size} value={size}>{size}</option>
-          ))}
-        </select>
-        <div className={styles.product_card_price_wrapper}>
-          <span className={styles.product_card_current_price}>
-            {product.price.toLocaleString('vi-VN')}₫
-          </span>
-          <span className={styles.product_card_original_price}>
-            {product.originalPrice.toLocaleString('vi-VN')}₫
-          </span>
-        </div>
+          <ChevronLeft size={30} color="#fff" />
+        </button>
+      )}
+
+      <img
+        src={images[currentIndex]}
+        alt={`Full view ${currentIndex + 1}`}
+        onClick={(e) => e.stopPropagation()}
+        className={styles.lightbox_image}
+      />
+
+      {images.length > 1 && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate('next');
+          }}
+          className={`${styles.lightbox_nav_button} ${styles.lightbox_nav_button_next}`}
+        >
+          <ChevronRight size={30} color="#fff" />
+        </button>
+      )}
+
+      <div className={styles.lightbox_counter}>
+        {currentIndex + 1} / {images.length}
       </div>
     </div>
   );
@@ -168,14 +72,8 @@ const ProductCard: React.FC<{ product: RelatedProduct; isSelected?: boolean }> =
 
 const SizeChart: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   return (
-    <div
-      onClick={onClose}
-      className={styles.size_chart_modal_overlay}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={styles.size_chart_modal_content}
-      >
+    <div onClick={onClose} className={styles.size_chart_modal_overlay}>
+      <div onClick={(e) => e.stopPropagation()} className={styles.size_chart_modal_content}>
         <h3 className={styles.size_chart_modal_title}>Bảng kích thước</h3>
         <table className={styles.size_chart_modal_table}>
           <thead>
@@ -208,10 +106,7 @@ const SizeChart: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </tr>
           </tbody>
         </table>
-        <button
-          onClick={onClose}
-          className={styles.size_chart_modal_close_button}
-        >
+        <button onClick={onClose} className={styles.size_chart_modal_close_button}>
           ĐÓNG
         </button>
       </div>
@@ -219,106 +114,185 @@ const SizeChart: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
-// Main Component
 const ProductDetailPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const productId = parseInt(id || '0', 10);
+
+  const [product, setProduct] = useState<ProductResponse | null>(null);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedColor, setSelectedColor] = useState(0);
-  const [selectedSize, setSelectedSize] = useState('M');
+  const [selectedColor, setSelectedColor] = useState<string>('');
+  const [selectedSize, setSelectedSize] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
   const [showSizeModal, setShowSizeModal] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set(['P001']));
+
+  const uniqueColors = Array.from(new Set(variants.map((v) => v.color)));
+  const uniqueSizes = Array.from(new Set(variants.map((v) => v.size)));
+
+  // Lấy số lượng tồn kho theo color + size
+  const getVariantStock = (color: string, size: string): number => {
+    const variant = variants.find((v) => v.color === color && v.size === size);
+    return variant?.quantity || 0;
+  };
+
+  const currentStock =
+    selectedColor && selectedSize ? getVariantStock(selectedColor, selectedSize) : 0;
+
+  const isOutOfStock = currentStock <= 0 || !selectedColor || !selectedSize;
+
+  // Lấy variant hiện tại
+  const currentVariant = variants.find(
+    (v) => v.color === selectedColor && v.size === selectedSize
+  );
+
+  const currentPrice = currentVariant
+    ? currentVariant.price - currentVariant.discount
+    : product?.price || 0;
+
+  const originalPrice = currentVariant?.price || product?.price || 0;
+  const currentSKU = currentVariant?.id.toString() || 'N/A';
+
+  // Lọc ảnh theo màu
+  const getImagesForColor = (color: string): string[] => {
+    const colorVariantImages = variants
+      .filter((v) => v.color === color && v.image)
+      .map((v) => v.image as string);
+
+    if (colorVariantImages.length > 0) {
+      const combined = [...colorVariantImages, ...(product?.images || [])];
+      return combined.filter((img, i, self) => self.indexOf(img) === i);
+    }
+    return product?.images || [];
+  };
+
+  const displayImages = selectedColor ? getImagesForColor(selectedColor) : product?.images || [];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+
+      const productRes = await productService.getProductById(productId);
+      if (productRes.success && productRes.data) {
+        setProduct(productRes.data);
+
+        const variantsRes = await productVariantService.getProductVariantsByProductId(productId);
+        if (variantsRes.success && variantsRes.data) {
+          setVariants(variantsRes.data);
+
+          if (variantsRes.data.length > 0) {
+            const defaultColor = variantsRes.data[0].color;
+            const defaultSize = variantsRes.data[0].size;
+            setSelectedColor(defaultColor);
+            setSelectedSize(defaultSize);
+          }
+        } else {
+          setError(variantsRes.message || 'Lỗi lấy variants');
+        }
+      } else {
+        setError(productRes.message || 'Lỗi lấy product');
+      }
+
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [productId]);
+
+  // Reset quantity khi đổi variant
+  useEffect(() => {
+    setQuantity(1);
+  }, [selectedColor, selectedSize]);
+
+  const handleColorSelect = (color: string) => {
+    setSelectedColor(color);
+    setCurrentImageIndex(0);
+  };
 
   const handlePrevImage = () => {
-    setCurrentImageIndex((prev) =>
-      prev === 0 ? mockProduct.images.length - 1 : prev - 1
-    );
+    setCurrentImageIndex((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
   };
 
   const handleNextImage = () => {
-    setCurrentImageIndex((prev) =>
-      prev === mockProduct.images.length - 1 ? 0 : prev + 1
-    );
+    setCurrentImageIndex((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleLightboxNavigate = (direction: 'prev' | 'next') => {
+    if (direction === 'prev') {
+      setCurrentImageIndex((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
+    } else {
+      setCurrentImageIndex((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1));
+    }
   };
 
   const handleQuantityChange = (type: 'increase' | 'decrease') => {
-    if (type === 'increase') {
-      setQuantity(prev => prev + 1);
+    if (isOutOfStock) return;
+
+    if (type === 'increase' && quantity < currentStock) {
+      setQuantity((prev) => prev + 1);
     } else if (type === 'decrease' && quantity > 1) {
-      setQuantity(prev => prev - 1);
+      setQuantity((prev) => prev - 1);
     }
   };
 
-  const toggleProductSelection = (id: string) => {
-    const newSelected = new Set(selectedProducts);
-    if (newSelected.has(id)) {
-      if (newSelected.size > 1) {
-        newSelected.delete(id);
-      }
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedProducts(newSelected);
+  const handleAddToCart = () => {
+    if (isOutOfStock) return;
+    alert(`Đã thêm: ${quantity} x ${product?.name} (${selectedColor}, ${selectedSize})`);
   };
 
-  const calculateTotal = () => {
-    return relatedProducts
-      .filter(p => selectedProducts.has(p.id))
-      .reduce((sum, p) => sum + p.price, 0);
+  const handleBuyNow = () => {
+    if (isOutOfStock) return;
+    alert(`Mua ngay: ${quantity} x ${product?.name} (${selectedColor}, ${selectedSize})`);
   };
 
-  const getCurrentSKU = () => {
-    const variant = mockProduct.variants.find(
-      v => v.colorId === mockProduct.colors[selectedColor].id && v.size === selectedSize
-    );
-    return variant?.sku || 'N/A';
+  const handleFavorite = () => {
+    setIsFavorite(!isFavorite);
   };
 
-  const getCurrentStock = () => {
-    const variant = mockProduct.variants.find(
-      v => v.colorId === mockProduct.colors[selectedColor].id && v.size === selectedSize
-    );
-    return variant?.stock || 0;
-  };
+  if (loading) return <div className={styles.loading}>Đang tải...</div>;
+  if (error || !product)
+    return <div className={styles.error}>{error || 'Không tìm thấy sản phẩm'}</div>;
 
   return (
     <div className={styles.product_detail_page}>
-      {/* Breadcrumb */}
       <div className={styles.product_detail_page_breadcrumb}>
         <span className={styles.product_detail_page_breadcrumb_link}>Trang chủ</span>
         <span className={styles.product_detail_page_breadcrumb_separator}>›</span>
         <span className={styles.product_detail_page_breadcrumb_link}>Sản phẩm nổi bật</span>
         <span className={styles.product_detail_page_breadcrumb_separator}>›</span>
-        <span className={styles.product_detail_page_breadcrumb_active}>{mockProduct.name}</span>
+        <span className={styles.product_detail_page_breadcrumb_active}>{product.name}</span>
       </div>
 
-      {/* Main Content */}
       <div className={styles.product_detail_page_main_content}>
-        {/* Left: Images */}
         <div className={styles.product_images_wrapper}>
           <div className={styles.product_images_container}>
-            {/* Thumbnail List */}
             <div className={styles.product_images_thumbnail_list}>
-              {mockProduct.images.map((img, idx) => (
+              {displayImages.map((img, idx) => (
                 <img
                   key={idx}
                   src={img}
                   alt={`Thumb ${idx + 1}`}
                   onClick={() => setCurrentImageIndex(idx)}
-                  className={`${styles.product_images_thumbnail} ${currentImageIndex === idx ? styles.product_images_thumbnail_active : ''}`}
+                  className={`${styles.product_images_thumbnail} ${
+                    currentImageIndex === idx ? styles.product_images_thumbnail_active : ''
+                  }`}
                 />
               ))}
             </div>
 
-            {/* Main Image */}
             <div className={styles.product_images_main_wrapper}>
               <img
-                src={mockProduct.images[currentImageIndex]}
-                alt={mockProduct.name}
+                src={displayImages[currentImageIndex]}
+                alt={product.name}
                 className={styles.product_images_main_image}
+                onClick={() => setShowLightbox(true)}
               />
 
-              {/* Navigation Arrows */}
               <button
                 onClick={handlePrevImage}
                 className={`${styles.product_images_nav_button} ${styles.product_images_nav_button_prev}`}
@@ -334,100 +308,152 @@ const ProductDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Share */}
           <div className={styles.product_images_share}>
             <span className={styles.product_images_share_text}>Chia sẻ</span>
-            <button className={`${styles.product_images_share_button} ${styles.product_images_share_button_facebook}`}>f</button>
-            <button className={`${styles.product_images_share_button} ${styles.product_images_share_button_twitter}`}>t</button>
-            <button className={`${styles.product_images_share_button} ${styles.product_images_share_button_generic}`}>
+            <button
+              className={`${styles.product_images_share_button} ${styles.product_images_share_button_facebook}`}
+            >
+              f
+            </button>
+            <button
+              className={`${styles.product_images_share_button} ${styles.product_images_share_button_twitter}`}
+            >
+              t
+            </button>
+            <button
+              className={`${styles.product_images_share_button} ${styles.product_images_share_button_generic}`}
+            >
               <Share2 size={16} />
             </button>
           </div>
         </div>
 
-        {/* Right: Product Info */}
         <div className={styles.product_info_wrapper}>
-          <h1 className={styles.product_info_title}>{mockProduct.name}</h1>
+          <h1 className={styles.product_info_title}>{product.name}</h1>
 
-          {/* Price & Status */}
           <div className={styles.product_info_header}>
             <div className={styles.product_info_price_group}>
               <span className={styles.product_info_current_price}>
-                {mockProduct.currentPrice.toLocaleString('vi-VN')}₫
+                {currentPrice.toLocaleString('vi-VN')}₫
               </span>
-              <span className={styles.product_info_original_price}>
-                {mockProduct.originalPrice.toLocaleString('vi-VN')}₫
-              </span>
+              {currentVariant?.discount > 0 && (
+                <span className={styles.product_info_original_price}>
+                  {originalPrice.toLocaleString('vi-VN')}₫
+                </span>
+              )}
             </div>
-            <div className={styles.product_info_status}>
-              {mockProduct.status}
+            <div
+              className={styles.product_info_status}
+              style={{ color: currentStock > 0 ? 'white' : 'black' }}
+            >
+              {currentStock > 0 ? 'Còn hàng' : 'Hết hàng'}
             </div>
           </div>
 
-          {/* Meta Info */}
           <div className={styles.product_info_meta}>
             <div>
-              <span className={styles.product_info_meta_label}>Mã Sku: </span>
-              <span className={styles.product_info_meta_value}>{getCurrentSKU()}</span>
+              <span className={styles.product_info_meta_label}>Mã SKU: </span>
+              <span className={styles.product_info_meta_value}>{currentSKU}</span>
             </div>
             <div>
               <span className={styles.product_info_meta_label}>Thương hiệu: </span>
-              <span className={styles.product_info_meta_value}>{mockProduct.brand}</span>
+              <span className={styles.product_info_meta_value}>{product.brandName}</span>
             </div>
           </div>
 
-          {/* Description */}
-          <p className={styles.product_info_description}>
-            {mockProduct.description}
-          </p>
+          <p className={styles.product_info_description}>{product.description}</p>
 
-          {/* Color Selection */}
+          {/* Hiển thị số lượng tồn kho */}
           <div className={styles.product_info_section}>
             <div className={styles.product_info_section_header}>
-              Màu sắc: <span className={styles.product_info_selected_value}>{mockProduct.colors[selectedColor].name}</span>
-            </div>
-            <div className={styles.product_info_option_list}>
-              {mockProduct.colors.map((color, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setSelectedColor(idx);
-                    setCurrentImageIndex(idx);
-                  }}
-                  className={`${styles.product_info_color_swatch} ${selectedColor === idx ? styles.product_info_color_swatch_active : ''}`}
-                  style={{ backgroundColor: color.code }}
-                />
-              ))}
+              Tồn kho:
+              <span
+                style={{
+                  color: currentStock > 0 ? '#28a745' : '#dc3545',
+                  marginLeft: '8px',
+                  fontWeight: 'bold',
+                }}
+              >
+                {currentStock > 0 ? currentStock : 'Hết hàng'}
+              </span>
             </div>
           </div>
 
-          {/* Size Selection */}
           <div className={styles.product_info_section}>
             <div className={styles.product_info_section_header}>
-              Kích cỡ: <span className={styles.product_info_selected_value}>{selectedSize}</span>
+              Màu sắc:{' '}
+              <span className={styles.product_info_selected_value}>
+                {selectedColor || 'Chọn màu'}
+              </span>
             </div>
             <div className={styles.product_info_option_list}>
-              {mockProduct.sizes.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`${styles.product_info_size_button} ${selectedSize === size ? styles.product_info_size_button_active : ''}`}
-                >
-                  {size}
-                </button>
-              ))}
+              {uniqueColors.map((color) => {
+                const hasStock = uniqueSizes.some((size) => getVariantStock(color, size) > 0);
+                return (
+                  <button
+                    key={color}
+                    onClick={() => handleColorSelect(color)}
+                    disabled={!hasStock}
+                    className={`${styles.product_info_size_button} ${
+                      selectedColor === color ? styles.product_info_size_button_active : ''
+                    }`}
+                    style={{
+                      opacity: !hasStock ? 0.4 : 1,
+                      cursor: !hasStock ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {color}
+                    {!hasStock && <span className={styles.out_of_stock_label}>Hết</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Quantity */}
+          <div className={styles.product_info_section}>
+            <div className={styles.product_info_section_header}>
+              Kích cỡ:{' '}
+              <span className={styles.product_info_selected_value}>
+                {selectedSize || 'Chọn size'}
+              </span>
+            </div>
+            <div className={styles.product_info_option_list}>
+              {uniqueSizes.map((size) => {
+                const stock = selectedColor ? getVariantStock(selectedColor, size) : 0;
+                const isDisabled = stock <= 0;
+                return (
+                  <button
+                    key={size}
+                    onClick={() => setSelectedSize(size)}
+                    disabled={isDisabled}
+                    className={`${styles.product_info_size_button} ${
+                      selectedSize === size ? styles.product_info_size_button_active : ''
+                    }`}
+                    style={{
+                      opacity: isDisabled ? 0.4 : 1,
+                      cursor: isDisabled ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {size}
+                    {isDisabled && <span className={styles.out_of_stock_label}>Hết</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className={styles.product_info_section}>
             <div className={styles.product_info_section_header}>Số lượng:</div>
             <div className={styles.product_info_quantity_wrapper}>
               <div className={styles.product_info_quantity_input_group}>
                 <button
                   onClick={() => handleQuantityChange('decrease')}
+                  disabled={quantity <= 1 || isOutOfStock}
                   className={styles.product_info_quantity_button}
-                >−</button>
+                  style={{ opacity: quantity <= 1 || isOutOfStock ? 0.5 : 1 }}
+                >
+                  −
+                </button>
                 <input
                   type="text"
                   value={quantity}
@@ -436,25 +462,36 @@ const ProductDetailPage: React.FC = () => {
                 />
                 <button
                   onClick={() => handleQuantityChange('increase')}
+                  disabled={quantity >= currentStock || isOutOfStock}
                   className={styles.product_info_quantity_button}
-                >+</button>
+                  style={{ opacity: quantity >= currentStock || isOutOfStock ? 0.5 : 1 }}
+                >
+                  +
+                </button>
               </div>
               <button
                 onClick={() => setShowSizeModal(true)}
                 className={styles.product_info_size_chart_button}
               >
-                📏 Bảng kích thước
+                Bảng kích thước
               </button>
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className={styles.product_info_action_buttons}>
-            <button className={`${styles.product_info_button} ${styles.product_info_button_primary_dark}`}>
-              THÊM VÀO GIỎ
+            <button
+              onClick={handleAddToCart}
+              disabled={isOutOfStock}
+              className={`${styles.product_info_button} ${styles.product_info_button_primary_dark}`}
+              style={{
+                opacity: isOutOfStock ? 0.5 : 1,
+                cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {isOutOfStock ? 'HẾT HÀNG' : 'THÊM VÀO GIỎ'}
             </button>
             <button
-              onClick={() => setIsFavorite(!isFavorite)}
+              onClick={handleFavorite}
               className={`${styles.product_info_button} ${styles.product_info_button_icon}`}
             >
               <Heart
@@ -468,77 +505,73 @@ const ProductDetailPage: React.FC = () => {
             </button>
           </div>
 
-          <button className={`${styles.product_info_button} ${styles.product_info_button_primary_cta}`}>
-            MUA NGAY
+          <button
+            onClick={handleBuyNow}
+            disabled={isOutOfStock}
+            className={`${styles.product_info_button} ${styles.product_info_button_primary_cta}`}
+            style={{
+              opacity: isOutOfStock ? 0.5 : 1,
+              cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {isOutOfStock ? 'HẾT HÀNG' : 'MUA NGAY'}
           </button>
 
-          {/* Info Alert */}
           <div className={styles.product_info_alert}>
-            <Zap size={16} color="#FF6347" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <Zap size={16} color="#FF6347" className={styles.icon_prefix} />
             <div>
-              <span className={styles.product_info_alert_text}>Sản phẩm hiện có {mockProduct.inCartCount} người thêm vào giỏ hàng.</span>
-              <span className={`${styles.product_info_alert_text} ${styles.product_info_alert_text_highlight}`}>{mockProduct.viewingCount} người đang xem.</span>
+              <span className={styles.product_info_alert_text}>
+                Sản phẩm hiện có {product.quantity || 0} người thêm vào giỏ hàng.
+              </span>
+              <span
+                className={`${styles.product_info_alert_text} ${styles.product_info_alert_text_highlight}`}
+              >
+                0 người đang xem.
+              </span>
             </div>
           </div>
 
-          {/* Features */}
           <div className={styles.product_info_features_list}>
             <div className={styles.product_info_feature_item}>
-              <Award size={20} color="#FF6347" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <span><strong>Giao hàng toàn quốc:</strong> Thanh toán (COD) khi nhận hàng</span>
+              <Award size={20} color="#FF6347" className={styles.icon_prefix} />
+              <span>
+                <strong>Giao hàng toàn quốc:</strong> Thanh toán (COD) khi nhận hàng
+              </span>
             </div>
             <div className={styles.product_info_feature_item}>
-              <Package size={20} color="#FF6347" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <span><strong>Miễn phí giao hàng:</strong> Theo chính sách</span>
+              <Package size={20} color="#FF6347" className={styles.icon_prefix} />
+              <span>
+                <strong>Miễn phí giao hàng:</strong> Theo chính sách
+              </span>
             </div>
             <div className={styles.product_info_feature_item}>
-              <Clock size={20} color="#FF6347" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <span><strong>Đổi trả trong 7 ngày:</strong> Kể từ ngày mua hàng</span>
+              <Clock size={20} color="#FF6347" className={styles.icon_prefix} />
+              <span>
+                <strong>Đổi trả trong 7 ngày:</strong> Kể từ ngày mua hàng
+              </span>
             </div>
             <div className={styles.product_info_feature_item}>
-              <Clock size={20} color="#FF6347" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <span><strong>Hỗ trợ 24/7:</strong> Theo chính sách</span>
+              <Clock size={20} color="#FF6347" className={styles.icon_prefix} />
+              <span>
+                <strong>Hỗ trợ 24/7:</strong> Theo chính sách
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Related Products */}
-      <div className={styles.related_products_wrapper}>
-        <h2 className={styles.related_products_title}>Thường được mua cùng</h2>
-
-        <div className={styles.related_products_grid}>
-          {relatedProducts.map((product) => (
-            <div
-              key={product.id}
-              onClick={() => toggleProductSelection(product.id)}
-              className={styles.related_products_item_wrapper}
-            >
-              <ProductCard
-                product={product}
-                isSelected={selectedProducts.has(product.id)}
-              />
-            </div>
-          ))}
-        </div>
-
-        <div className={styles.related_products_footer}>
-          <div className={styles.related_products_total_info}>
-            <span className={styles.related_products_total_label}>Tổng cộng: </span>
-            <span className={styles.related_products_total_price}>
-              {calculateTotal().toLocaleString('vi-VN')}₫
-            </span>
-          </div>
-          <button className={styles.related_products_combo_button}>
-            ĐẶT COMBO NGAY
-          </button>
-        </div>
-      </div>
-      
       <ProductTabs />
 
-      {/* Size Modal */}
       {showSizeModal && <SizeChart onClose={() => setShowSizeModal(false)} />}
+
+      {showLightbox && (
+        <ImageLightbox
+          images={displayImages}
+          currentIndex={currentImageIndex}
+          onClose={() => setShowLightbox(false)}
+          onNavigate={handleLightboxNavigate}
+        />
+      )}
     </div>
   );
 };

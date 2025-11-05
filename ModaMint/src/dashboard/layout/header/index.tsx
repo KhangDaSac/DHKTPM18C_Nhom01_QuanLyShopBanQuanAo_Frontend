@@ -18,7 +18,9 @@ import {
     UserOutlined,
     SettingOutlined,
     LogoutOutlined,
-    MailOutlined
+    MailOutlined,
+    SunOutlined,
+    MoonOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/authContext';
@@ -37,6 +39,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarCollapsed }) => {
     const navigate = useNavigate();
     const { logout, user } = useAuth();
     const [notificationVisible, setNotificationVisible] = useState(false);
+    const [theme] = useState<'light' | 'dark'>('light'); // Fixed to light mode
 
     // Mock notifications data
     const notifications = [
@@ -67,11 +70,17 @@ const Header: React.FC<HeaderProps> = ({ sidebarCollapsed }) => {
     const handleLogout = async () => {
         try {
             await logout();
-            navigate('/login', { replace: true });
+            // Redirect được xử lý trong logout() của authContext
         } catch (error) {
             console.error('Logout error:', error);
             toast.error('Có lỗi xảy ra khi đăng xuất!');
         }
+    };
+
+    // Hàm chuyển đổi theme - Tạm thời vô hiệu hóa
+    const toggleTheme = () => {
+        // Disabled - chỉ hiển thị nút không có chức năng
+        return;
     };
 
     const userMenuItems = [
@@ -79,7 +88,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarCollapsed }) => {
             key: 'profile',
             icon: <UserOutlined />,
             label: 'Thông tin cá nhân',
-            onClick: () => navigate('/profile')
+            onClick: () => navigate('/dashboard/profile')
         },
         {
             key: 'settings',
@@ -149,17 +158,26 @@ const Header: React.FC<HeaderProps> = ({ sidebarCollapsed }) => {
                         display: flex;
                         align-items: center;
                         justify-content: space-between;
+                        gap: 24px;
                         position: fixed;
                         top: 0;
                         right: 0;
                         z-index: 1000;
-                        transition: left 0.2s ease;
+                        transition: left 0.2s ease, background 0.3s ease, border-color 0.3s ease;
                         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                    }
+
+                    [data-theme-mode="dark"] .dashboard-header {
+                        background: #141414;
+                        border-bottom: 1px solid #303030;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
                     }
                     
                     .header-search {
                         flex: 1;
                         max-width: 400px;
+                        display: flex;
+                        justify-content: center;
                     }
                     
                     .header-actions {
@@ -169,12 +187,23 @@ const Header: React.FC<HeaderProps> = ({ sidebarCollapsed }) => {
                     }
                     
                     .header-button {
-                        transition: background-color 0.15s ease;
+                        transition: all 0.2s ease;
                         border-radius: 6px;
+                        color: #595959;
                     }
                     
                     .header-button:hover {
                         background-color: rgba(0, 0, 0, 0.06);
+                        color: #1890ff;
+                    }
+
+                    [data-theme-mode="dark"] .header-button {
+                        color: #8c8c8c;
+                    }
+
+                    [data-theme-mode="dark"] .header-button:hover {
+                        background-color: rgba(255, 255, 255, 0.08);
+                        color: #ffffff;
                     }
                     
                     .header-user-menu {
@@ -185,6 +214,26 @@ const Header: React.FC<HeaderProps> = ({ sidebarCollapsed }) => {
                     
                     .header-user-menu:hover {
                         background-color: rgba(24, 144, 255, 0.1);
+                    }
+
+                    /* Dark mode for Search input */
+                    [data-theme-mode="dark"] .ant-input {
+                        background: #1f1f1f;
+                        border-color: #434343;
+                        color: #ffffff;
+                    }
+
+                    [data-theme-mode="dark"] .ant-input::placeholder {
+                        color: #8c8c8c;
+                    }
+
+                    [data-theme-mode="dark"] .ant-input-search .ant-input {
+                        background: #1f1f1f;
+                        border-color: #434343;
+                    }
+
+                    [data-theme-mode="dark"] .ant-badge-count {
+                        background: #722ed1;
                     }
                 `}
             </style>
@@ -205,6 +254,17 @@ const Header: React.FC<HeaderProps> = ({ sidebarCollapsed }) => {
 
             {/* Right Side Actions */}
             <div className="header-actions">
+                {/* Theme Toggle - Disabled */}
+                <Button
+                    type="text"
+                    icon={theme === 'light' ? <MoonOutlined /> : <SunOutlined />}
+                    onClick={toggleTheme}
+                    className="header-button"
+                    style={{ fontSize: '18px', opacity: 0.5, cursor: 'not-allowed' }}
+                    disabled
+                    title="Chức năng đang phát triển"
+                />
+
                 {/* Notifications */}
                 <Popover
                     content={notificationContent}
