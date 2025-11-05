@@ -545,37 +545,40 @@ const StoresPage: React.FC = () => {
     );
 
     return (
-        <div style={{ padding: '72px', background: '#f0f2f5', minHeight: '100vh' }}>
-            <Card style={{ marginBottom: '20px' }}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center'
-                }}>
-                    <Space>
-                        <ShopOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                        <Title level={2} style={{ margin: 0 }}>Quản lý cửa hàng</Title>
-                    </Space>
-                    <Space>
-                        <Button
-                            icon={<ExportOutlined />}
-                            onClick={exportToExcel}
-                        >
-                            Xuất Excel
-                        </Button>
-                        <Button
-                            type="primary"
-                            icon={<PlusOutlined />}
-                            onClick={handleAddStore}
-                        >
-                            Thêm cửa hàng
-                        </Button>
-                    </Space>
-                </div>
-            </Card>
+        <div style={{ margin: 0, padding: 0 }}>
+            <style>{`
+                .ant-table-measure-row {
+                    display: none !important;
+                    height: 0 !important;
+                    visibility: hidden !important;
+                }
+                .ant-table-tbody > tr > td {
+                    height: 70px !important;
+                    vertical-align: middle !important;
+                    padding: 8px 16px !important;
+                }
+                .ant-table-tbody > tr {
+                    height: 70px !important;
+                }
+                .ant-table-tbody > tr:first-child > td {
+                    padding-top: 8px !important;
+                }
+                .ant-table-thead > tr > th {
+                    padding: 8px 16px !important;
+                }
+                .ant-table {
+                    margin-top: 0 !important;
+                }
+                .ant-card-body {
+                    padding: 16px !important;
+                }
+            `}</style>
+            <Title level={2} className="text-primary" style={{ marginBottom: '16px', marginTop: 0 }}>
+                Quản lý cửa hàng
+            </Title>
 
             {/* Statistics */}
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '16px', marginTop: 0 }}>
                 <Row gutter={16}>
                     <Col xs={24} sm={12} md={6}>
                         <Card>
@@ -629,14 +632,12 @@ const StoresPage: React.FC = () => {
             </div>
 
             {/* Search and Filter */}
-            <Card style={{ marginBottom: '20px' }}>
+            <Card style={{ marginBottom: '16px', marginTop: 0 }}>
                 <Row gutter={16} align="middle">
                     <Col flex="auto">
                         <Search
                             placeholder="Tìm kiếm cửa hàng..."
-                            prefix={<SearchOutlined />}
                             allowClear
-                            size="large"
                             onSearch={(value) => setSearchText(value)}
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
@@ -654,6 +655,23 @@ const StoresPage: React.FC = () => {
                             <Option value="inactive">Không hoạt động</Option>
                             <Option value="maintenance">Bảo trì</Option>
                         </Select>
+                    </Col>
+                    <Col>
+                        <Space>
+                            <Button
+                                icon={<ExportOutlined />}
+                                onClick={exportToExcel}
+                            >
+                                Xuất Excel
+                            </Button>
+                            <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={handleAddStore}
+                            >
+                                Thêm cửa hàng
+                            </Button>
+                        </Space>
                     </Col>
                 </Row>
             </Card>

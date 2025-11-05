@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Heart, Share2, ChevronLeft, ChevronRight, Zap, Award, Package, Clock, Star } from 'lucide-react';
-import ProductTabs from '../../components/detail/DetailInforTab';
+import ProductTabs from '@/components/detail/DetailInforTab';
 
 // Import file CSS Module
 import styles from './styles.module.css';

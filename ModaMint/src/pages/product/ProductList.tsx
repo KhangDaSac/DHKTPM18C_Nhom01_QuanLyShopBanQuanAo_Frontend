@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ProductCard } from '../../components/home/item-components/ProductCard';
-import Sidebar from '../../components/product-list/Sidebar';
-import Pagination from '../../components/product-list/Pagination';
-import SortSelect from '../../components/product-list/SortSelect';
-import CategoryCarousel from '../../components/product-list/CategoryCarousel';
+import { ProductCard } from '@/components/product';
+import Sidebar from '@/components/product-list/Sidebar';
+import Pagination from '@/components/product-list/Pagination';
+import SortSelect from '@/components/product-list/SortSelect';
+import CategoryCarousel from '@/components/product-list/CategoryCarousel';
 // Mock data (replace with API calls later)
 interface Product {
   id: number;

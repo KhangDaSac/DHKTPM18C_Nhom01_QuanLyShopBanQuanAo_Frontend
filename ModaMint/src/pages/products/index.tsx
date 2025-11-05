@@ -1,10 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ProductCard } from '../../components/home/item-components/ProductCard';
-import Sidebar from '../../components/product-list/Sidebar';
-import Pagination from '../../components/product-list/Pagination';
-import SortSelect from '../../components/product-list/SortSelect';
-import CategoryCarousel from '../../components/product-list/CategoryCarousel';
+import { ProductCard } from '@/components/product';
+import Sidebar from '@/components/product-list/Sidebar';
+import Pagination from '@/components/product-list/Pagination';
+import SortSelect from '@/components/product-list/SortSelect';
+import CategoryCarousel from '@/components/product-list/CategoryCarousel';
 import axios from 'axios';
+import { cartService } from '@/services/cart';
+import { toast } from 'react-toastify';
+import { useAuth } from '@/contexts/authContext';
+import { productVariantService } from '@/services/productVariant';
 
 // Mock data (replace with API calls later)
 interface Product {
@@ -18,8 +22,11 @@ interface Product {
     category: string;
     color?: string;
     size?: string[];
+    variantId?: number; // ID của product variant để thêm vào giỏ hàng
 }
 
+// Legacy mock data - not currently used
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const MOCK: Product[] = [
     // Sản phẩm giá thấp, màu đen, size S
     {
@@ -211,30 +218,118 @@ const ProductList: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const { isAuthenticated } = useAuth();
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const res = await axios.get<{code: number; result: any[]; message: string}>("http://localhost:8080/api/v1/products");
       // Map dữ liệu từ API sang format Product local
-      const mappedProducts: Product[] = (res.data.result ?? []).map((p: any) => ({
-        id: p.id,
-        name: p.name || '',
-        price: p.price || 0,
-        originalPrice: p.price || 0, // Sử dụng price làm originalPrice
-        currentPrice: p.price || 0,  // Sử dụng price làm currentPrice
-        image: p.images && p.images.length > 0 ? p.images[0] : '',
-        hoverImage: p.images && p.images.length > 1 ? p.images[1] : (p.images && p.images[0] ? p.images[0] : ''),
-        category: p.categoryName || p.category || '',
-        color: undefined,
-        size: undefined
-      }));
+      const mappedProducts: Product[] = (res.data.result ?? []).map((p: any) => {
+        // Thử lấy variantId từ nhiều nguồn khác nhau
+        let variantId: number | undefined = undefined;
+        let variantPrice: number | undefined = undefined;
+        let variantDiscount: number | undefined = undefined;
+        
+        // Lấy thông tin từ variant đầu tiên nếu có
+        if (p.productVariants && Array.isArray(p.productVariants) && p.productVariants.length > 0) {
+          const firstVariant = p.productVariants[0];
+          variantId = firstVariant.id;
+          variantPrice = firstVariant.price;
+          variantDiscount = firstVariant.discount; // Lấy discount từ variant
+        } else if (p.variants && Array.isArray(p.variants) && p.variants.length > 0) {
+          const firstVariant = p.variants[0];
+          variantId = firstVariant.id;
+          variantPrice = firstVariant.price;
+          variantDiscount = firstVariant.discount;
+        } else if (p.variantId) {
+          variantId = p.variantId;
+        }
+        
+        // Tính originalPrice và currentPrice dựa trên variant nếu có
+        const basePrice = variantPrice ?? p.price ?? 0;
+        const originalPriceNum = basePrice;
+        // Nếu có discount từ variant, tính currentPrice từ đó
+        let currentPriceNum = basePrice;
+        if (variantDiscount && variantDiscount > 0 && basePrice > 0) {
+          currentPriceNum = Math.round(basePrice * (1 - variantDiscount / 100));
+        } else {
+          currentPriceNum = basePrice; // Không có discount thì giá bằng nhau
+        }
+        
+        return {
+          id: p.id,
+          name: p.name || '',
+          price: p.price || 0,
+          originalPrice: originalPriceNum,
+          currentPrice: currentPriceNum,
+          image: p.images && p.images.length > 0 ? p.images[0] : (p.imageUrl || ''),
+          hoverImage: p.images && p.images.length > 1 ? p.images[1] : (p.images && p.images[0] ? p.images[0] : (p.imageUrl || '')),
+          category: p.categoryName || p.category || '',
+          color: undefined,
+          size: undefined,
+          variantId: variantId
+        };
+      });
       setProducts(mappedProducts);
     } catch (error) {
-      console.error("❌ Error fetching products:", error);
       setError("Không thể tải danh sách sản phẩm");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Xử lý thêm vào giỏ hàng
+  const handleAddToCart = async (product: any) => {
+    if (!isAuthenticated) {
+      toast.warning('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
+      return;
+    }
+
+    // Lấy variantId từ product
+    let variantId = product.variantId;
+    
+    // Nếu không có variantId, thử lấy từ API
+    if (!variantId) {
+      try {
+        const variantsResult = await productVariantService.getProductVariantsByProductId(product.id);
+        
+        if (variantsResult.success && variantsResult.data && variantsResult.data.length > 0) {
+          variantId = variantsResult.data[0].id;
+        } else {
+          toast.error('Sản phẩm này chưa có biến thể. Vui lòng chọn từ trang chi tiết.');
+          return;
+        }
+      } catch (error: any) {
+        toast.error('Không thể lấy thông tin biến thể sản phẩm. Vui lòng thử lại.');
+        return;
+      }
+    }
+
+    if (!variantId) {
+      toast.error('Không thể xác định phiên bản sản phẩm. Vui lòng chọn từ trang chi tiết.');
+      return;
+    }
+
+    try {
+      const result = await cartService.addItem({ 
+        variantId: variantId, 
+        quantity: 1 
+      });
+
+      if (result.success) {
+        toast.success('Đã thêm sản phẩm vào giỏ hàng!');
+        // Dispatch event to notify cart component to reload
+        // Use CustomEvent để có thể pass data nếu cần
+        const event = new CustomEvent('cartUpdated', { 
+          detail: { timestamp: Date.now() }
+        });
+        window.dispatchEvent(event);
+      } else {
+        toast.error(result.message || 'Không thể thêm sản phẩm vào giỏ hàng');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng');
     }
   };
 
@@ -353,15 +448,42 @@ const ProductList: React.FC = () => {
                                     pageItems
                                         .filter(p => p && p.id) // Lọc bỏ các item undefined hoặc không có id
                                         .map(p => {
+                                            // Tính toán giá và discount
+                                            const originalPriceNum = p.originalPrice ?? p.price ?? 0;
+                                            const currentPriceNum = p.currentPrice ?? p.price ?? 0;
+                                            
+                                            // Format giá với đuôi "đ"
+                                            const formatPrice = (price: number): string => {
+                                                return `${price.toLocaleString('vi-VN')}đ`;
+                                            };
+                                            
+                                            // Tính % giảm giá nếu có giảm
+                                            let discount: string | undefined = undefined;
+                                            if (originalPriceNum > currentPriceNum && originalPriceNum > 0) {
+                                                const discountPercent = Math.round(((originalPriceNum - currentPriceNum) / originalPriceNum) * 100);
+                                                if (discountPercent > 0) {
+                                                    discount = `-${discountPercent}%`;
+                                                }
+                                            }
+                                            
                                             // Convert Product to ProductCardData format
                                             const productCardData = {
                                                 ...p,
-                                                originalPrice: (p.originalPrice ?? p.price ?? 0).toString(),
-                                                currentPrice: (p.currentPrice ?? p.price ?? 0).toString(),
+                                                originalPrice: formatPrice(originalPriceNum),
+                                                currentPrice: formatPrice(currentPriceNum),
+                                                discount: discount,
                                                 image: p.image || '',
-                                                hoverImage: p.hoverImage || p.image || ''
+                                                hoverImage: p.hoverImage || p.image || '',
+                                                variantId: p.variantId
                                             };
-                                            return <ProductCard key={p.id} product={productCardData} />;
+                                            return (
+                                                <ProductCard 
+                                                    key={p.id} 
+                                                    product={productCardData} 
+                                                    buttonText="Thêm vào giỏ hàng"
+                                                    onButtonClick={handleAddToCart}
+                                                />
+                                            );
                                         })
                                 ) : (
                                     <div style={{

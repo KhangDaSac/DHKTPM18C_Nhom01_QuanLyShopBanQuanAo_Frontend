@@ -1,6 +1,6 @@
 import React from 'react';
-import { useAuth } from '../../contexts/authContext';
-import { useRoles, usePermissions } from '../../hooks/useRoles';
+import { useAuth } from '@/contexts/authContext';
+import { useRoles, usePermissions } from '@/hooks/useRoles';
 import { Card, Typography, Space, Tag, Button, Divider } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 

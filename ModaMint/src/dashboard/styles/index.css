@@ -1,0 +1,20 @@
+/**
+ * Dashboard Styles - Consolidated
+ * 
+ * Import all dashboard CSS files here
+ */
+
+/* Base styles */
+@import '../style.css';
+
+/* Theme styles */
+@import '../theme-styles.css';
+
+/* DaisyUI overrides */
+@import '../daisyui-override.css';
+
+/* Component styles */
+@import '../components/common-styles.module.css';
+
+/* Note: debug-theme.css, force-theme.css have been removed */
+

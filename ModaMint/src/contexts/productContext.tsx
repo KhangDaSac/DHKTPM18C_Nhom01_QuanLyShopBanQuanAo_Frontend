@@ -45,17 +45,12 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
 
             if (result.success && result.data) {
                 setProducts(result.data);
-                console.log('Fetched products:', result.data);
             } else {
                 setError(result.message || 'Không thể lấy danh sách sản phẩm');
-                // Không show toast khi auto-fetch để tránh spam
-                console.warn('Failed to fetch products:', result.message);
             }
         } catch (err) {
             const errorMessage = 'Có lỗi xảy ra khi tải sản phẩm';
             setError(errorMessage);
-            // Không show toast khi auto-fetch
-            console.error('Error fetching products:', err);
         } finally {
             setIsLoading(false);
         }

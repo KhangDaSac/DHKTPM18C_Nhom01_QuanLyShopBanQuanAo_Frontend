@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { ProductCard } from './item-components/ProductCard';
+import { ProductCard } from '@/components/product';
 import {CircleChevronRight, CircleChevronLeft, ArrowRight} from 'lucide-react';
 import styles from './styles.module.css'
 
@@ -51,7 +51,11 @@ const ListProducts: React.FC<ListProductsProps> = ({ products, itemsPerPage}) =>
 
         <div className={styles.product_list} ref={scrollRef}>
           {visibleProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard 
+              key={product.id} 
+              product={product} 
+              buttonText="Tùy chọn"
+            />
           ))}
         </div>
 

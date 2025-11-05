@@ -1,7 +1,17 @@
 
 import './App.css'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import RootLayout from './components/layout';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Components
+import { RootLayout } from './components/layout';
+import ErrorBoundary from './components/ErrorBoundary';
+
+// Context
+import { CartProvider } from './contexts/CartContext';
+
+// Pages
 import HomePage from "./pages/home"
 import NewsPage from "./pages/news"
 import AboutPage from "./pages/about"
@@ -15,28 +25,15 @@ import ProfileAddress from "./pages/profile/ProfileAddress";
 import ProfileOrders from "./pages/profile/ProfileOrders";
 import ProfileChangePassword from "./pages/profile/ProfileChangePassword";
 import AuthTestPage from "./pages/auth-test";
-
-// Import protected routes
-import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
-
 import Detail from "./pages/detail"
-
 import ProductList from './pages/products';
-
-import CartPage from './pages/cart/CartPage';
+import CartPage from './pages/cart';
 import CheckoutPage from './pages/checkout/CheckoutPage';
-// Context
-import { CartProvider } from './contexts/CartContext';
 import FavoritesPage from './pages/favorites/FavoritesPage';
-// Import dashboard routes
-import dashboardRoutes from './dashboard/routes';
-// Import Error Boundary
-import ErrorBoundary from './components/ErrorBoundary';
 
-// Import React Toastify
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import ProductDetail from './pages/detail';
+// Routes
+import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
+import dashboardRoutes from './dashboard/routes';
 
 
 
@@ -52,7 +49,7 @@ function App() {
         { path: "about", element: <AboutPage /> },
         { path: "stores", element: <StoresPage /> },
         { path: "contact", element: <ContactPage /> },
-        { path: "detail", element: <ProductDetail /> },
+        { path: "detail", element: <Detail /> },
 
         // Routes chỉ cho phép user CHƯA đăng nhập
         {

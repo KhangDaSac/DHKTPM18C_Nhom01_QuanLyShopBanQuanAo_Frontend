@@ -1,291 +1,246 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Table,
-    Button,
-    Space,
-    Tag,
-    Modal,
-    Form,
-    Input,
-    message,
-    Card,
-    Row,
-    Col,
-    Statistic,
-    Typography,
-    Popconfirm,
-    DatePicker,
-    InputNumber,
-    Switch,
-    Progress
-} from 'antd';
-import {
-    GiftOutlined,
-    EyeOutlined,
-    EditOutlined,
-    DeleteOutlined,
-    PlusOutlined,
-    DollarOutlined,
-    CalendarOutlined,
-    ShoppingCartOutlined,
-    FireOutlined
-} from '@ant-design/icons';
+import { Table, Button, Space, Tag, Modal, Form, Input, InputNumber, message, Card, Row, Col, Statistic, Typography, Popconfirm, DatePicker, Select, Descriptions, Badge, Empty } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, DollarOutlined, ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined, GiftOutlined, CalendarOutlined, DownloadOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
+import { amountPromotionService, type AmountPromotion } from '../../../services/promotion';
+import * as XLSX from 'xlsx';
 import './style.css';
 import '../../components/common-styles.css';
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
 const { RangePicker } = DatePicker;
-
-// Interface cho Promotion
-interface Promotion {
-    id: number;
-    name: string;
-    code: string;
-    description: string;
-    type: 'percentage' | 'fixed_amount' | 'buy_x_get_y' | 'free_shipping';
-    value: number; // % hoặc số tiền
-    minimumOrderValue?: number;
-    maximumDiscountAmount?: number;
-    buyQuantity?: number;
-    getQuantity?: number;
-    applicableProducts?: string[];
-    applicableCategories?: string[];
-    startDate: string;
-    endDate: string;
-    usageLimit?: number;
-    usageCount: number;
-    userLimit?: number;
-    isActive: boolean;
-    isPublic: boolean;
-    createdAt: string;
-    updatedAt: string;
-}
+const { Option } = Select;
 
 const FixedPromotions: React.FC = () => {
-    const [promotions, setPromotions] = useState<Promotion[]>([]);
+    const [amountPromotions, setAmountPromotions] = useState<AmountPromotion[]>([]);
+    const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isViewModalVisible, setIsViewModalVisible] = useState(false);
-    const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
-    const [viewingPromotion, setViewingPromotion] = useState<Promotion | null>(null);
+    const [editingPromotion, setEditingPromotion] = useState<AmountPromotion | null>(null);
+    const [viewingPromotion, setViewingPromotion] = useState<AmountPromotion | null>(null);
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
-
-    // Filter: chỉ hiển thị loại fixed_amount
-    const filteredPromotions = promotions.filter(p => p.type === 'fixed_amount');
-
-    // Statistics
-    const totalPromotions = filteredPromotions.length;
-    const activePromotions = filteredPromotions.filter(p => p.isActive).length;
-    const expiredPromotions = filteredPromotions.filter(p => dayjs(p.endDate).isBefore(dayjs())).length;
-    const totalUsage = filteredPromotions.reduce((sum, p) => sum + p.usageCount, 0);
-
-    const isExpired = (endDate: string) => {
-        return dayjs(endDate).isBefore(dayjs());
-    };
-
-    const getValueDisplay = (promotion: Promotion) => {
-        return `${promotion.value.toLocaleString()}đ`;
-    };
-
-    const loadPromotions = () => {
-        setLoading(true);
-        // TODO: Load from API
-        const mockData: Promotion[] = [
-            {
-                id: 1,
-                name: 'Giảm 50.000đ',
-                code: 'GIAM50K',
-                description: 'Giảm 50.000đ cho mọi đơn hàng',
-                type: 'fixed_amount',
-                value: 50000,
-                minimumOrderValue: 200000,
-                startDate: '2024-01-01',
-                endDate: '2024-12-31',
-                usageLimit: 1000,
-                usageCount: 234,
-                userLimit: 1,
-                isActive: true,
-                isPublic: true,
-                createdAt: '2024-01-01',
-                updatedAt: '2024-01-01',
-            },
-        ];
-        setPromotions(mockData);
-        setLoading(false);
-    };
 
     useEffect(() => {
         loadPromotions();
     }, []);
 
-    const handleAdd = () => {
+    const loadPromotions = async () => {
+        setLoading(true);
+        try {
+            const data = await amountPromotionService.getAll();
+            setAmountPromotions(data);
+        } catch (error: any) {
+            message.error('Không thể tải danh sách khuyến mãi: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCreate = () => {
         setEditingPromotion(null);
         form.resetFields();
         setIsModalVisible(true);
     };
 
-    const handleEdit = (record: Promotion) => {
+    const handleEdit = (record: AmountPromotion) => {
         setEditingPromotion(record);
         form.setFieldsValue({
-            ...record,
-            dateRange: [dayjs(record.startDate), dayjs(record.endDate)],
+            name: record.name,
+            code: record.code,
+            discountAmount: record.discountAmount,
+            minOrderValue: record.minOrderValue,
+            startAt: [dayjs(record.startAt), dayjs(record.endAt)],
+            quantity: record.quantity,
+            isActive: record.isActive,
         });
         setIsModalVisible(true);
     };
 
-    const handleView = (record: Promotion) => {
+    const handleDelete = async (id: number) => {
+        try {
+            await amountPromotionService.delete(id);
+            message.success('Xóa khuyến mãi thành công');
+            loadPromotions();
+        } catch (error: any) {
+            message.error('Không thể xóa khuyến mãi: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const handleExportExcel = () => {
+        const data = amountPromotions.map((item, index) => ({
+            STT: index + 1,
+            ID: item.id,
+            'Mã khuyến mãi': item.code,
+            'Tên': item.name,
+            'Số tiền giảm': item.discountAmount,
+            'Giá trị đơn tối thiểu': item.minOrderValue,
+            'Ngày bắt đầu': dayjs(item.startAt).format('DD/MM/YYYY HH:mm'),
+            'Ngày kết thúc': dayjs(item.endAt).format('DD/MM/YYYY HH:mm'),
+            'Số lượng': item.quantity,
+            'Trạng thái': item.isActive ? 'Hoạt động' : 'Tạm dừng',
+        }));
+        
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Khuyến mãi');
+        
+        // Auto-width columns
+        const maxWidth = 20;
+        const colWidths = Object.keys(data[0] || {}).map(key => ({
+            wch: Math.min(Math.max(key.length, (data[0] as any)[key]?.toString().length || 0), maxWidth)
+        }));
+        ws['!cols'] = colWidths;
+        
+        XLSX.writeFile(wb, `KhuyenMai_GiaCoDinh_${new Date().toISOString().split('T')[0]}.xlsx`);
+        message.success('Xuất Excel thành công!');
+    };
+
+    const handleSubmit = async () => {
+        try {
+            const values = await form.validateFields();
+            const promotionData = {
+                name: values.name,
+                code: values.code,
+                discountAmount: values.discountAmount,
+                minOrderValue: values.minOrderValue,
+                startAt: values.startAt[0].format('YYYY-MM-DD HH:mm:ss'),
+                endAt: values.startAt[1].format('YYYY-MM-DD HH:mm:ss'),
+                quantity: values.quantity,
+                isActive: values.isActive ?? true,
+            };
+
+            if (editingPromotion?.id) {
+                await amountPromotionService.update(editingPromotion.id, promotionData);
+                message.success('Cập nhật khuyến mãi thành công');
+            } else {
+                await amountPromotionService.create(promotionData);
+                message.success('Tạo khuyến mãi thành công');
+            }
+
+            setIsModalVisible(false);
+            form.resetFields();
+            loadPromotions();
+        } catch (error: any) {
+            if (error.errorFields) {
+                message.error('Vui lòng điền đầy đủ thông tin');
+            } else {
+                message.error('Không thể lưu khuyến mãi: ' + (error.response?.data?.message || error.message));
+            }
+        }
+    };
+
+    const handleView = (record: AmountPromotion) => {
         setViewingPromotion(record);
         setIsViewModalVisible(true);
     };
 
-    const handleDelete = (id: number) => {
-        setPromotions(promotions.filter(p => p.id !== id));
-        message.success('Đã xóa khuyến mãi thành công');
+    // Statistics
+    const stats = {
+        total: amountPromotions.length,
+        active: amountPromotions.filter(p => p.isActive).length,
+        expired: amountPromotions.filter(p => dayjs(p.endAt).isBefore(dayjs())).length,
     };
 
-    const handleSubmit = async (values: any) => {
-        const newPromotion: Promotion = {
-            ...values,
-            startDate: values.dateRange[0].format('YYYY-MM-DD'),
-            endDate: values.dateRange[1].format('YYYY-MM-DD'),
-            type: 'fixed_amount',
-            id: editingPromotion?.id || Date.now(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-
-        if (editingPromotion) {
-            setPromotions(promotions.map(p => p.id === editingPromotion.id ? newPromotion : p));
-            message.success('Cập nhật khuyến mãi thành công');
-        } else {
-            setPromotions([...promotions, newPromotion]);
-            message.success('Tạo khuyến mãi thành công');
-        }
-
-        setIsModalVisible(false);
-        form.resetFields();
-    };
-
-    const tableColumns = [
+    // Table columns
+    const columns: ColumnsType<AmountPromotion> = [
         {
             title: 'STT',
-            key: 'index',
+            key: 'stt',
             width: 60,
-            align: 'center' as const,
+            align: 'center',
             render: (_: any, __: any, index: number) => index + 1,
         },
         {
-            title: 'Tên Khuyến Mãi',
-            dataIndex: 'name',
-            key: 'name',
-            width: 200,
-            align: 'left' as const,
-        },
-        {
-            title: 'Mã',
+            title: 'Mã khuyến mãi',
             dataIndex: 'code',
             key: 'code',
-            width: 120,
-            align: 'center' as const,
-            render: (code: string) => <Tag color="green">{code}</Tag>,
+            render: (text: string) => <Tag color="green">{text}</Tag>,
         },
         {
-            title: 'Giảm Giá',
-            key: 'value',
-            width: 120,
-            align: 'center' as const,
-            render: (record: Promotion) => (
-                <Text strong style={{ color: '#52c41a', fontSize: '16px' }}>
-                    {getValueDisplay(record)}
-                </Text>
+            title: 'Giảm giá',
+            key: 'discount',
+            render: (_, record) => (
+                <span className="promotion-value">
+                    <DollarOutlined /> {record.discountAmount.toLocaleString('vi-VN')} đ
+                </span>
             ),
         },
         {
-            title: 'Đơn Tối Thiểu',
-            key: 'minimumOrderValue',
-            width: 150,
-            align: 'center' as const,
-            render: (record: Promotion) => record.minimumOrderValue 
-                ? `${record.minimumOrderValue.toLocaleString()}đ` 
-                : 'Không có',
+            title: 'Giá trị đơn tối thiểu',
+            dataIndex: 'minOrderValue',
+            key: 'minOrderValue',
+            render: (value: number) => `${value.toLocaleString('vi-VN')} đ`,
         },
         {
-            title: 'Thời Gian',
+            title: 'Thời gian',
             key: 'period',
-            width: 250,
-            align: 'center' as const,
-            render: (record: Promotion) => (
-                <Space direction="vertical" size={0}>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                        <CalendarOutlined /> {dayjs(record.startDate).format('DD/MM/YYYY')}
-                    </Text>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                        → {dayjs(record.endDate).format('DD/MM/YYYY')}
-                    </Text>
-                </Space>
+            render: (_, record) => (
+                <div className="promotion-period">
+                    <div>{dayjs(record.startAt).format('DD/MM/YYYY HH:mm')}</div>
+                    <div>→ {dayjs(record.endAt).format('DD/MM/YYYY HH:mm')}</div>
+                </div>
             ),
         },
         {
-            title: 'Sử Dụng',
-            key: 'usage',
-            width: 150,
-            align: 'center' as const,
-            render: (record: Promotion) => (
-                <Space direction="vertical" size={0} style={{ width: '100%' }}>
-                    <Text strong>{record.usageCount}/{record.usageLimit || '∞'}</Text>
-                    <Progress 
-                        percent={record.usageLimit 
-                            ? Math.round((record.usageCount / record.usageLimit) * 100) 
-                            : 0} 
-                        size="small" 
-                    />
-                </Space>
-            ),
+            title: 'Số lượng',
+            dataIndex: 'quantity',
+            key: 'quantity',
+            align: 'center',
         },
         {
-            title: 'Trạng Thái',
+            title: 'Trạng thái',
             key: 'status',
-            width: 150,
-            align: 'center' as const,
-            render: (record: Promotion) => (
-                <Space direction="vertical" size={4}>
-                    <Tag color={isExpired(record.endDate) ? 'default' : record.isActive ? 'success' : 'error'}>
-                        {isExpired(record.endDate) ? 'Hết hạn' : record.isActive ? 'Hoạt động' : 'Tắt'}
-                    </Tag>
-                    <Tag color={record.isPublic ? 'blue' : 'orange'}>
-                        {record.isPublic ? 'Công khai' : 'Mã khuyến mãi'}
-                    </Tag>
-                </Space>
-            ),
+            render: (_, record) => {
+                const now = dayjs();
+                const start = dayjs(record.startAt);
+                const end = dayjs(record.endAt);
+                const isActive = record.isActive;
+                const isExpired = end.isBefore(now);
+                const notStarted = start.isAfter(now);
+
+                if (!isActive) {
+                    return <Badge status="default" text="Tạm dừng" />;
+                }
+                if (isExpired) {
+                    return <Badge status="error" text="Đã hết hạn" />;
+                }
+                if (notStarted) {
+                    return <Badge status="processing" text="Chưa bắt đầu" />;
+                }
+                return <Badge status="success" text="Đang hoạt động" />;
+            },
         },
         {
-            title: 'Thao Tác',
+            title: 'Thao tác',
             key: 'action',
             width: 150,
             align: 'center' as const,
-            fixed: 'right' as const,
-            render: (record: Promotion) => (
-                <Space>
-                    <Button 
-                        icon={<EyeOutlined />} 
-                        size="small" 
+            render: (_, record) => (
+                <Space size="small">
+                    <Button
+                        type="text"
+                        icon={<EyeOutlined />}
                         onClick={() => handleView(record)}
+                        title="Xem chi tiết"
+                        size="small"
                     />
-                    <Button 
-                        icon={<EditOutlined />} 
-                        size="small" 
+                    <Button
+                        type="text"
+                        icon={<EditOutlined />}
                         onClick={() => handleEdit(record)}
+                        title="Chỉnh sửa"
+                        size="small"
                     />
                     <Popconfirm
-                        title="Xóa khuyến mãi"
-                        description="Bạn có chắc muốn xóa khuyến mãi này?"
-                        onConfirm={() => handleDelete(record.id)}
+                        title="Xác nhận xóa"
+                        description="Bạn có chắc chắn muốn xóa khuyến mãi này?"
+                        onConfirm={() => record.id && handleDelete(record.id)}
                         okText="Xóa"
                         cancelText="Hủy"
+                        icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
                     >
-                        <Button icon={<DeleteOutlined />} size="small" danger />
+                        <Button type="text" danger icon={<DeleteOutlined />} title="Xóa" size="small" />
                     </Popconfirm>
                 </Space>
             ),
@@ -293,175 +248,303 @@ const FixedPromotions: React.FC = () => {
     ];
 
     return (
-        <div className="promotions-page" style={{ padding: '72px', background: '#f0f2f5', minHeight: '100vh' }}>
-            {/* Header */}
-            <Card style={{ marginBottom: '20px', marginTop: '0px' }}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center'
-                }}>
-                    <Space>
-                        <DollarOutlined style={{ fontSize: '24px', color: '#52c41a' }} />
-                        <Title level={2} style={{ margin: 0 }}>Khuyến Mãi Theo Giá Cố Định</Title>
-                    </Space>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                        Thêm Khuyến Mãi
-                    </Button>
-                </div>
-            </Card>
+        <div style={{ margin: 0, padding: 0 }}>
+            <style>{`
+                .ant-table-measure-row {
+                    display: none !important;
+                    height: 0 !important;
+                    visibility: hidden !important;
+                }
+                .ant-table-tbody > tr > td {
+                    height: 70px !important;
+                    vertical-align: middle !important;
+                    padding: 8px 16px !important;
+                }
+                .ant-table-tbody > tr {
+                    height: 70px !important;
+                }
+                .ant-table-tbody > tr:first-child > td {
+                    padding-top: 8px !important;
+                }
+                .ant-table-thead > tr > th {
+                    padding: 8px 16px !important;
+                }
+                .ant-table {
+                    margin-top: 0 !important;
+                }
+                .ant-card-body {
+                    padding: 16px !important;
+                }
+            `}</style>
 
-            {/* Statistics */}
-            <div style={{ marginBottom: '20px' }}>
-                <Row gutter={16}>
-                    <Col xs={24} sm={12} md={6}>
-                        <Card>
-                            <Statistic
-                                title="Tổng Khuyến Mãi"
-                                value={totalPromotions}
-                                prefix={<GiftOutlined />}
-                                valueStyle={{ color: '#1890ff' }}
-                            />
-                        </Card>
-                    </Col>
-                    <Col xs={24} sm={12} md={6}>
-                        <Card>
-                            <Statistic
-                                title="Đang Hoạt Động"
-                                value={activePromotions}
-                                prefix={<FireOutlined />}
-                                valueStyle={{ color: '#52c41a' }}
-                            />
-                        </Card>
-                    </Col>
-                    <Col xs={24} sm={12} md={6}>
-                        <Card>
-                            <Statistic
-                                title="Hết Hạn"
-                                value={expiredPromotions}
-                                prefix={<CalendarOutlined />}
-                                valueStyle={{ color: '#ff4d4f' }}
-                            />
-                        </Card>
-                    </Col>
-                    <Col xs={24} sm={12} md={6}>
-                        <Card>
-                            <Statistic
-                                title="Tổng Sử Dụng"
-                                value={totalUsage}
-                                prefix={<ShoppingCartOutlined />}
-                                valueStyle={{ color: '#722ed1' }}
-                            />
-                        </Card>
+            <Title level={2} className="text-primary" style={{ marginBottom: '16px', marginTop: 0 }}>
+                <DollarOutlined /> Quản lý khuyến mãi giá cố định
+            </Title>
+
+            {/* Statistics Cards */}
+            <Row gutter={16} style={{ marginBottom: '16px', marginTop: 0 }}>
+                <Col xs={24} sm={12} lg={8}>
+                    <Card>
+                        <Statistic
+                            title="Tổng số khuyến mãi"
+                            value={stats.total}
+                            prefix={<GiftOutlined />}
+                            valueStyle={{ color: '#1890ff' }}
+                        />
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} lg={8}>
+                    <Card>
+                        <Statistic
+                            title="Đang hoạt động"
+                            value={stats.active}
+                            prefix={<CheckCircleOutlined />}
+                            valueStyle={{ color: '#52c41a' }}
+                        />
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} lg={8}>
+                    <Card>
+                        <Statistic
+                            title="Đã hết hạn"
+                            value={stats.expired}
+                            prefix={<CloseCircleOutlined />}
+                            valueStyle={{ color: '#ff4d4f' }}
+                        />
+                    </Card>
+                </Col>
+            </Row>
+
+            {/* Action Bar */}
+            <Card style={{ marginBottom: '16px', marginTop: 0 }}>
+                <Row justify="space-between" align="middle">
+                    <Col>
+                        <Space>
+                            <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={handleCreate}
+                            >
+                                Thêm khuyến mãi
+                            </Button>
+                            <Button
+                                type="default"
+                                icon={<ReloadOutlined />}
+                                onClick={loadPromotions}
+                                loading={loading}
+                            >
+                                Làm mới khuyến mãi
+                            </Button>
+                            <Button
+                                type="default"
+                                icon={<DownloadOutlined />}
+                                onClick={handleExportExcel}
+                            >
+                                Xuất Excel
+                            </Button>
+                        </Space>
                     </Col>
                 </Row>
-            </div>
+            </Card>
 
             {/* Table */}
             <Card>
-                <Table
-                    columns={tableColumns}
-                    dataSource={filteredPromotions}
-                    rowKey="id"
+                        <Table
+                            columns={columns}
+                    dataSource={amountPromotions}
                     loading={loading}
-                    scroll={{ x: 1200 }}
-                    pagination={{ pageSize: 10 }}
-                />
-            </Card>
+                            rowKey="id"
+                    locale={{
+                        emptyText: (
+                            <Empty
+                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                description={
+                                    <span style={{ color: '#999' }}>
+                                        Chưa có khuyến mãi nào. Nhấn <strong>"Thêm khuyến mãi"</strong> để tạo mới.
+                                    </span>
+                                }
+                            />
+                        )
+                            }}
+                            pagination={{
+                        pageSize: 10,
+                                showSizeChanger: true,
+                        showQuickJumper: true,
+                        showTotal: (total, range) =>
+                            `${range[0]}-${range[1]} của ${total} khuyến mãi`,
+                        pageSizeOptions: ['5', '10', '20', '50'],
+                            }}
+                        />
+                    </Card>
 
-            {/* Add/Edit Modal */}
-            <Modal
-                title={editingPromotion ? 'Sửa Khuyến Mãi' : 'Thêm Khuyến Mãi Theo Giá'}
-                open={isModalVisible}
-                onCancel={() => setIsModalVisible(false)}
-                footer={null}
-                width={800}
-            >
-                <Form form={form} layout="vertical" onFinish={handleSubmit}>
-                    <Form.Item name="name" label="Tên Khuyến Mãi" rules={[{ required: true }]}>
+                    {/* Add/Edit Modal */}
+                    <Modal
+                title={editingPromotion ? 'Sửa khuyến mãi giá cố định' : 'Thêm khuyến mãi giá cố định'}
+                        open={isModalVisible}
+                onOk={handleSubmit}
+                        onCancel={() => {
+                            setIsModalVisible(false);
+                    form.resetFields();
+                        }}
+                width={600}
+                footer={[
+                    <Button key="cancel" onClick={() => {
+                        setIsModalVisible(false);
+                        form.resetFields();
+                    }}>
+                        Hủy
+                    </Button>,
+                    <Button key="submit" type="primary" onClick={handleSubmit} loading={loading}>
+                        {editingPromotion ? 'Cập nhật' : 'Thêm mới'}
+                    </Button>
+                ]}
+                    >
+                        <Form
+                            form={form}
+                            layout="vertical"
+                    initialValues={{ isActive: true }}
+                        >
+                            <Form.Item
+                                name="name"
+                        label="Tên khuyến mãi"
+                        rules={[{ required: true, message: 'Vui lòng nhập tên khuyến mãi' }]}
+                    >
                         <Input placeholder="Nhập tên khuyến mãi" />
-                    </Form.Item>
-                    <Form.Item name="code" label="Mã Khuyến Mãi" rules={[{ required: true }]}>
-                        <Input placeholder="Nhập mã khuyến mãi" />
-                    </Form.Item>
-                    <Form.Item name="description" label="Mô Tả">
-                        <TextArea rows={3} placeholder="Nhập mô tả" />
-                    </Form.Item>
-                    <Form.Item name="value" label="Số Tiền Giảm (đ)" rules={[{ required: true }]}>
-                        <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
-                    </Form.Item>
-                    <Form.Item name="minimumOrderValue" label="Đơn Tối Thiểu (đ)">
-                        <InputNumber min={0} style={{ width: '100%' }} />
-                    </Form.Item>
-                    <Form.Item name="dateRange" label="Thời Gian" rules={[{ required: true }]}>
-                        <RangePicker style={{ width: '100%' }} />
-                    </Form.Item>
-                    <Row gutter={16}>
-                        <Col span={12}>
-                            <Form.Item name="usageLimit" label="Giới Hạn Sử Dụng">
-                                <InputNumber min={0} style={{ width: '100%' }} placeholder="∞" />
                             </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item name="userLimit" label="Giới Hạn User">
-                                <InputNumber min={0} style={{ width: '100%' }} placeholder="1" />
-                            </Form.Item>
-                        </Col>
-                    </Row>
-                    <Row gutter={16}>
-                        <Col span={12}>
-                            <Form.Item name="isActive" label="Hoạt Động" valuePropName="checked" initialValue={true}>
-                                <Switch />
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item name="isPublic" label="Công Khai" valuePropName="checked" initialValue={true}>
-                                <Switch />
-                            </Form.Item>
-                        </Col>
-                    </Row>
-                    <Form.Item>
-                        <Space>
-                            <Button type="primary" htmlType="submit">
-                                {editingPromotion ? 'Cập Nhật' : 'Tạo Mới'}
-                            </Button>
-                            <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
-                        </Space>
+
+                                    <Form.Item
+                        name="code"
+                        label="Mã khuyến mãi"
+                        rules={[{ required: true, message: 'Vui lòng nhập mã khuyến mãi' }]}
+                    >
+                        <Input placeholder="Nhập mã khuyến mãi (VD: SALE5000)" />
                     </Form.Item>
-                </Form>
-            </Modal>
+
+                    <Form.Item
+                        name="discountAmount"
+                        label="Số tiền giảm (đ)"
+                                        rules={[
+                            { required: true, message: 'Vui lòng nhập số tiền giảm' },
+                            { type: 'number', min: 1, message: 'Số tiền phải lớn hơn 0' },
+                                        ]}
+                                    >
+                                        <InputNumber
+                                            style={{ width: '100%' }}
+                            placeholder="Nhập số tiền giảm"
+                            min={1}
+                            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                            parser={(value) => value!.replace(/\$\s?|(,*)/g, '') as any}
+                                        />
+                                    </Form.Item>
+
+                            <Form.Item
+                        name="minOrderValue"
+                        label="Giá trị đơn tối thiểu (đ)"
+                                rules={[
+                            { required: true, message: 'Vui lòng nhập giá trị đơn tối thiểu' },
+                            { type: 'number', min: 0, message: 'Giá trị phải lớn hơn 0' },
+                        ]}
+                    >
+                        <InputNumber
+                            style={{ width: '100%' }}
+                            placeholder="Nhập giá trị đơn tối thiểu"
+                            min={0}
+                            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                            parser={(value) => value!.replace(/\$\s?|(,*)/g, '') as any}
+                                />
+                            </Form.Item>
+
+                                    <Form.Item
+                        name="startAt"
+                        label="Thời gian áp dụng"
+                        rules={[{ required: true, message: 'Vui lòng chọn thời gian áp dụng' }]}
+                    >
+                        <RangePicker
+                            showTime
+                            format="DD/MM/YYYY HH:mm"
+                            style={{ width: '100%' }}
+                            placeholder={['Ngày bắt đầu', 'Ngày kết thúc']}
+                        />
+                                    </Form.Item>
+
+                                    <Form.Item
+                        name="quantity"
+                        label="Số lượng"
+                                        rules={[
+                            { required: true, message: 'Vui lòng nhập số lượng' },
+                            { type: 'number', min: 1, message: 'Số lượng phải lớn hơn 0' },
+                        ]}
+                    >
+                        <InputNumber
+                            style={{ width: '100%' }}
+                            placeholder="Nhập số lượng"
+                            min={1}
+                        />
+                                    </Form.Item>
+
+                            <Form.Item
+                        name="isActive"
+                        label="Trạng thái"
+                    >
+                        <Select placeholder="Chọn trạng thái">
+                            <Option value={true}>Hoạt động</Option>
+                            <Option value={false}>Tạm dừng</Option>
+                        </Select>
+                            </Form.Item>
+                        </Form>
+                    </Modal>
 
             {/* View Modal */}
-            <Modal
-                title="Chi Tiết Khuyến Mãi"
-                open={isViewModalVisible}
-                onCancel={() => setIsViewModalVisible(false)}
-                footer={null}
-                width={700}
+                    <Modal
+                title="Chi tiết khuyến mãi giá cố định"
+                        open={isViewModalVisible}
+                        onCancel={() => setIsViewModalVisible(false)}
+                        footer={[
+                            <Button key="close" onClick={() => setIsViewModalVisible(false)}>
+                                Đóng
+                    </Button>,
+                ]}
+                width={600}
             >
                 {viewingPromotion && (
-                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                        <div>
-                            <Text strong>Tên:</Text> {viewingPromotion.name}
-                        </div>
-                        <div>
-                            <Text strong>Mã:</Text> <Tag>{viewingPromotion.code}</Tag>
-                        </div>
-                        <div>
-                            <Text strong>Giảm Giá:</Text> <Text strong style={{ color: '#52c41a' }}>{getValueDisplay(viewingPromotion)}</Text>
-                        </div>
-                        <div>
-                            <Text strong>Mô Tả:</Text> {viewingPromotion.description}
-                        </div>
-                        <div>
-                            <Text strong>Thời Gian:</Text> {dayjs(viewingPromotion.startDate).format('DD/MM/YYYY')} - {dayjs(viewingPromotion.endDate).format('DD/MM/YYYY')}
-                        </div>
-                    </Space>
-                )}
-            </Modal>
+                    <Descriptions column={1} size="small">
+                        <Descriptions.Item label="Mã khuyến mãi">
+                            <Tag color="green">{viewingPromotion.code}</Tag>
+                                            </Descriptions.Item>
+                        <Descriptions.Item label="Số tiền giảm">
+                            <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#52c41a' }}>
+                                <DollarOutlined /> {viewingPromotion.discountAmount.toLocaleString('vi-VN')} đ
+                            </span>
+                                            </Descriptions.Item>
+                        <Descriptions.Item label="Giá trị đơn tối thiểu">
+                            {viewingPromotion.minOrderValue.toLocaleString('vi-VN')} đ
+                                            </Descriptions.Item>
+                        <Descriptions.Item label="Ngày bắt đầu">
+                            <CalendarOutlined /> {dayjs(viewingPromotion.startAt).format('DD/MM/YYYY HH:mm')}
+                                            </Descriptions.Item>
+                        <Descriptions.Item label="Ngày kết thúc">
+                            <CalendarOutlined /> {dayjs(viewingPromotion.endAt).format('DD/MM/YYYY HH:mm')}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Số lượng">
+                            {viewingPromotion.quantity}
+                                            </Descriptions.Item>
+                                            <Descriptions.Item label="Trạng thái">
+                            {viewingPromotion.isActive ? (
+                                <Badge status="success" text="Hoạt động" />
+                            ) : (
+                                <Badge status="default" text="Tạm dừng" />
+                            )}
+                                            </Descriptions.Item>
+                        {viewingPromotion.createAt && (
+                                                <Descriptions.Item label="Ngày tạo">
+                                {dayjs(viewingPromotion.createAt).format('DD/MM/YYYY HH:mm')}
+                                                </Descriptions.Item>
+                                            )}
+                                        </Descriptions>
+                        )}
+                    </Modal>
         </div>
     );
 };
 
 export default FixedPromotions;
-

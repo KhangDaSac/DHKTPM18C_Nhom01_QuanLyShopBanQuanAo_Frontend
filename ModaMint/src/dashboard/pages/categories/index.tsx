@@ -4,9 +4,11 @@ import {
     Button,
     Space,
     Tag,
+    Badge,
     Modal,
     Form,
     Input,
+    Select,
     message,
     Card,
     Row,
@@ -29,14 +31,18 @@ import {
     AppstoreOutlined,
     ReloadOutlined,
     RestOutlined,
-    ExclamationCircleOutlined
+    ExclamationCircleOutlined,
+    RightCircleTwoTone,
+    DownCircleTwoTone
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import './style.css';
 import '../../components/common-styles.css';
 import { categoryService, type CategoryRequest } from '../../../services/category';
+import { useProducts } from '../../../hooks/useProducts';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 // Interface cho Category - phù hợp với API backend
 interface Category {
@@ -47,6 +53,8 @@ interface Category {
     updateAt?: string;
     // Thêm các trường để hiển thị (mock data)
     productCount?: number;
+    parentId?: number;
+    parentName?: string;
 }
 
 // Data sẽ được load từ API
@@ -56,6 +64,10 @@ const Categories: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    
+    // Thêm state tree
+    type CategoryTree = Category & { children?: CategoryTree[]; level?: number };
+    const [categoryTree, setCategoryTree] = useState<CategoryTree[]>([]);
     
     // State cho modals
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -85,15 +97,39 @@ const Categories: React.FC = () => {
             const result = await categoryService.getAllCategories();
             
             if (result.code === 1000 && result.result) {
-                const allCategoriesWithMockData = result.result.map((category: Category) => ({
-                    ...category,
-                    productCount: Math.floor(Math.random() * 100) + 1 // Mock product count
-                }));
-                
-                setCategories(allCategoriesWithMockData);
+                setCategories(result.result);
+
+                // Xây dựng cây danh mục từ parentId và điền parentName nếu thiếu
+                const idToNode = new Map<number, CategoryTree>();
+                result.result.forEach((c) => {
+                    idToNode.set(c.id, { ...c, children: [], level: 1 });
+                });
+                idToNode.forEach((node) => {
+                    if (!node.parentName && node.parentId && idToNode.has(node.parentId)) {
+                        node.parentName = idToNode.get(node.parentId)!.name;
+                    }
+                });
+                const roots: CategoryTree[] = [];
+                idToNode.forEach((node) => {
+                    if (node.parentId && idToNode.has(node.parentId)) {
+                        const parent = idToNode.get(node.parentId)!;
+                        if (!parent.children) parent.children = [];
+                        node.level = (parent.level || 1) + 1;
+                        parent.children.push(node);
+                    } else {
+                        node.level = 1;
+                        roots.push(node);
+                    }
+                });
+                const sortTree = (nodes: CategoryTree[]) => {
+                    nodes.sort((a, b) => a.name.localeCompare(b.name));
+                    nodes.forEach(n => n.children && sortTree(n.children));
+                };
+                sortTree(roots);
+                setCategoryTree(roots);
                 
                 // Tính toán pagination mới
-                const totalCategories = allCategoriesWithMockData.length;
+                const totalCategories = result.result.length;
                 const maxPage = Math.ceil(totalCategories / pagination.pageSize);
                 
                 // Điều chỉnh trang hiện tại nếu cần
@@ -111,10 +147,6 @@ const Categories: React.FC = () => {
                     total: totalCategories
                 }));
                 
-                console.log(`Loaded ${totalCategories} categories, page ${currentPage}/${maxPage}`);
-                console.log('All categories from API:', result.result);
-                console.log('Active categories:', allCategoriesWithMockData.filter(c => c.isActive).length);
-                console.log('Inactive categories:', allCategoriesWithMockData.filter(c => !c.isActive).length);
             } else {
                 setError(result.message || 'Không thể tải danh sách danh mục');
             }
@@ -136,82 +168,9 @@ const Categories: React.FC = () => {
         loadCategories();
     }, []); // Chỉ load một lần khi component mount
 
-    // Inject CSS để fix table spacing
-    useEffect(() => {
-        const styleId = 'custom-categories-table-fix';
-        let existingStyle = document.getElementById(styleId);
+    // Lấy danh sách sản phẩm thật
+    const { products: allProducts } = useProducts();
 
-        if (existingStyle) {
-            existingStyle.remove();
-        }
-
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = `
-            .custom-categories-table .ant-table-thead {
-                position: sticky !important;
-                top: 0 !important;
-                z-index: 2 !important;
-            }
-            
-            .custom-categories-table .ant-table-tbody {
-                margin-top: 0 !important;
-                padding-top: 0 !important;
-            }
-            
-            .custom-categories-table .ant-table-thead > tr > th {
-                vertical-align: middle !important;
-                text-align: center !important;
-                font-weight: 600 !important;
-                padding: 8px 16px !important;
-                border-bottom: 1px solid #f0f0f0 !important;
-                background-color: #fafafa !important;
-                height: 40px !important;
-                margin: 0 !important;
-                border-top: none !important;
-            }
-            
-            .custom-categories-table .ant-table-tbody > tr > td {
-                vertical-align: middle !important;
-                padding: 8px 16px !important;
-                height: 60px !important;
-                border-bottom: 1px solid #f0f0f0 !important;
-                margin: 0 !important;
-                border-top: none !important;
-            }
-            
-            .custom-categories-table .ant-table-container {
-                border: none !important;
-            }
-            
-            .custom-categories-table .ant-table {
-                border-collapse: collapse !important;
-                border-spacing: 0 !important;
-            }
-            
-            .custom-categories-table .ant-table-thead > tr > th.ant-table-selection-column {
-                padding: 8px !important;
-                width: 50px !important;
-                text-align: center !important;
-                background-color: #fafafa !important;
-            }
-            
-            .custom-categories-table .ant-table-tbody > tr > td.ant-table-selection-column {
-                padding: 8px !important;
-                width: 50px !important;
-                text-align: center !important;
-            }
-        `;
-
-        document.head.appendChild(style);
-
-        return () => {
-            const styleToRemove = document.getElementById(styleId);
-            if (styleToRemove) {
-                styleToRemove.remove();
-            }
-        };
-    }, []);
 
     // Filtered categories - Logic mới: hiển thị hoặc danh mục hoạt động hoặc danh mục ngừng hoạt động
     const filteredCategories = categories.filter(c => {
@@ -223,13 +182,75 @@ const Categories: React.FC = () => {
         return activeCheck && searchCheck;
     });
 
-    // Logic phân trang mới: Tính toán categories hiển thị trên trang hiện tại
-    const startIndex = (pagination.current - 1) * pagination.pageSize;
-    const endIndex = startIndex + pagination.pageSize;
-    const currentPageCategories = filteredCategories.slice(startIndex, endIndex);
-    
-    // Cập nhật total cho pagination dựa trên filtered categories
-    const filteredTotal = filteredCategories.length;
+    // Xây dựng cây danh mục theo filter để hiển thị
+    const buildCategoryTreeWithProductCount = () => {
+        // Tạo bản đồ: categoryName => số sản phẩm trực tiếp
+        const productMap: Record<string, number> = {};
+        allProducts.forEach(p => {
+            if (p.categoryName in productMap) {
+                productMap[p.categoryName] += 1;
+            } else {
+                productMap[p.categoryName] = 1;
+            }
+        });
+        // Build cây, đồng thời cộng dồn sản phẩm cấp con lên cha
+        const idToNode = new Map<number, CategoryTree & { productCount?: number }>();
+        categories.forEach((c) => {
+            idToNode.set(c.id, { ...c, children: [], level: 1, productCount: productMap[c.name] || 0 });
+        });
+        idToNode.forEach((node) => {
+            if (!node.parentName && node.parentId && idToNode.has(node.parentId)) {
+                node.parentName = idToNode.get(node.parentId)!.name;
+            }
+        });
+        // Xây cấu trúc cây và cộng dồn productCount
+        const roots: (CategoryTree & { productCount?: number })[] = [];
+        idToNode.forEach((node) => {
+            if (node.parentId && idToNode.has(node.parentId)) {
+                const parent = idToNode.get(node.parentId)!;
+                if (!parent.children) parent.children = [];
+                node.level = (parent.level || 1) + 1;
+                parent.children.push(node);
+            } else {
+                node.level = 1;
+                roots.push(node);
+            }
+        });
+        // Hàm cộng dồn sp lên parent
+        const accumulate = (node: CategoryTree & { productCount?: number }): number => {
+            let total = node.productCount || 0;
+            if (node.children && node.children.length > 0) {
+                for (const child of node.children) {
+                    total += accumulate(child);
+                }
+            }
+            node.productCount = total;
+            return total;
+        };
+        roots.forEach(accumulate);
+        const sortTree = (nodes: (CategoryTree & { productCount?: number })[]) => {
+            nodes.sort((a, b) => a.name.localeCompare(b.name));
+            nodes.forEach(n => n.children && sortTree(n.children));
+        };
+        sortTree(roots);
+        return roots;
+    };
+    const filteredTree = buildCategoryTreeWithProductCount();
+
+    // Gán STT dạng phân cấp trực tiếp trên cây để dùng expandable
+    type SttCategory = CategoryTree & { sttLabel?: string };
+    const assignSttLabels = (nodes: CategoryTree[], prefix: string = ''): SttCategory[] => {
+        return nodes.map((node, idx) => {
+            const currentIndex = idx + 1;
+            const currentStt = prefix ? `${prefix}.${currentIndex}` : `${currentIndex}`;
+            const withStt: SttCategory = { ...node, sttLabel: currentStt };
+            if (node.children && node.children.length > 0) {
+                withStt.children = assignSttLabels(node.children, currentStt);
+            }
+            return withStt;
+        });
+    };
+    const sttTree: SttCategory[] = assignSttLabels(filteredTree);
 
     // Statistics từ dữ liệu thực
     const totalCategories = categories.length;
@@ -242,59 +263,74 @@ const Categories: React.FC = () => {
         {
             title: 'STT',
             key: 'index',
-            width: 60,
+            width: 80,
             align: 'center' as const,
-            render: (_: any, __: any, index: number) => index + 1,
+            render: (_: any, record: any) => record.sttLabel || '',
+        },
+        {
+            title: 'Danh mục cha',
+            key: 'parentLevel',
+            width: 120,
+            align: 'center' as const,
+            render: (_: any, record: any) => (
+                <div style={{
+                    padding: '8px 0',
+                    minHeight: '60px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <Tag style={{ fontSize: '12px' }}>Cấp {record.level || 1}</Tag>
+                </div>
+            ),
         },
         {
             title: 'Danh mục',
             key: 'category',
-            width: 300,
-            render: (record: Category) => (
+            width: 400,
+            render: (record: any) => (
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '12px',
                     padding: '8px 0',
-                    minHeight: '60px'
+                    minHeight: '60px',
+                    marginLeft: `${Math.max(0, (record.level || 1) - 1) * 20}px`
                 }}>
-                    <div style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: '6px',
-                        backgroundColor: '#f0f0f0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0
-                    }}>
-                        <FolderOutlined style={{ fontSize: '20px', color: '#1890ff' }} />
+                    <div style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: '#f3f6ff', border: '1px solid #e6efff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <AppstoreOutlined style={{ fontSize: 20, color: '#3b82f6' }} />
                     </div>
                     <div style={{ flex: 1 }}>
-                        <div style={{
-                            fontWeight: 'bold',
-                            marginBottom: '4px',
-                            fontSize: '14px'
-                        }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '14px' }}>
                             {record.name}
+                            {record.level && (
+                                <Tag color={record.level === 1 ? 'blue' : record.level === 2 ? 'geekblue' : 'purple'} style={{ marginLeft: 8, fontSize: 11 }}>
+                                    Cấp {record.level}
+                                </Tag>
+                            )}
                         </div>
-                        <div style={{
-                            fontSize: '12px',
-                            color: '#666',
-                            marginBottom: '2px'
-                        }}>
-                            <AppstoreOutlined style={{ marginRight: '4px' }} />
-                            ID: {record.id}
+                        <div style={{ fontSize: '12px', color: '#9aa4b2', marginBottom: 2 }}>
+                            <span style={{ marginRight: 12 }}>ID: {record.id}</span>
                         </div>
-                        <div style={{
-                            fontSize: '12px',
-                            color: '#999'
-                        }}>
-                            {record.createAt ? `Tạo: ${new Date(record.createAt).toLocaleDateString('vi-VN')}` : 'Chưa có thông tin'}
+                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                            {record.description || 'Chưa có thông tin'}
                         </div>
                     </div>
                 </div>
             ),
+        },
+        {
+            title: 'Quan hệ',
+            key: 'relation',
+            width: 140,
+            align: 'center' as const,
+            render: (_: any, record: any) => (
+                <div style={{ padding: '8px 0', minHeight: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Tag color={record.level && record.level > 1 ? 'geekblue' : 'green'} style={{ fontSize: '12px' }}>
+                        {record.level && record.level > 1 ? 'Danh mục con' : 'Danh mục cha'}
+                    </Tag>
+                </div>
+            )
         },
         {
             title: 'Sản phẩm',
@@ -324,17 +360,10 @@ const Categories: React.FC = () => {
             width: 120,
             align: 'center' as const,
             render: (isActive: boolean) => (
-                <div style={{
-                    padding: '8px 0',
-                    minHeight: '60px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <Tag color={isActive ? 'green' : 'red'} style={{ fontSize: '12px' }}>
-                        {isActive ? 'Hoạt động' : 'Ngừng hoạt động'}
-                    </Tag>
-                </div>
+                <Badge 
+                    status={isActive ? 'success' : 'default'} 
+                    text={isActive ? 'Hoạt động' : 'Ngừng hoạt động'} 
+                />
             ),
         },
         {
@@ -343,14 +372,7 @@ const Categories: React.FC = () => {
             width: 180,
             align: 'center' as const,
             render: (record: Category) => (
-                <div style={{
-                    padding: '8px 0',
-                    minHeight: '60px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <Space size="small">
+                <Space size="small">
                         <Button
                             type="text"
                             icon={<EyeOutlined />}
@@ -410,7 +432,6 @@ const Categories: React.FC = () => {
                             />
                         )}
                     </Space>
-                </div>
             ),
         },
     ];
@@ -425,7 +446,8 @@ const Categories: React.FC = () => {
         setEditingCategory(category);
         form.setFieldsValue({
             name: category.name,
-            isActive: category.isActive
+            isActive: category.isActive,
+            parentId: category.parentId
         });
         setIsModalVisible(true);
     };
@@ -556,10 +578,9 @@ const Categories: React.FC = () => {
 
             const categoryData: CategoryRequest = {
                 name: values.name.trim(),
-                isActive: values.isActive !== undefined ? values.isActive : true
+                isActive: values.isActive !== undefined ? values.isActive : true,
+                parentId: values.parentId ? Number(values.parentId) : undefined
             };
-
-            console.log('Sending category data:', categoryData);
 
             let result;
             if (editingCategory) {
@@ -713,12 +734,19 @@ const Categories: React.FC = () => {
                     <Col>
                         <Space>
                             <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={handleAdd}
+                            >
+                                Thêm danh mục
+                            </Button>
+                            <Button
                                 type="default"
                                 icon={<ReloadOutlined />}
                                 onClick={refreshData}
                                 loading={loading}
                             >
-                                Làm mới
+                                Làm mới danh mục
                             </Button>
                             <Button
                                 type="default"
@@ -726,14 +754,6 @@ const Categories: React.FC = () => {
                                 onClick={handleExportExcel}
                             >
                                 Xuất Excel
-                            </Button>
-                            <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={handleAdd}
-                                className="btn-primary"
-                            >
-                                Thêm danh mục
                             </Button>
                         </Space>
                     </Col>
@@ -760,11 +780,81 @@ const Categories: React.FC = () => {
 
             {/* Categories Table */}
             <Card style={{ marginTop: 0 }}>
+                <style>{`
+                    .ant-table-measure-row {
+                        display: none !important;
+                        height: 0 !important;
+                        visibility: hidden !important;
+                    }
+                    .ant-table-tbody > tr > td {
+                        height: 70px !important;
+                        vertical-align: middle !important;
+                        padding: 8px 16px !important;
+                    }
+                    .ant-table-tbody > tr {
+                        height: 70px !important;
+                    }
+                    .ant-table-tbody > tr:first-child > td {
+                        padding-top: 8px !important;
+                    }
+                    .ant-table-thead > tr > th {
+                        padding: 8px 16px !important;
+                    }
+                    .ant-table {
+                        margin-top: 0 !important;
+                    }
+                    .ant-table-container {
+                        margin-top: 0 !important;
+                    }
+                    .ant-card-body {
+                        padding: 16px !important;
+                    }
+                    .ant-table-thead {
+                        margin-top: 0 !important;
+                    }
+                    .ant-table-thead > tr {
+                        margin-top: 0 !important;
+                    }
+                    /* Level highlight rows for categories */
+                    .custom-categories-table .row-level-1 td { background: #ffffff !important; }
+                    .custom-categories-table .row-level-2 td { background: #f8fbff !important; }
+                    .custom-categories-table .row-level-3 td { background: #f9f5ff !important; }
+                `}</style>
                 <Table
                     columns={columns}
-                    dataSource={currentPageCategories}
+                    dataSource={sttTree}
                     rowKey="id"
                     loading={loading}
+                    className="custom-categories-table"
+                    rowClassName={(record: any) => {
+                        const lvl = record.level || 1;
+                        if (lvl >= 3) return 'row-level-3';
+                        if (lvl === 2) return 'row-level-2';
+                        return 'row-level-1';
+                    }}
+                    expandable={{
+                        childrenColumnName: 'children',
+                        expandIconColumnIndex: 2,
+                        indentSize: 0,
+                        expandIcon: ({ expanded, onExpand, record }: any) => {
+                            const hasChildren = record.children && record.children.length > 0;
+                            if (!hasChildren) {
+                                return <span style={{ display: 'inline-block', width: 24 }} />;
+                            }
+                            return (
+                                <Button
+                                    type="text"
+                                    onClick={(e) => onExpand(record, e)}
+                                    style={{ padding: 0, width: 24, height: 24 }}
+                                    icon={expanded ? (
+                                        <DownCircleTwoTone twoToneColor="#1677ff" style={{ fontSize: 18 }} />
+                                    ) : (
+                                        <RightCircleTwoTone twoToneColor="#1677ff" style={{ fontSize: 18 }} />
+                                    )}
+                                />
+                            );
+                        }
+                    }}
                     rowSelection={{
                         selectedRowKeys,
                         onChange: setSelectedRowKeys,
@@ -772,28 +862,7 @@ const Categories: React.FC = () => {
                             disabled: !record.isActive
                         })
                     }}
-                    pagination={{
-                        current: pagination.current,
-                        pageSize: pagination.pageSize,
-                        total: filteredTotal,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                        showTotal: (total) => `Tổng ${total} danh mục`,
-                        onChange: (page, pageSize) => {
-                            setPagination(prev => ({
-                                ...prev,
-                                current: page,
-                                pageSize: pageSize || prev.pageSize
-                            }));
-                        },
-                        onShowSizeChange: (_, size) => {
-                            setPagination(prev => ({
-                                ...prev,
-                                current: 1, // Reset về trang 1 khi thay đổi page size
-                                pageSize: size
-                            }));
-                        }
-                    }}
+                    pagination={false}
                     scroll={{ x: 1000 }}
                 />
             </Card>
@@ -826,12 +895,35 @@ const Categories: React.FC = () => {
                     </Form.Item>
 
                     <Form.Item
+                        name="parentId"
+                        label="Danh mục cha"
+                        tooltip="Không chọn nếu là danh mục cấp 1"
+                    >
+                        <Input.Group compact>
+                            <select
+                                style={{ width: '100%', height: 32, borderRadius: 6, border: '1px solid #d9d9d9', padding: '4px 8px' }}
+                                value={form.getFieldValue('parentId') ?? ''}
+                                onChange={(e) => form.setFieldsValue({ parentId: e.target.value ? Number(e.target.value) : undefined })}
+                            >
+                                <option value="">Không có (cấp 1)</option>
+                                {categories
+                                    .filter(c => !editingCategory || c.id !== editingCategory.id)
+                                    .map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                            </select>
+                        </Input.Group>
+                    </Form.Item>
+
+                    <Form.Item
                         name="isActive"
                         label="Trạng thái"
-                        valuePropName="checked"
                         initialValue={true}
                     >
-                        <Checkbox>Hoạt động</Checkbox>
+                        <Select placeholder="Chọn trạng thái">
+                            <Option value={true}>Hoạt động</Option>
+                            <Option value={false}>Ngừng hoạt động</Option>
+                        </Select>
                     </Form.Item>
                 </Form>
             </Modal>
