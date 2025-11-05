@@ -1,21 +1,42 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 type Props = {
-  onSelect?: (id: string) => void;
+  onSelect?: (id: number) => void;
 };
 
-const items = [
-  { id: 'somi', label: 'SƠ MI', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_4.png?1749442635129' },
-  { id: 'quan', label: 'QUẦN', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_5.png?1749442635129' },
-  { id: 'aokhoac', label: 'ÁO KHOÁC', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_6.png?1749442635129' },
-  { id: 'giaydep', label: 'ÁO NỮ', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_1.png?1749442635129' },
-  { id: 'phukien', label: 'ÁO NAM', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_3.png?1749442635129' },
-  { id: 'vay', label: 'ÁO NAM', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_3.png?1749442635129' },
-  { id: 'giaydep', label: 'ÁO NAM', img: 'https://bizweb.dktcdn.net/100/534/571/themes/972900/assets/image_cate_3.png?1749442635129' },
-];
+interface Brand {
+  id: number;
+  name: string;
+  logo: string; // Assuming logo is a URL string, adjust based on actual BrandResponse
+}
 
-const CategoryCarousel: React.FC<Props> = ({ onSelect }) => {
+const BrandCarousel: React.FC<Props> = ({ onSelect }) => {
   const ref = useRef<HTMLDivElement | null>(null);
+  const [brands, setBrands] = useState<Brand[]>([]);
+
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/v1/brands');
+        const data = await response.json();
+        if (data && Array.isArray(data.result)) {
+          setBrands(
+            data.result.map((b: any) => ({
+              id: b.id,
+              name: b.name, // Assuming BrandResponse has 'name'
+              logo: b.logo || 'https://via.placeholder.com/130', // Assuming 'logo' field, fallback to placeholder if missing
+            }))
+          );
+        } else {
+          setBrands([]);
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách thương hiệu:', error);
+      }
+    };
+
+    fetchBrands();
+  }, []);
 
   const itemWidth = 130;
   const gap = 40;
@@ -76,9 +97,9 @@ const CategoryCarousel: React.FC<Props> = ({ onSelect }) => {
           margin: '0 auto',
         }}
       >
-        {items.map((it) => (
+        {brands.map((brand) => (
           <div
-            key={it.id}
+            key={brand.id}
             style={{
               minWidth: 130,
               textAlign: 'center',
@@ -99,8 +120,8 @@ const CategoryCarousel: React.FC<Props> = ({ onSelect }) => {
               }}
             >
               <img
-                src={it.img}
-                alt={it.label}
+                src={brand.logo}
+                alt={brand.name}
                 style={{
                   width: '80%',
                   height: 'auto',
@@ -110,7 +131,7 @@ const CategoryCarousel: React.FC<Props> = ({ onSelect }) => {
               />
             </div>
             <button
-              onClick={() => onSelect?.(it.id)}
+              onClick={() => onSelect?.(brand.id)}
               style={{
                 border: '1px solid #ffdede',
                 background: '#fff',
@@ -129,7 +150,7 @@ const CategoryCarousel: React.FC<Props> = ({ onSelect }) => {
                 (e.currentTarget.style.backgroundColor = '#fff')
               }
             >
-              {it.label}
+              {brand.name}
             </button>
           </div>
         ))}
@@ -171,4 +192,4 @@ const CategoryCarousel: React.FC<Props> = ({ onSelect }) => {
   );
 };
 
-export default CategoryCarousel;
+export default BrandCarousel;

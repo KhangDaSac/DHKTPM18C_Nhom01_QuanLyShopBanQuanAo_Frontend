@@ -15,6 +15,9 @@ import { toast } from 'react-toastify';
 import { vietnamAddressService } from '@/services/address/vietnamAddress';
 import type { Province, District, Ward } from '@/services/address/vietnamAddress';
 import styles from './style.module.css';
+import axios from 'axios'; 
+
+const API_URL = 'http://localhost:8080/api/v1'; 
 
 const CheckoutPage: React.FC = () => {
     const navigate = useNavigate();
@@ -204,6 +207,31 @@ const CheckoutPage: React.FC = () => {
         }
     };
 
+    const handleVNPayPayment = async (orderId: number, amount: number) => {
+        try {
+            const { data } = await axios.post(
+                `${API_URL}/payment/create-payment`, // Sửa endpoint để khớp với backend
+                { 
+                    amount, 
+                    orderInfo: `Thanh toan don hang ${orderId}` // Attach orderId vào orderInfo để dễ track trong callback
+                }
+            );
+            if (data.paymentUrl) {
+                window.location.href = data.paymentUrl;
+            } else {
+                toast.error('Không tạo được link thanh toán VNPay');
+                // Optional: Gọi API để cancel order nếu fail ngay từ đầu (thêm nếu có endpoint cancel)
+                // await axios.post(`${API_URL}/orders/${orderId}/cancel`);
+                setLoading(false);
+            }
+        } catch (err) {
+            toast.error('Lỗi khi tạo thanh toán VNPay');
+            // Optional: Cancel order
+            // await axios.post(`${API_URL}/orders/${orderId}/cancel`);
+            setLoading(false);
+        }
+    };
+
     const handleCheckout = async () => {
         console.log('🛒 Starting checkout process...');
         console.log('📋 Current state:', {
@@ -311,17 +339,21 @@ const CheckoutPage: React.FC = () => {
             const response = await processCheckout(request);
             console.log('✅ Checkout response:', response);
             
-            toast.success('Đặt hàng thành công!');
-            
-            // Clear cart after successful checkout
-            console.log('🧹 Clearing cart...');
-            await cartService.clearCart();
-            
-            // Navigate to order success page
-            console.log('🎉 Navigating to order success page...');
-            navigate(`/order-success/${response.orderId}`, {
-                state: { orderData: response }
-            });
+            toast.success('Tạo đơn hàng thành công!');
+
+            // Xử lý thanh toán dựa trên paymentMethod
+            if (paymentMethod === 'BANK_TRANSFER') {
+                // Gọi VNPay sau khi tạo order thành công
+                await handleVNPayPayment(response.orderId, totalAmount);
+            } else {
+                // Đối với COD, update status nếu cần (giả sử backend tự handle), clear cart và navigate
+                await cartService.clearCart();
+                
+                // Navigate to order success page
+                navigate(`/order-success/${response.orderId}`, {
+                    state: { orderData: response }
+                });
+            }
         } catch (error: any) {
             console.error('❌ Checkout error:', error);
             console.error('Error details:', {
@@ -436,118 +468,117 @@ const CheckoutPage: React.FC = () => {
                         {addresses.length > 0 && (
                             <div className="space-y-3 mb-4">
                                 {addresses.map(addr => (
-                                    <label key={addr.id} className="flex items-start p-3 border rounded cursor-pointer hover:bg-gray-50">
+                                    <label 
+                                        key={addr.id} 
+                                        className={`flex items-center p-3 border rounded cursor-pointer ${
+                                            selectedAddressId === addr.id ? 'border-orange-500 bg-orange-50' : ''
+                                        }`}
+                                    >
                                         <input
                                             type="radio"
                                             name="address"
-                                            value={addr.id}
-                                            checked={selectedAddressId === addr.id && !showAddressInput}
+                                            checked={selectedAddressId === addr.id}
                                             onChange={() => {
                                                 setSelectedAddressId(addr.id);
                                                 setShowAddressInput(false);
                                             }}
-                                            className="mt-1 mr-3"
+                                            className="mr-3"
                                         />
                                         <div>
-                                            <p className="font-medium">{addr.fullAddress}</p>
+                                            <p className="font-medium">{addr.addressDetail}</p>
+                                            <p className="text-sm text-gray-600">
+                                                {addr.ward}, {addr.district}, {addr.city}
+                                            </p>
                                         </div>
                                     </label>
                                 ))}
                             </div>
                         )}
                         
-                        {/* New address option */}
-                        <div className="space-y-3">
-                            <label className="flex items-start p-3 border rounded cursor-pointer hover:bg-gray-50">
-                                <input
-                                    type="radio"
-                                    name="address"
-                                    checked={showAddressInput}
-                                    onChange={() => {
-                                        setShowAddressInput(true);
-                                        setSelectedAddressId(null);
-                                    }}
-                                    className="mt-1 mr-3"
-                                />
-                                <span className="font-medium">Nhập địa chỉ mới</span>
-                            </label>
-                            
-                            {showAddressInput && (
-                                <div className="pl-8 space-y-3">
-                                    {/* Province */}
-                                    <div>
-                                        <label htmlFor="province-select" className="block mb-2 text-sm font-medium">Tỉnh/Thành phố *</label>
-                                        <select
-                                            id="province-select"
-                                            value={selectedProvince || ''}
-                                            onChange={(e) => handleProvinceChange(Number(e.target.value))}
-                                            className="w-full border rounded px-3 py-2"
-                                            required
-                                        >
-                                            <option value="">-- Chọn Tỉnh/Thành phố --</option>
-                                            {provinces.map(province => (
-                                                <option key={province.code} value={province.code}>
-                                                    {province.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* District */}
-                                    <div>
-                                        <label htmlFor="district-select" className="block mb-2 text-sm font-medium">Quận/Huyện *</label>
-                                        <select
-                                            id="district-select"
-                                            value={selectedDistrict || ''}
-                                            onChange={(e) => handleDistrictChange(Number(e.target.value))}
-                                            className="w-full border rounded px-3 py-2"
-                                            disabled={!selectedProvince}
-                                            required
-                                        >
-                                            <option value="">-- Chọn Quận/Huyện --</option>
-                                            {districts.map(district => (
-                                                <option key={district.code} value={district.code}>
-                                                    {district.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* Ward */}
-                                    <div>
-                                        <label htmlFor="ward-select" className="block mb-2 text-sm font-medium">Phường/Xã *</label>
-                                        <select
-                                            id="ward-select"
-                                            value={selectedWard || ''}
-                                            onChange={(e) => handleWardChange(Number(e.target.value))}
-                                            className="w-full border rounded px-3 py-2"
-                                            disabled={!selectedDistrict}
-                                            required
-                                        >
-                                            <option value="">-- Chọn Phường/Xã --</option>
-                                            {wards.map(ward => (
-                                                <option key={ward.code} value={ward.code}>
-                                                    {ward.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* Address Detail */}
-                                    <div>
-                                        <label className="block mb-2 text-sm font-medium">Địa chỉ chi tiết *</label>
-                                        <input
-                                            type="text"
-                                            value={addressDetail}
-                                            onChange={(e) => setAddressDetail(e.target.value)}
-                                            className="w-full border rounded px-3 py-2"
-                                            placeholder="Số nhà, tên đường..."
-                                            required
-                                        />
-                                    </div>
+                        {/* Toggle new address input */}
+                        <button
+                            onClick={() => setShowAddressInput(!showAddressInput)}
+                            className="text-orange-500 font-medium mb-4 hover:underline"
+                        >
+                            {showAddressInput ? 'Hủy nhập địa chỉ mới' : 'Thêm địa chỉ giao hàng mới'}
+                        </button>
+                        
+                        {/* New address form */}
+                        {showAddressInput && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Province */}
+                                <div>
+                                    <label htmlFor="province-select" className="block mb-2 text-sm font-medium">Tỉnh/Thành phố *</label>
+                                    <select
+                                        id="province-select"
+                                        value={selectedProvince || ''}
+                                        onChange={(e) => handleProvinceChange(Number(e.target.value))}
+                                        className="w-full border rounded px-3 py-2"
+                                        required
+                                    >
+                                        <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                                        {provinces.map(province => (
+                                            <option key={province.code} value={province.code}>
+                                                {province.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
-                            )}
-                        </div>
+
+                                {/* District */}
+                                <div>
+                                    <label htmlFor="district-select" className="block mb-2 text-sm font-medium">Quận/Huyện *</label>
+                                    <select
+                                        id="district-select"
+                                        value={selectedDistrict || ''}
+                                        onChange={(e) => handleDistrictChange(Number(e.target.value))}
+                                        className="w-full border rounded px-3 py-2"
+                                        disabled={!selectedProvince}
+                                        required
+                                    >
+                                        <option value="">-- Chọn Quận/Huyện --</option>
+                                        {districts.map(district => (
+                                            <option key={district.code} value={district.code}>
+                                                {district.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Ward */}
+                                <div>
+                                    <label htmlFor="ward-select" className="block mb-2 text-sm font-medium">Phường/Xã *</label>
+                                    <select
+                                        id="ward-select"
+                                        value={selectedWard || ''}
+                                        onChange={(e) => handleWardChange(Number(e.target.value))}
+                                        className="w-full border rounded px-3 py-2"
+                                        disabled={!selectedDistrict}
+                                        required
+                                    >
+                                        <option value="">-- Chọn Phường/Xã --</option>
+                                        {wards.map(ward => (
+                                            <option key={ward.code} value={ward.code}>
+                                                {ward.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Address Detail */}
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium">Địa chỉ chi tiết *</label>
+                                    <input
+                                        type="text"
+                                        value={addressDetail}
+                                        onChange={(e) => setAddressDetail(e.target.value)}
+                                        className="w-full border rounded px-3 py-2"
+                                        placeholder="Số nhà, tên đường..."
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        )}
                         
                         {addresses.length === 0 && !showAddressInput && (
                             <p className="text-gray-500 text-sm mt-2">Chưa có địa chỉ đã lưu. Vui lòng nhập địa chỉ giao hàng.</p>
@@ -578,7 +609,7 @@ const CheckoutPage: React.FC = () => {
                                     onChange={() => setPaymentMethod('BANK_TRANSFER')}
                                     className="mr-3"
                                 />
-                                <span>Chuyển khoản ngân hàng</span>
+                                <span>Chuyển khoản ngân hàng (VNPay)</span>
                             </label>
                         </div>
                     </div>
