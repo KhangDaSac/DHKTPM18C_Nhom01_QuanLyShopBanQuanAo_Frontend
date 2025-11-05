@@ -11,29 +11,29 @@ type Props = {
 
 const Sidebar: React.FC<Props> = ({ onCategory, filtersSelected, onFiltersChange }) => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [colors, setColors] = useState<string[]>([]);  // State cho colors (hex)
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const response = await fetch('http://localhost:8080/api/v1/categories');
-        const data = await response.json();
-        const activeCats = data.result.filter((cat: any) => cat.isActive);
-
-        // Xây dựng map category
+        // Fetch categories (giữ nguyên như cũ)
+        const catResponse = await fetch('http://localhost:8080/api/v1/categories');
+        const catData = await catResponse.json();
+        const activeCats = catData.result.filter((cat: any) => cat.isActive);
         const catMap: Record<string, Category> = {};
         activeCats.forEach((cat: any) => {
-          const catId = cat.id.toString(); // Chuyển id sang string
+          const catId = cat.id.toString();
           catMap[catId] = { id: catId, label: cat.name };
         });
-
-        // Xây dựng cây: Gắn children vào parent
         const roots: Category[] = [];
         activeCats.forEach((cat: any) => {
           const catId = cat.id.toString();
           const parentId = cat.parentId ? cat.parentId.toString() : null;
-
           if (parentId && catMap[parentId]) {
             const parent = catMap[parentId];
             parent.children = parent.children || [];
@@ -42,34 +42,56 @@ const Sidebar: React.FC<Props> = ({ onCategory, filtersSelected, onFiltersChange
             roots.push(catMap[catId]);
           }
         });
-
-        // Sắp xếp roots và children theo id (tăng dần) để giữ thứ tự ổn định
         roots.sort((a, b) => parseInt(a.id) - parseInt(b.id));
         roots.forEach(root => {
           if (root.children) {
             root.children.sort((a, b) => parseInt(a.id) - parseInt(b.id));
           }
         });
-
         setCategories(roots);
-      } catch (error) {
-        console.error('Error fetching categories:', error);
+
+        // Fetch top colors mới
+        const colorsResponse = await fetch('http://localhost:8080/api/v1/product-variants/colors');
+        if (!colorsResponse.ok) {
+          throw new Error('Failed to fetch colors');
+        }
+        const colorsData = await colorsResponse.json();
+        const topColors = colorsData.result.map((item: { color: string }) => item.color);  // Lấy tên color
+
+        // Map tên color sang hex (mở rộng map này dựa trên database)
+        const colorMap: Record<string, string> = {
+          'Trắng': '#ffffff',
+          'Xanh': '#0000ff',
+          'Đen': '#000000',
+          'Đỏ': '#ff0000',
+          // Thêm các color khác nếu cần
+        };
+        const hexColors = topColors.map((name: string) => colorMap[name] || '#cccccc');  // Default gray nếu không map
+        setColors(hexColors);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCategories();
-  }, []); // Chạy chỉ một lần khi mount
+    fetchData();
+  }, []);
 
   const toggleOpen = (id: string) => setOpen(prev => ({ ...prev, [id]: !prev[id] }));
 
+  if (error) {
+    return <aside style={{ paddingLeft: 12 }}><div style={{ color: 'red' }}>Error: {error}</div></aside>;
+  }
+
   if (loading) {
-    return <div>Loading categories...</div>; // Optional: Spinner hoặc placeholder
+    return <aside style={{ paddingLeft: 12 }}><div>Loading...</div></aside>;  // Hoặc Spinner như trước
   }
 
   return (
     <aside style={{ paddingLeft: 12 }}>
+      {/* Phần categories giữ nguyên */}
       <div style={{ marginBottom: 20 }}>
         <h4>Danh mục sản phẩm</h4>
         <div>
@@ -81,7 +103,6 @@ const Sidebar: React.FC<Props> = ({ onCategory, filtersSelected, onFiltersChange
                   <button onClick={() => toggleOpen(cat.id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>{open[cat.id] ? '▴' : '▾'}</button>
                 ) : null}
               </div>
-
               {cat.children && open[cat.id] ? (
                 <div style={{ paddingLeft: 12, marginTop: 6 }}>
                   {cat.children.map(c => (
@@ -104,16 +125,16 @@ const Sidebar: React.FC<Props> = ({ onCategory, filtersSelected, onFiltersChange
           { id: 'p4', label: '700.000đ - 1.000.000đ', min: 700000, max: 1000000 },
           { id: 'p5', label: 'Trên 1.000.000đ', min: 1000000 }
         ]}
-        colors={["#000000", "#ff0000", "#0000ff"]} // Match the colors in MOCK data
+        colors={colors}  // Pass colors động từ state
         sizes={['S','M','L','XL']}
         selected={filtersSelected ?? { prices: [], colors: [], sizes: [] }}
         onChange={onFiltersChange ?? (() => {})}
       />
-      
+
+      {/* Phần reset giữ nguyên */}
       <div style={{ marginTop: 12 }}>
         <button
           onClick={() => {
-            // reset filters to initial empty state and clear category selection as well
             onFiltersChange?.({ prices: [], colors: [], sizes: [] });
             onCategory?.(undefined);
           }}
