@@ -2,17 +2,24 @@ import React, { useRef, useState, useEffect } from 'react';
 
 type Props = {
   onSelect?: (id: number) => void;
+  selectedBrand?: number | null; // Thêm prop để nhận brand đang chọn
 };
 
 interface Brand {
   id: number;
   name: string;
-  logo: string; // Assuming logo is a URL string, adjust based on actual BrandResponse
+  logo: string;
 }
 
-const BrandCarousel: React.FC<Props> = ({ onSelect }) => {
+const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrand }) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(selectedBrand || null);
+
+  // Đồng bộ selectedId với selectedBrand từ parent
+  useEffect(() => {
+    setSelectedId(selectedBrand || null);
+  }, [selectedBrand]);
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -23,8 +30,8 @@ const BrandCarousel: React.FC<Props> = ({ onSelect }) => {
           setBrands(
             data.result.map((b: any) => ({
               id: b.id,
-              name: b.name, // Assuming BrandResponse has 'name'
-              logo: b.logo || 'https://via.placeholder.com/130', // Assuming 'logo' field, fallback to placeholder if missing
+              name: b.name,
+              logo: b.logo || 'https://via.placeholder.com/130',
             }))
           );
         } else {
@@ -38,10 +45,22 @@ const BrandCarousel: React.FC<Props> = ({ onSelect }) => {
     fetchBrands();
   }, []);
 
+  const handleBrandClick = (brandId: number) => {
+    if (selectedId === brandId) {
+      // Nếu click lại brand đang chọn thì bỏ chọn
+      setSelectedId(null);
+      onSelect?.(0); // Gửi 0 hoặc undefined để biết là bỏ chọn
+    } else {
+      // Chọn brand mới
+      setSelectedId(brandId);
+      onSelect?.(brandId);
+    }
+  };
+
   const itemWidth = 130;
   const gap = 40;
   const visibleItems = 5;
-  const padding = 40; // Set to match gap for no partial items
+  const padding = 40;
   const paddingX = padding * 2;
   const visibleWidth = visibleItems * itemWidth + (visibleItems - 1) * gap;
   const containerWidth = visibleWidth + paddingX;
@@ -103,12 +122,13 @@ const BrandCarousel: React.FC<Props> = ({ onSelect }) => {
             style={{
               minWidth: 130,
               textAlign: 'center',
-              transition: 'transform 0.3s',
+              transition: 'all 0.3s ease',
             }}
           >
             <div
+              onClick={() => handleBrandClick(brand.id)}
               style={{
-                width: 130,
+                width: 130, // Tăng kích thước khi chọn
                 height: 130,
                 borderRadius: '50%',
                 backgroundColor: '#fff4f2',
@@ -117,38 +137,60 @@ const BrandCarousel: React.FC<Props> = ({ onSelect }) => {
                 justifyContent: 'center',
                 margin: '0 auto 10px',
                 overflow: 'hidden',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: selectedId === brand.id 
+                  ? '0 4px 12px rgba(0,0,0,0.3)' 
+                  : 'none',
+               
+              }}
+              onMouseEnter={(e) => {
+                if (selectedId !== brand.id) {
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedId !== brand.id) {
+                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }
               }}
             >
               <img
                 src={brand.logo}
                 alt={brand.name}
                 style={{
-                  width: '80%',
+                  width: selectedId === brand.id ? '85%' : '80%',
                   height: 'auto',
                   objectFit: 'contain',
-                  transition: 'transform 0.3s',
+                  transition: 'all 0.3s ease',
                 }}
               />
             </div>
             <button
-              onClick={() => onSelect?.(brand.id)}
+              onClick={() => handleBrandClick(brand.id)}
               style={{
                 border: '1px solid #ffdede',
-                background: '#fff',
+                background: selectedId === brand.id ? '#000' : '#fff',
                 borderRadius: 20,
                 padding: '6px 12px',
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#333',
+                color: selectedId === brand.id ? '#fff' : '#333',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = '#fff2f1')
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = '#fff')
-              }
+              onMouseEnter={(e) => {
+                if (selectedId !== brand.id) {
+                  e.currentTarget.style.backgroundColor = '#fff2f1';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedId !== brand.id) {
+                  e.currentTarget.style.backgroundColor = '#fff';
+                }
+              }}
             >
               {brand.name}
             </button>
