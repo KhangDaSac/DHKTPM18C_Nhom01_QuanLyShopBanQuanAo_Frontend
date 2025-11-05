@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Filters from './Filters';
 
-type Category = { id: string; label: string; children?: { id: string; label: string }[] };
+type Category = { id: string; label: string; children?: Category[] };
 
 type Props = {
   onCategory?: (catId?: string) => void;
@@ -9,26 +9,71 @@ type Props = {
   onFiltersChange?: (next: { prices: string[]; colors: string[]; sizes: string[] }) => void;
 };
 
-const CATS: Category[] = [
-  { id: 'phukien-nam', label: 'Phụ kiện nam', children: [ { id: 'giay', label: 'Giày' }, { id: 'vi', label: 'Ví' }, { id: 'that-lung', label: 'Thắt lưng' } ] },
-  { id: 'ao-nam', label: 'Áo nam' },
-  { id: 'quan-nam', label: 'Quần nam' },
-  { id: 'phukien-nu', label: 'Phụ kiện nữ' },
-  { id: 'ao-nu', label: 'Áo nữ' },
-  { id: 'quan-nu', label: 'Quần nữ' },
-];
-
 const Sidebar: React.FC<Props> = ({ onCategory, filtersSelected, onFiltersChange }) => {
+  const [categories, setCategories] = useState<Category[]>([]);
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/v1/categories');
+        const data = await response.json();
+        const activeCats = data.result.filter((cat: any) => cat.isActive);
+
+        // Xây dựng map category
+        const catMap: Record<string, Category> = {};
+        activeCats.forEach((cat: any) => {
+          const catId = cat.id.toString(); // Chuyển id sang string
+          catMap[catId] = { id: catId, label: cat.name };
+        });
+
+        // Xây dựng cây: Gắn children vào parent
+        const roots: Category[] = [];
+        activeCats.forEach((cat: any) => {
+          const catId = cat.id.toString();
+          const parentId = cat.parentId ? cat.parentId.toString() : null;
+
+          if (parentId && catMap[parentId]) {
+            const parent = catMap[parentId];
+            parent.children = parent.children || [];
+            parent.children.push(catMap[catId]);
+          } else {
+            roots.push(catMap[catId]);
+          }
+        });
+
+        // Sắp xếp roots và children theo id (tăng dần) để giữ thứ tự ổn định
+        roots.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+        roots.forEach(root => {
+          if (root.children) {
+            root.children.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+          }
+        });
+
+        setCategories(roots);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []); // Chạy chỉ một lần khi mount
 
   const toggleOpen = (id: string) => setOpen(prev => ({ ...prev, [id]: !prev[id] }));
+
+  if (loading) {
+    return <div>Loading categories...</div>; // Optional: Spinner hoặc placeholder
+  }
 
   return (
     <aside style={{ paddingLeft: 12 }}>
       <div style={{ marginBottom: 20 }}>
         <h4>Danh mục sản phẩm</h4>
         <div>
-          {CATS.map(cat => (
+          {categories.map(cat => (
             <div key={cat.id} style={{ marginBottom: 6 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <button onClick={() => onCategory?.(cat.id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>{cat.label}</button>
