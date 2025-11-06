@@ -208,26 +208,31 @@ const CheckoutPage: React.FC = () => {
     };
 
     const handleVNPayPayment = async (orderId: number, amount: number) => {
+        console.log('💳 Starting VNPay payment for order:', orderId, 'amount:', amount);
         try {
             const { data } = await axios.post(
-                `${API_URL}/payment/create-payment`, // Sửa endpoint để khớp với backend
+                `${API_URL}/payment/create-payment`,
                 { 
                     amount, 
-                    orderInfo: `Thanh toan don hang ${orderId}` // Attach orderId vào orderInfo để dễ track trong callback
+                    orderInfo: `Thanh toan don hang ${orderId}`
                 }
             );
+            console.log('💳 VNPay response:', data);
+            
             if (data.paymentUrl) {
+                console.log('✅ Redirecting to VNPay URL:', data.paymentUrl);
+                // Clear cart trước khi redirect
+                await cartService.clearCart();
+                // Redirect đến VNPay
                 window.location.href = data.paymentUrl;
             } else {
+                console.error('❌ No payment URL received');
                 toast.error('Không tạo được link thanh toán VNPay');
-                // Optional: Gọi API để cancel order nếu fail ngay từ đầu (thêm nếu có endpoint cancel)
-                // await axios.post(`${API_URL}/orders/${orderId}/cancel`);
                 setLoading(false);
             }
         } catch (err) {
+            console.error('❌ VNPay payment error:', err);
             toast.error('Lỗi khi tạo thanh toán VNPay');
-            // Optional: Cancel order
-            // await axios.post(`${API_URL}/orders/${orderId}/cancel`);
             setLoading(false);
         }
     };
