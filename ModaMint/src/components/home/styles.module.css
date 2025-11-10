@@ -120,8 +120,13 @@
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
-.product_list__view_all:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+
+.product_list_view_all_text{
+  color: white;
+}
+
+.product_list_view_all:hover {
+  background: linear-gradient(135deg, #fd5739 0%, #fc3714 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
@@ -161,29 +166,68 @@
 }
 
 .suggestion_today__product_grid {
+  padding: 15px;
+  margin: auto;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: start;
   gap: 20px;
 }
 
-/* Review Carousel */
-.review_carousel__container {
+/* === MAIN LAYOUT: 2 CỘT (ảnh + carousel) === */
+.review_carousel__main_container {
   display: flex;
-  width: 40%;
-  flex-direction: column;
-  align-items: center;
+  gap: 30px;
+  align-items: flex-start;
   justify-content: center;
   margin: 40px auto;
   padding: 0 20px;
-  position: relative;
+  max-width: 1200px;
+  flex-wrap: wrap; /* Responsive */
+}
+
+/* === ẢNH SẢN PHẨM BÊN TRÁI === */
+.review_carousel__product_image_container {
+  flex: 0 0 300px;
+  max-width: 300px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transition: transform 0.4s ease;
+}
+
+.review_carousel__product_image_container:hover {
+  transform: translateY(-5px);
+}
+
+.review_carousel__product_image {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+/* === CAROUSEL BÊN PHẢI === */
+.review_carousel__carousel_section {
+  flex: 1;
+  min-width: 300px;
+  max-width: 500px;
+}
+
+.review_carousel__container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .review_carousel__wrapper {
   overflow: hidden;
   position: relative;
   border-radius: 16px;
+  width: 100%;
 }
 
 .review_carousel__content {
@@ -193,41 +237,37 @@
 
 .review_carousel__item {
   min-width: 100%;
-  margin: auto;
   flex-shrink: 0;
+  padding: 20px;
 }
 
-@keyframes star_pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.15);
-  }
-}
-
+/* === NÚT & DOTS === */
 .review_carousel__controls {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 20px;
-  margin-top: 30px;
+  margin-top: 20px;
 }
 
 .review_carousel__control_btn {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
+  background: white;
+  border: 2px solid #ff6b6b;
   color: #ff6b6b;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(255, 107, 107, 0.2);
 }
 
 .review_carousel__control_btn:hover {
   background: #ff6b6b;
-  color: #fff;
+  color: white;
   transform: scale(1.1);
 }
 
@@ -259,10 +299,21 @@
   background: #ff8787;
 }
 
-.review_carousel__control_btn {
-  width: 40px;
-  height: 40px;
-  font-size: 18px;
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  .review_carousel__main_container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .review_carousel__product_image_container {
+    flex: 0 0 250px;
+    max-width: 250px;
+  }
+
+  .review_carousel__carousel_section {
+    max-width: 100%;
+  }
 }
 
 

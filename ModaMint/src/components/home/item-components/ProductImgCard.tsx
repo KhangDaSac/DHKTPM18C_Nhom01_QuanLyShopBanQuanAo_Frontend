@@ -2,7 +2,7 @@ import {Heart} from 'lucide-react';
 import styles from './styles.module.css'
 
 interface ProductImgCardProps {
-  imageUrl: string;
+  imageUrl: string | undefined;
   alt?: string;
 }
 

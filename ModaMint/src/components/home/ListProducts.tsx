@@ -1,21 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { ProductCard } from '@/components/product';
 import {CircleChevronRight, CircleChevronLeft, ArrowRight} from 'lucide-react';
 import styles from './styles.module.css'
-
-
-interface Product {
-  id: number;
-  image: string;
-  name: string;
-  discount?: string;
-  originalPrice: string;
-  currentPrice: string;
-  soldCount?: number;
-}
+import { Link } from 'react-router-dom';
+import type { ProductResponse } from '@/services/product';
+import { ProductCard } from './item-components/ProductCard';
 
 interface ListProductsProps {
-  products: Product[];
+  products: ProductResponse[];
   itemsPerPage: number;
 }
 
@@ -68,7 +59,7 @@ const ListProducts: React.FC<ListProductsProps> = ({ products, itemsPerPage}) =>
         </button>
       </div>
 
-      <button className={styles.product_list_view_all}>Xem tất cả</button>
+      <button className={styles.product_list_view_all}><Link to="/products" className={styles.product_list_view_all_text}>Xem tất cả</Link></button>
     </div>
   );
 };

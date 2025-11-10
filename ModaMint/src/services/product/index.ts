@@ -696,6 +696,244 @@ class ProductService {
             };
         }
     }
+
+
+    /**
+     * GET /products/category/female - Lấy 10 sản phẩm danh mục "nữ" (active)
+     */
+    async getTop10FemaleCategoryProducts(): Promise<{
+        success: boolean;
+        data?: ProductResponse[];
+        message?: string;
+    }> {
+        try {
+            const response = await productApiClient.get<ApiResponse<ProductResponse[]>>(
+                '/products/category/female'
+            );
+
+            const apiResponse = response.data;
+            if (apiResponse.code !== 1000) {
+                return {
+                    success: false,
+                    message: apiResponse.message || 'Không thể lấy sản phẩm danh mục nữ',
+                };
+            }
+
+            return {
+                success: true,
+                data: apiResponse.result,
+                message: apiResponse.message,
+            };
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return {
+                    success: false,
+                    message: errorResponse?.message || 'Không thể lấy sản phẩm danh mục nữ',
+                };
+            }
+            return {
+                success: false,
+                message: 'Lỗi kết nối đến server',
+            };
+        }
+    }
+
+    /**
+     * GET /products/category/male - Lấy 10 sản phẩm danh mục "nam" (active)
+     */
+    async getTop10MaleCategoryProducts(): Promise<{
+        success: boolean;
+        data?: ProductResponse[];
+        message?: string;
+    }> {
+        try {
+            const response = await productApiClient.get<ApiResponse<ProductResponse[]>>(
+                '/products/category/male'
+            );
+
+            const apiResponse = response.data;
+            if (apiResponse.code !== 1000) {
+                return {
+                    success: false,
+                    message: apiResponse.message || 'Không thể lấy sản phẩm danh mục nam',
+                };
+            }
+
+            return {
+                success: true,
+                data: apiResponse.result,
+                message: apiResponse.message,
+            };
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return {
+                    success: false,
+                    message: errorResponse?.message || 'Không thể lấy sản phẩm danh mục nam',
+                };
+            }
+            return {
+                success: false,
+                message: 'Lỗi kết nối đến server',
+            };
+        }
+    }
+    /**
+     * GET /products/best-selling - Lấy 10 sản phẩm bán chạy nhất (active)
+     */
+    async getTop10BestSellingProducts(): Promise<{
+        success: boolean;
+        data?: ProductResponse[];
+        message?: string;
+    }> {
+        try {
+            const response = await productApiClient.get<ApiResponse<ProductResponse[]>>(
+                '/products/best-selling'
+            );
+
+            const apiResponse = response.data;
+            if (apiResponse.code !== 1000) {
+                return {
+                    success: false,
+                    message: apiResponse.message || 'Không thể lấy sản phẩm bán chạy nhất',
+                };
+            }
+
+            return {
+                success: true,
+                data: apiResponse.result,
+                message: apiResponse.message,
+            };
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return {
+                    success: false,
+                    message: errorResponse?.message || 'Không thể lấy sản phẩm bán chạy nhất',
+                };
+            }
+            return {
+                success: false,
+                message: 'Lỗi kết nối đến server',
+            };
+        }
+    }
+
+    /**
+     * GET /products/worst-selling - Lấy 10 sản phẩm bán ít nhất (active)
+     */
+    async getTop10WorstSellingProducts(): Promise<{
+        success: boolean;
+        data?: ProductResponse[];
+        message?: string;
+    }> {
+        try {
+            const response = await productApiClient.get<ApiResponse<ProductResponse[]>>(
+                '/products/worst-selling'
+            );
+
+            const apiResponse = response.data;
+            if (apiResponse.code !== 1000) {
+                return {
+                    success: false,
+                    message: apiResponse.message || 'Không thể lấy sản phẩm bán ít nhất',
+                };
+            }
+
+            return {
+                success: true,
+                data: apiResponse.result,
+                message: apiResponse.message,
+            };
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return {
+                    success: false,
+                    message: errorResponse?.message || 'Không thể lấy sản phẩm bán ít nhất',
+                };
+            }
+            return {
+                success: false,
+                message: 'Lỗi kết nối đến server',
+            };
+        }
+    }
+    async getTop20RandomActiveProducts(): Promise<{
+        success: boolean;
+        data?: ProductResponse[];
+        message?: string;
+    }> {
+        try {
+            const response = await productApiClient.get<ApiResponse<ProductResponse[]>>(
+                '/products/random'
+            );
+
+            const apiResponse = response.data;
+            if (apiResponse.code !== 1000) {
+                return {
+                    success: false,
+                    message: apiResponse.message || 'Không thể lấy sản phẩm ngẫu nhiên',
+                };
+            }
+
+            return {
+                success: true,
+                data: apiResponse.result,
+                message: apiResponse.message,
+            };
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return {
+                    success: false,
+                    message: errorResponse?.message || 'Không thể lấy sản phẩm ngẫu nhiên',
+                };
+            }
+            return {
+                success: false,
+                message: 'Lỗi kết nối đến server',
+            };
+        }
+    }
+    async getProductsFromTop5Brands(): Promise<{
+        success: boolean;
+        data?: ProductResponse[];
+        message?: string;
+    }> {
+        try {
+            const response = await productApiClient.get<ApiResponse<ProductResponse[]>>(
+                '/products/top-brands'
+            );
+
+            const apiResponse = response.data;
+            if (apiResponse.code !== 1000) {
+                return {
+                    success: false,
+                    message: apiResponse.message || 'Không thể lấy sản phẩm từ top 5 thương hiệu',
+                };
+            }
+
+            return {
+                success: true,
+                data: apiResponse.result,
+                message: apiResponse.message,
+            };
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return {
+                    success: false,
+                    message: errorResponse?.message || 'Không thể lấy sản phẩm từ top 5 thương hiệu',
+                };
+            }
+            return {
+                success: false,
+                message: 'Lỗi kết nối đến server',
+            };
+        }
+    }
 }
 
 // Export instance để sử dụng trong các component
