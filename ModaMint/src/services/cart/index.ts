@@ -77,7 +77,12 @@ class CartService {
         return { success: false, message: 'Customer ID is required' };
       }
       
-      const resp = await cartClient.get<ApiResponse<CartDto>>(`/carts/customer/${customerId}`);
+      // Backend expects X-User-Id header
+      const resp = await cartClient.get<ApiResponse<CartDto>>(`/carts`, {
+        headers: {
+          'X-User-Id': customerId
+        }
+      });
       return { success: true, data: resp.data.result };
     } catch (err: any) {
       return { success: false, message: err?.message || 'Network error' };
@@ -139,10 +144,15 @@ class CartService {
         quantity: payload.quantity ?? 1
       };
       
-      const url = `/carts/add?customerId=${encodeURIComponent(customerId)}`;
-      console.log('📡 POST', url, 'Body:', body);
+      // Backend expects X-User-Id header, not query param
+      const url = `/carts/items`;
+      console.log('📡 POST', url, 'Body:', body, 'CustomerId:', customerId);
       
-      const resp = await cartClient.post<ApiResponse<CartDto>>(url, body);
+      const resp = await cartClient.post<ApiResponse<CartDto>>(url, body, {
+        headers: {
+          'X-User-Id': customerId
+        }
+      });
       
       console.log('✅ addItem success:', resp.data);
       return { success: true, data: resp.data.result };
@@ -156,68 +166,22 @@ class CartService {
     }
   }
 
-  async updateItem(variantId: number, quantity: number, customerId?: string) {
+  async updateItem(itemId: number, quantity: number) {
     try {
-      // Lấy customerId từ auth nếu chưa có
-      if (!customerId) {
-        const authDataStr = localStorage.getItem('authData');
-        if (authDataStr) {
-          try {
-            const authData = JSON.parse(authDataStr);
-            customerId = authData?.user?.id;
-            if (!customerId && authData?.accessToken) {
-              const userInfo = getUserInfoFromToken(authData.accessToken);
-              customerId = userInfo?.id;
-            }
-          } catch (e) {
-            console.error('Error parsing authData:', e);
-          }
-        }
-      }
-
-      if (!customerId) {
-        return { success: false, message: 'Customer ID is required' };
-      }
-
-      // Backend không có endpoint update trực tiếp
-      // Workaround: xóa hết rồi thêm lại với quantity mới
-      const currentCart = await this.getCart(customerId);
+      // Backend endpoint: PUT /carts/items/{itemId}
+      const resp = await cartClient.put<ApiResponse<CartItemDto>>(`/carts/items/${itemId}`, {
+        quantity: quantity
+      });
       
-      if (!currentCart.success || !currentCart.data) {
-        return { success: false, message: 'Cannot get current cart' };
-      }
-
-      const currentItem = currentCart.data.items?.find(item => item.variantId === variantId);
-      if (!currentItem) {
-        return { success: false, message: 'Item not found in cart' };
-      }
-
-      const currentQty = currentItem.quantity || 1;
-      const diff = quantity - currentQty;
-
-      if (diff > 0) {
-        // Tăng: thêm thêm quantity
-        const result = await this.addItem({ variantId, quantity: diff, customerId });
-        return { success: result.success, message: result.message || 'Updated successfully' };
-      } else if (diff < 0) {
-        // Giảm: gọi removeItem multiple times
-        const absDiff = Math.abs(diff);
-        for (let i = 0; i < absDiff; i++) {
-          await cartClient.delete(`/carts/remove/${variantId}?customerId=${encodeURIComponent(customerId)}`);
-        }
-        return { success: true, message: 'Updated successfully' };
-      } else {
-        // Không thay đổi
-        return { success: true, message: 'No change needed' };
-      }
+      return { success: true, data: resp.data.result, message: 'Updated successfully' };
     } catch (err: any) {
       return { success: false, message: err?.message || 'Network error' };
     }
   }
 
-  async deleteItem(variantId: number, customerId?: string) {
+  async deleteItem(itemId: number, customerId?: string) {
     try {
-      // Lấy customerId từ auth nếu chưa có
+      // Lấy customerId từ auth nếu chưa có (không dùng nhưng giữ lại để consistency)
       if (!customerId) {
         const authDataStr = localStorage.getItem('authData');
         if (authDataStr) {
@@ -234,11 +198,8 @@ class CartService {
         }
       }
 
-      if (!customerId) {
-        return { success: false, message: 'Customer ID is required' };
-      }
-
-      const resp = await cartClient.delete<ApiResponse<void>>(`/carts/remove/${variantId}/complete?customerId=${encodeURIComponent(customerId)}`);
+      // Backend endpoint: DELETE /carts/items/{itemId}
+      const resp = await cartClient.delete<ApiResponse<void>>(`/carts/items/${itemId}`);
       return { success: true, message: resp.data.message };
     } catch (err: any) {
       return { success: false, message: err?.message || 'Network error' };
@@ -268,7 +229,12 @@ class CartService {
         return { success: false, message: 'Customer ID is required' };
       }
 
-      const resp = await cartClient.delete<ApiResponse<void>>(`/carts/clear?customerId=${encodeURIComponent(customerId)}`);
+      // Backend endpoint: DELETE /carts with X-User-Id header
+      const resp = await cartClient.delete<ApiResponse<void>>(`/carts`, {
+        headers: {
+          'X-User-Id': customerId
+        }
+      });
       return { success: true, message: resp.data.message };
     } catch (err: any) {
       return { success: false, message: err?.message || 'Network error' };

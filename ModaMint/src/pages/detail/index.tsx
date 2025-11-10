@@ -1,12 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Heart, Share2, Zap, Award, Package, Clock, X } from 'lucide-react';
+import ProductTabs from '@/components/detail/DetailInforTab';
+
+// Import file CSS Module
+
 import styles from './styles.module.css';
 import type { ProductResponse } from '@/services/product';
 import type { ProductVariant } from '@/services/productVariant';
 import { productService } from '@/services/product';
 import { productVariantService } from '@/services/productVariant';
-import ProductTabs from '@/components/detail/DetailInforTab';
 
 // Lightbox Component (Đã refactor)
 const ImageLightbox: React.FC<{

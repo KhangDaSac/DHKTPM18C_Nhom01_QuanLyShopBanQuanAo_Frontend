@@ -30,6 +30,8 @@ import ProductList from './pages/products';
 import CartPage from './pages/cart';
 import CheckoutPage from './pages/checkout/CheckoutPage';
 import FavoritesPage from './pages/favorites/FavoritesPage';
+import OrderSuccessPage from './pages/order-success';
+
 
 // Routes
 import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
@@ -121,6 +123,7 @@ function App() {
 
         { path: "favorites", element: <FavoritesPage /> },
         { path: 'checkoutpage', element: <CheckoutPage /> },
+        { path: 'order-success/:orderId', element: <OrderSuccessPage /> },
       ]
     },
 
