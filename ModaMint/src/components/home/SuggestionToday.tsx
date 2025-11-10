@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import styles from './styles.module.css';
 import type { ProductResponse } from '@/services/product';
-import { ProductCard } from './item-components/ProductCard';
+import { ProductCard } from './item-components/ProductCardHome';
 
 interface SuggestionTodayProps {
   products: ProductResponse[];

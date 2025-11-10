@@ -564,7 +564,7 @@ const ProductDetailPage: React.FC = () => {
         </div>
       </div>
 
-      <ProductTabs />
+      <ProductTabs productId={product.id}/>
 
       {showSizeModal && <SizeChart onClose={() => setShowSizeModal(false)} />}
 

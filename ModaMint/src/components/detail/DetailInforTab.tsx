@@ -1,19 +1,21 @@
+// src/components/detail/ProductTabs.tsx
 import React, { useState } from 'react';
 import { Package, RefreshCcw, Star } from 'lucide-react';
-
-// Import file CSS Module
 import styles from './styles.module.css';
 import { ProductReview } from './ReviewProduct';
 import { useAuth } from '@/contexts/authContext';
 
+interface ProductTabsProps {
+  productId: number;
+}
 
-const ProductTabs = () => {
-  const {user} = useAuth();
+const ProductTabs: React.FC<ProductTabsProps> = ({ productId }) => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('info');
-  const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({ // Sửa state
+  const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({
     info: false,
     policy: false,
-    reviews: false
+    reviews: false,
   });
 
   const tabsData = [
@@ -28,19 +30,19 @@ Sản phẩm của chúng tôi được tuyển chọn kỹ lưỡng từ các n
 
 Sản phẩm của chúng tôi được tuyển chọn kỹ lưỡng từ các nhà cung cấp uy tín, đảm bảo chất lượng và an toàn cho người tiêu dùng.
 
-🏪 VỀ CỬA HÀNG:
+VỀ CỬA HÀNG:
 • Thành lập từ năm 2020
 • Hơn 10,000 khách hàng hài lòng
 • Giao hàng toàn quốc
 • Hỗ trợ 24/7
 
-📦 CAM KẾT:
+CAM KẾT:
 • Sản phẩm chính hãng 100%
 • Giá cả cạnh tranh nhất thị trường
 • Đóng gói cẩn thận, giao hàng nhanh chóng
 • Bảo hành theo chính sách nhà sản xuất
 
-💝 ƯU ĐÃI ĐẶC BIỆT:
+ƯU ĐÃI ĐẶC BIỆT:
 • Miễn phí vận chuyển cho đơn hàng trên 500,000đ
 • Tích điểm thành viên - đổi quà hấp dẫn
 • Khuyến mãi mỗi tuần`,
@@ -55,29 +57,29 @@ Sản phẩm của chúng tôi được tuyển chọn kỹ lưỡng từ các n
 • Có đầy đủ hóa đơn, phiếu bảo hành`,
       fullDescription: `CHÍNH SÁCH ĐỔI TRẢ HÀNG
 
-🔄 THỜI GIAN ĐỔI TRẢ:
+THỜI GIAN ĐỔI TRẢ:
 • Trong vòng 7 ngày kể từ ngày nhận hàng
 • Áp dụng cho tất cả sản phẩm trừ hàng khuyến mãi đặc biệt
 
-✅ ĐIỀU KIỆN ĐỔI TRẢ:
+ĐIỀU KIỆN ĐỔI TRẢ:
 • Sản phẩm còn nguyên tem, mác, nhãn hiệu
 • Chưa qua sử dụng, không có dấu hiệu hư hỏng
 • Còn đầy đủ phụ kiện, quà tặng kèm theo (nếu có)
 • Có hóa đơn mua hàng hoặc phiếu bảo hành
 
-📋 QUY TRÌNH ĐỔI TRẢ:
+QUY TRÌNH ĐỔI TRẢ:
 1. Liên hệ bộ phận CSKH qua hotline hoặc email
 2. Cung cấp thông tin đơn hàng và lý do đổi trả
 3. Đóng gói sản phẩm cẩn thận
 4. Gửi hàng về địa chỉ của chúng tôi
 5. Nhận sản phẩm mới hoặc hoàn tiền trong 5-7 ngày
 
-💰 PHI ĐỔI TRẢ:
+PHI ĐỔI TRẢ:
 • Miễn phí nếu lỗi từ nhà sản xuất
 • Khách hàng chịu phí vận chuyển nếu đổi ý
 • Hoàn 100% tiền nếu sản phẩm lỗi
 
-📞 LIÊN HỆ HỖ TRỢ:
+LIÊN HỆ HỖ TRỢ:
 • Hotline: 1900 xxxx
 • Email: support@example.com
 • Thời gian: 8:00 - 22:00 hàng ngày`,
@@ -94,10 +96,11 @@ Sản phẩm của chúng tôi được tuyển chọn kỹ lưỡng từ các n
   ];
 
   const currentTab = tabsData.find(tab => tab.id === activeTab);
-  const isExpanded = currentTab ? expanded[currentTab.id] : false; // Sửa logic
+  const isExpanded = currentTab ? expanded[currentTab.id] : false;
 
   const toggleExpand = () => {
-    if (currentTab) { // Thêm kiểm tra
+    console.log(user);
+    if (currentTab) {
       setExpanded(prev => ({
         ...prev,
         [activeTab]: !prev[activeTab]
@@ -127,12 +130,10 @@ Sản phẩm của chúng tôi được tuyển chọn kỹ lưỡng từ các n
       <div className={styles.product_tabs_content_wrapper}>
         {currentTab && currentTab.id !== 'reviews' && (
           <div className={styles.product_tabs_content}>
-            {/* Description */}
             <div className={styles.product_tabs_description}>
               {isExpanded ? currentTab.fullDescription : currentTab.shortDescription}
             </div>
 
-            {/* Image - Only show when expanded */}
             {isExpanded && currentTab.image && (
               <div className={styles.product_tabs_image_wrapper}>
                 <img
@@ -143,23 +144,28 @@ Sản phẩm của chúng tôi được tuyển chọn kỹ lưỡng từ các n
               </div>
             )}
 
-            {/* View More Button */}
             {!currentTab.hideExpandButton && (
               <div className={styles.product_tabs_expand_wrapper}>
                 <button
                   onClick={toggleExpand}
                   className={styles.product_tabs_expand_button}
                 >
-                  {isExpanded ? '⬆ Thu gọn' : '⬇ Xem thêm'}
+                  {isExpanded ? 'Thu gọn' : 'Xem thêm'}
                 </button>
               </div>
             )}
           </div>
         )}
 
-        {/* Product Review Component */}
+        {/* Product Review */}
         {currentTab && currentTab.id === 'reviews' && (
-          <ProductReview productId={1} customerId={'1db47544-d17c-427a-aab5-b5356fd2c8e7'} orderItemId={1} />
+
+          
+          <ProductReview 
+            productId={productId} 
+            customerId={user?.id || 'd12ea12f-82d0-43bc-817f-32a3802e7800'} 
+            orderItemId={1} 
+          />
         )}
       </div>
     </div>

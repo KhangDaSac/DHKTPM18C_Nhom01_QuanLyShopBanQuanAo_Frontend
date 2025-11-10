@@ -4,7 +4,7 @@ import styles from "./styles.module.css";
 import type { ReviewResponse } from "@/services/review";
 
 const DEFAULT_AVATAR =
-  "https://res.cloudinary.com/dkokkltme/image/upload/v1760263866/img_mini_review_t8drmo.webp";
+  "https://res.cloudinary.com/dkokkltme/image/upload/v1762793886/image_album_8_soqfvo.webp";
 
 export const ReviewCard = ({ review }: { review: ReviewResponse }) => {
   const rating = review.rating || 0;

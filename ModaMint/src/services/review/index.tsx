@@ -15,8 +15,6 @@ export interface ReviewResponse {
     id: number;
     productId: number;
     customerId: string;
-    customerName?: string; // Tên cũ (có thể giữ lại hoặc bỏ đi)
-    productName?: string;  // Backend có thể trả về thêm
     orderItemId?: number;
     rating: number;
     comment?: string;

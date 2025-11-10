@@ -3,7 +3,6 @@ import styles from './styles.module.css';
 import { Delete, Hand, Pen } from 'lucide-react';
 import { reviewService, type ReviewResponse } from '@/services/review';
 import { uploadImageToCloudinary } from '@/services/review/upImage';
-import { customerService, type CustomerResponse } from '@/services/customer';
 
 interface ProductReviewProps {
   productId: number;
@@ -11,25 +10,19 @@ interface ProductReviewProps {
   orderItemId: number | null;
 }
 
-interface ReviewWithCustomer extends ReviewResponse {
-  customerAvatar?: string;
-  customerFullName?: string;
-}
-
 export const ProductReview: React.FC<ProductReviewProps> = ({ 
   productId, 
   customerId, 
   orderItemId 
 }) => {
-  const [reviews, setReviews] = useState<ReviewWithCustomer[]>([]);
+  const [reviews, setReviews] = useState<ReviewResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingReview, setEditingReview] = useState<ReviewWithCustomer | null>(null);
+  const [editingReview, setEditingReview] = useState<ReviewResponse | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
-  
   
   // Form state
   const [formRating, setFormRating] = useState(5);
@@ -50,58 +43,26 @@ export const ProductReview: React.FC<ProductReviewProps> = ({
     fetchReviews();
   }, [productId]);
 
-// Thay thế toàn bộ hàm fetchReviews bằng đoạn này:
-const fetchReviews = async () => {
-  setLoading(true);
-  try {
-    const result = await reviewService.getReviewsByProductId(productId);
-    if (!result.success || !result.data) {
-      console.error('Failed to fetch reviews:', result.message);
+  const fetchReviews = async () => {
+    setLoading(true);
+    try {
+      const result = await reviewService.getReviewsByProductId(productId);
+      if (!result.success || !result.data) {
+        console.error('Failed to fetch reviews:', result.message);
+        setReviews([]);
+        return;
+      }
+
+      // ReviewResponse đã có đầy đủ thông tin, không cần gọi customerService
+      setReviews(result.data);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
       setReviews([]);
-      return;
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Lấy thông tin customer cho từng review
-    const reviewsWithCustomerInfo = await Promise.all(
-      result.data.map(async (review) => {
-        let customerAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(review.customerName || 'User')}&background=ff4d4d&color=fff`;
-        let customerFullName = review.customerName || 'Khách hàng';
-
-        try {
-          const customerResult = await customerService.getCustomerById(review.customerId);
-          
-          if (customerResult.success && customerResult.data?.user) {
-            const user = customerResult.data.user;
-            customerFullName = `${user.firstName} ${user.lastName}`.trim() || 'Khách hàng';
-            
-            // Ưu tiên ảnh từ user.image, nếu không có thì dùng ui-avatars
-            if (user.image) {
-              customerAvatar = user.image;
-            } else {
-              customerAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.firstName + ' ' + user.lastName)}&background=ff4d4d&color=fff`;
-            }
-          }
-        } catch (error) {
-          console.warn(`Không thể tải thông tin khách hàng ID: ${review.customerId}`, error);
-          // Giữ fallback
-        }
-
-        return {
-          ...review,
-          customerAvatar,
-          customerFullName,
-        };
-      })
-    );
-
-    setReviews(reviewsWithCustomerInfo);
-  } catch (error) {
-    console.error('Error fetching reviews:', error);
-    setReviews([]);
-  } finally {
-    setLoading(false);
-  }
-};
   const customerReview = reviews.find(r => r.customerId === customerId);
   const displayedReviews = showAll ? reviews : reviews.slice(0, 5);
 
@@ -110,7 +71,16 @@ const fetchReviews = async () => {
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : '0.0';
 
-  const handleOpenModal = (review?: ReviewWithCustomer) => {
+  // Helper function to get customer display info
+  const getCustomerDisplayInfo = (review: ReviewResponse) => {
+    const fullName = `${review.firstName || ''} ${review.lastName || ''}`.trim() || 'Khách hàng';
+    const avatarUrl = review.image || 
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=ff4d4d&color=fff`;
+    
+    return { fullName, avatarUrl };
+  };
+
+  const handleOpenModal = (review?: ReviewResponse) => {
     if (review) {
       setEditingReview(review);
       setFormRating(review.rating);
@@ -218,6 +188,7 @@ const fetchReviews = async () => {
       setUploadingImages(false);
     }
   };
+
   const handleDeleteReview = async (reviewId: number) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa đánh giá này?')) {
       return;
@@ -258,7 +229,9 @@ const fetchReviews = async () => {
 
   const handleRemoveImage = (index: number) => {
     // Revoke the preview URL to free memory
-    URL.revokeObjectURL(imagePreviewUrls[index]);
+    if (imagePreviewUrls[index].startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreviewUrls[index]);
+    }
     
     setFormImages(formImages.filter((_, i) => i !== index));
     setImagePreviewUrls(imagePreviewUrls.filter((_, i) => i !== index));
@@ -326,41 +299,44 @@ const fetchReviews = async () => {
           {reviews.length === 0 ? (
             <p className={styles.review_list__empty}>Chưa có đánh giá nào cho sản phẩm này.</p>
           ) : (
-            displayedReviews.map(review => (
-              <div key={review.id} className={styles.review_item}>
-                <div className={styles.review_item__header}>
-                  <img 
-                    src={review.customerAvatar}
-                    alt={review.customerFullName || 'Customer'}
-                    className={styles.review_item__avatar}
-                  />
-                  <div className={styles.review_item__info}>
-                    <h4 className={styles.review_item__name}>{review.customerFullName}</h4>
-                    <span className={styles.review_item__date}>{formatDate(review.createAt)}</span>
+            displayedReviews.map(review => {
+              const { fullName, avatarUrl } = getCustomerDisplayInfo(review);
+              return (
+                <div key={review.id} className={styles.review_item}>
+                  <div className={styles.review_item__header}>
+                    <img 
+                      src={avatarUrl}
+                      alt={fullName}
+                      className={styles.review_item__avatar}
+                    />
+                    <div className={styles.review_item__info}>
+                      <h4 className={styles.review_item__name}>{fullName}</h4>
+                      <span className={styles.review_item__date}>{formatDate(review.createAt)}</span>
+                    </div>
                   </div>
-                </div>
-                
-                <div className={styles.review_item__rating}>
-                  <StarRating rating={review.rating} />
-                </div>
-
-                {review.images && review.images.length > 0 && (
-                  <div className={styles.review_item__images}>
-                    {review.images.map((img, idx) => (
-                      <img 
-                        key={idx}
-                        src={img}
-                        alt={`Review ${idx + 1}`}
-                        className={styles.review_item__image}
-                        onClick={() => setSelectedImage(img)}
-                      />
-                    ))}
+                  
+                  <div className={styles.review_item__rating}>
+                    <StarRating rating={review.rating} />
                   </div>
-                )}
 
-                <p className={styles.review_item__comment}>{review.comment}</p>
-              </div>
-            ))
+                  {review.images && review.images.length > 0 && (
+                    <div className={styles.review_item__images}>
+                      {review.images.map((img, idx) => (
+                        <img 
+                          key={idx}
+                          src={img}
+                          alt={`Review ${idx + 1}`}
+                          className={styles.review_item__image}
+                          onClick={() => setSelectedImage(img)}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  <p className={styles.review_item__comment}>{review.comment}</p>
+                </div>
+              );
+            })
           )}
         </div>
 
@@ -441,60 +417,63 @@ const fetchReviews = async () => {
         {reviews.length === 0 ? (
           <p className={styles.review_list__empty}>Chưa có đánh giá nào cho sản phẩm này. Hãy là người đầu tiên!</p>
         ) : (
-          displayedReviews.map(review => (
-            <div key={review.id} className={styles.review_item}>
-              <div className={styles.review_item__header}>
-                <img 
-                  src={review.customerAvatar}
-                  alt={review.customerFullName || 'Customer'}
-                  className={styles.review_item__avatar}
-                />
-                <div className={styles.review_item__info}>
-                  <h4 className={styles.review_item__name}>
-                    {review.customerId === customerId ? 'Bạn' : review.customerFullName}
-                  </h4>
-                  <span className={styles.review_item__date}>{formatDate(review.createAt)}</span>
+          displayedReviews.map(review => {
+            const { fullName, avatarUrl } = getCustomerDisplayInfo(review);
+            return (
+              <div key={review.id} className={styles.review_item}>
+                <div className={styles.review_item__header}>
+                  <img 
+                    src={avatarUrl}
+                    alt={fullName}
+                    className={styles.review_item__avatar}
+                  />
+                  <div className={styles.review_item__info}>
+                    <h4 className={styles.review_item__name}>
+                      {review.customerId === customerId ? 'Bạn' : fullName}
+                    </h4>
+                    <span className={styles.review_item__date}>{formatDate(review.createAt)}</span>
+                  </div>
                 </div>
+                
+                <div className={styles.review_item__rating}>
+                  <StarRating rating={review.rating} />
+                </div>
+
+                {review.images && review.images.length > 0 && (
+                  <div className={styles.review_item__images}>
+                    {review.images.map((img, idx) => (
+                      <img 
+                        key={idx}
+                        src={img}
+                        alt={`Review ${idx + 1}`}
+                        className={styles.review_item__image}
+                        onClick={() => setSelectedImage(img)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                <p className={styles.review_item__comment}>{review.comment}</p>
+
+                {review.customerId === customerId && (
+                  <div className={styles.review_item__actions}>
+                    <button 
+                      className={styles.review_item__action_button}
+                      onClick={() => handleOpenModal(review)}
+                    >
+                      Sửa
+                    </button>
+                    <button 
+                      className={styles.review_item__action_button}
+                      onClick={() => handleDeleteReview(review.id)}
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                )}
               </div>
-              
-              <div className={styles.review_item__rating}>
-                <StarRating rating={review.rating} />
-              </div>
-
-              {review.images && review.images.length > 0 && (
-                <div className={styles.review_item__images}>
-                  {review.images.map((img, idx) => (
-                    <img 
-                      key={idx}
-                      src={img}
-                      alt={`Review ${idx + 1}`}
-                      className={styles.review_item__image}
-                      onClick={() => setSelectedImage(img)}
-                    />
-                  ))}
-                </div>
-              )}
-
-              <p className={styles.review_item__comment}>{review.comment}</p>
-
-              {review.customerId === customerId && (
-                <div className={styles.review_item__actions}>
-                  <button 
-                    className={styles.review_item__action_button}
-                    onClick={() => handleOpenModal(review)}
-                  >
-                    Sửa
-                  </button>
-                  <button 
-                    className={styles.review_item__action_button}
-                    onClick={() => handleDeleteReview(review.id)}
-                  >
-                    Xóa
-                  </button>
-                </div>
-              )}
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -593,12 +572,13 @@ const fetchReviews = async () => {
                               setExistingImageUrls(prev => prev.filter((_, i) => i !== idx));
                             }
                             // Xóa ảnh mới
-                              else {
+                            else {
                               const newFileIndex = idx - existingImageUrls.length;
                               setFormImages(prev => prev.filter((_, i) => i !== newFileIndex));
-                              // Revoke the preview URL (a string) instead of passing the File to revokeObjectURL
-                              // imagePreviewUrls contains the blob: URLs created with URL.createObjectURL(file)
-                              URL.revokeObjectURL(imagePreviewUrls[idx]);
+                              // Revoke the preview URL to free memory
+                              if (imagePreviewUrls[idx].startsWith('blob:')) {
+                                URL.revokeObjectURL(imagePreviewUrls[idx]);
+                              }
                             }
                             // Cập nhật preview
                             setImagePreviewUrls(prev => prev.filter((_, i) => i !== idx));

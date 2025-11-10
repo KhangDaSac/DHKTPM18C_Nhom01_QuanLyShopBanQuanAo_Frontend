@@ -15,6 +15,7 @@ import { brandService, type BrandResponse } from "@/services/brand";
 import { percentagePromotionService } from "@/services/promotion"; // Import service
 import { amountPromotionService } from "@/services/promotion";     // Import service
 import { reviewService, type ReviewResponse } from "@/services/review";
+import { Link } from "react-router-dom";
 
 // Interface chung cho Promotion
 export interface Promotion {
@@ -232,7 +233,7 @@ export default function Home() {
             <p>Trình bày buổi dạo phố một cách thanh lịch với những chiếc váy điệu đà...</p>
             <p>Hãy để bộ sưu tập này làm nổi bật phong cách của bạn...</p>
           </div>
-          <button className={styles.event_view_btn}>Xem thêm</button>
+          <button className={styles.event_view_btn}><Link to="/news">Xem thêm</Link></button>
         </div>
       </div>
 
@@ -241,7 +242,7 @@ export default function Home() {
       <div className={styles.male_collection}>
         <ListProducts products={femaleProducts} itemsPerPage={2} />
         <div className={styles.container_male_img}>
-          <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1760258514/img_product_banner_1_swjimu.webp" alt="" />
+          <img src="https://res.cloudinary.com/dkokkltme/image/upload/v1762794109/img_product_banner_2_vgpxku.webp" alt="" />
         </div>
       </div>
 

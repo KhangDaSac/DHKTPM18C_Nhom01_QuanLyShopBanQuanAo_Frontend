@@ -11,7 +11,7 @@ interface ReviewCarouselProps {
 }
 
 const DEFAULT_PRODUCT_IMAGE =
-  "https://res.cloudinary.com/dkokkltme/image/upload/v1760263866/default-product.webp"; // Thêm ảnh mặc định nếu cần
+  "https://res.cloudinary.com/dkokkltme/image/upload/v1762793886/image_album_8_soqfvo.webp"; // Thêm ảnh mặc định nếu cần
 
 export const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviews }) => {
   const [currentIndex, setCurrentIndex] = useState(0);

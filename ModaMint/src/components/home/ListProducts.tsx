@@ -3,7 +3,7 @@ import {CircleChevronRight, CircleChevronLeft, ArrowRight} from 'lucide-react';
 import styles from './styles.module.css'
 import { Link } from 'react-router-dom';
 import type { ProductResponse } from '@/services/product';
-import { ProductCard } from './item-components/ProductCard';
+import { ProductCard } from './item-components/ProductCardHome';
 
 interface ListProductsProps {
   products: ProductResponse[];
@@ -45,7 +45,7 @@ const ListProducts: React.FC<ListProductsProps> = ({ products, itemsPerPage}) =>
             <ProductCard 
               key={product.id} 
               product={product} 
-              buttonText="Tùy chọn"
+              buttonText="Xem chi tiết"
             />
           ))}
         </div>
