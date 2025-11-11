@@ -83,6 +83,17 @@
   transform: scale(1.1);
 }
 
+.heart_icon.favorited {
+  opacity: 1;
+  background: #ff6347;
+  color: white;
+}
+
+.heart_icon:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .product_details {
   padding: 16px;
 }

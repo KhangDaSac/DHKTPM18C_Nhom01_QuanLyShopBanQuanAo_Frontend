@@ -2,10 +2,7 @@ import React, { useEffect, useState } from "react";
 import styles from "./style.module.css";
 import { ProductCard } from '@/components/product';
 import { favoritesService } from '@/services/favorites';
-import { cartService } from '@/services/cart';
-import { useContext } from 'react';
-import { CartContext } from '@/contexts/CartContext';
-import { toast } from 'react-toastify';
+import { useFavorites } from '@/contexts/favoritesContext';
 import type { FavoriteDto } from '@/services/favorites';
 
 // frontend favorites are represented by backend FavoriteDto
@@ -21,18 +18,20 @@ type ProductCardData = {
 };
 
 const FavoritesPage: React.FC = () => {
-  const [favorites, setFavorites] = useState<FavoriteDto[]>([]);
-
-  const cartCtx = useContext(CartContext);
+  const [favoritesList, setFavoritesList] = useState<FavoriteDto[]>([]);
+  const { favorites: favoritesSet } = useFavorites();
 
   useEffect(() => {
     let mounted = true;
     favoritesService.getFavorites().then(res => {
       if (!mounted) return;
-      if (res.success && res.data) setFavorites(res.data);
+      if (res.success && res.data) setFavoritesList(res.data);
     }).catch(() => {/* ignore */});
     return () => { mounted = false };
   }, []);
+
+  // Filter out removed favorites from the list
+  const displayedFavorites = favoritesList.filter(fav => favoritesSet.has(fav.productId));
 
   // UI-only handlers (non-functional as requested)
 
@@ -44,37 +43,31 @@ const FavoritesPage: React.FC = () => {
       </div>
 
       <div className={styles.container}>
-        <div className={styles.grid}>
-          {favorites.map((item, idx) => {
-            const card: ProductCardData = {
-              id: idx + 1,
-              image: item.price ? `https://picsum.photos/seed/fav${item.productId}/320` : 'https://picsum.photos/320',
-              name: item.productName || 'Sản phẩm',
-              discount: undefined,
-              originalPrice: '',
-              currentPrice: item.price ? Number(item.price).toLocaleString('vi-VN') + ' đ' : '',
-              soldCount: undefined,
-            };
+        {displayedFavorites.length === 0 ? (
+          <div className={styles.emptyState}>
+            <p>Không có sản phẩm yêu thích</p>
+          </div>
+        ) : (
+          <div className={styles.grid}>
+            {displayedFavorites.map((item) => {
+              const card: ProductCardData = {
+                id: item.productId, // Use productId instead of index
+                image: item.price ? `https://picsum.photos/seed/fav${item.productId}/320` : 'https://picsum.photos/320',
+                name: item.productName || 'Sản phẩm',
+                discount: undefined,
+                originalPrice: '',
+                currentPrice: item.price ? Number(item.price).toLocaleString('vi-VN') + ' đ' : '',
+                soldCount: undefined,
+              };
 
-            return (
-              <div key={item.id} className={styles.card}>
-                <ProductCard product={card} onAdd={async ({ variantId, quantity }) => {
-                  try {
-                    const res = await cartService.addItem({ variantId: variantId ?? item.productId ?? 0, quantity: quantity ?? 1 });
-                    if (res.success && res.data) {
-                      if (cartCtx && cartCtx.setCartFromBackend) cartCtx.setCartFromBackend(res.data);
-                      toast.success('Đã thêm vào giỏ hàng');
-                    } else {
-                      toast.error('Không thể thêm vào giỏ hàng');
-                    }
-                  } catch (e) {
-                    toast.error('Không thể thêm vào giỏ hàng');
-                  }
-                }} />
-              </div>
-            );
-          })}
-        </div>
+              return (
+                <div key={item.id} className={styles.card}>
+                  <ProductCard product={card} />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
