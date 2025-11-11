@@ -70,15 +70,15 @@ const Cart = () => {
   };
 
   const increaseQty = async (item: CartItemDto | undefined) => {
-    if (!item || !item.variantId) return;
+    if (!item || !item.id) return;
     const newQty = (item.quantity ?? 1) + 1;
     console.log('➕ Increasing qty:', { 
-      variantId: item.variantId, 
+      itemId: item.id, 
       currentQty: item.quantity, 
       newQty 
     });
     
-    const result = await cartService.updateItem(item.variantId, newQty);
+    const result = await cartService.updateItem(item.id, newQty);
     console.log('Update result:', result);
     if (result.success) {
       await load();
@@ -88,16 +88,16 @@ const Cart = () => {
   };
 
   const decreaseQty = async (item: CartItemDto | undefined) => {
-    if (!item || !item.variantId) return;
+    if (!item || !item.id) return;
     const newQty = (item.quantity ?? 1) - 1;
     console.log('➖ Decreasing qty:', { 
-      variantId: item.variantId, 
+      itemId: item.id, 
       currentQty: item.quantity, 
       newQty 
     });
     
     if (newQty <= 0) {
-      const result = await cartService.deleteItem(item.variantId);
+      const result = await cartService.deleteItem(item.id);
       console.log('Delete result:', result);
       if (result.success) {
         await load();
@@ -105,7 +105,7 @@ const Cart = () => {
         alert('Không thể xóa: ' + result.message);
       }
     } else {
-      const result = await cartService.updateItem(item.variantId, newQty);
+      const result = await cartService.updateItem(item.id, newQty);
       console.log('Update result:', result);
       if (result.success) {
         await load();
