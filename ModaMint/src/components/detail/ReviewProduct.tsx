@@ -1,80 +1,68 @@
-import React, { useState, useMemo } from 'react';
-import styles from './styles.module.css'
+import React, { useState, useEffect } from 'react';
+import styles from './styles.module.css';
 import { Delete, Hand, Pen } from 'lucide-react';
-
-// Interfaces
-interface Review {
-  id: number;
-  productId: number;
-  customerId: string;
-  customerName: string;
-  customerAvatar: string;
-  orderItemId: number;
-  rating: number;
-  images: string[];
-  comment: string;
-  createAt: string;
-}
+import { reviewService, type ReviewResponse } from '@/services/review';
+import { uploadImageToCloudinary } from '@/services/review/upImage';
 
 interface ProductReviewProps {
   productId: number;
-  customerId: string | null;
+  customerId?: string;
   orderItemId: number | null;
 }
 
-
-export const ProductReview: React.FC<ProductReviewProps> = ({ productId, customerId, orderItemId }) => {
-  // Generate mock reviews
-  const mockReviews: Review[] = useMemo(() => {
-    const reviews: Review[] = [];
-    const comments = [
-      'Sản phẩm rất tốt, chất lượng vượt mong đợi!',
-      'Giao hàng nhanh, đóng gói cẩn thận. Sản phẩm đẹp như hình.',
-      'Đáng đồng tiền bát gạo. Sẽ ủng hộ shop lâu dài.',
-      'Chất lượng ok, giá cả hợp lý. Recommend!',
-      'Sản phẩm tốt nhưng giao hơi lâu. Nhìn chung ổn.',
-      'Rất hài lòng với sản phẩm này. 5 sao không cần bàn cãi!',
-      'Mình đã dùng được 2 tuần rồi, sản phẩm hoạt động tốt.',
-      'Giá hơi cao nhưng chất lượng xứng đáng.'
-    ];
-
-    for (let i = 1; i <= 12; i++) {
-      const numImages = Math.floor(Math.random() * 4);
-      const images: string[] = [];
-      
-      for (let j = 0; j < numImages; j++) {
-        images.push(`https://picsum.photos/400/400?random=${i}-${j}`);
-      }
-
-      reviews.push({
-        id: i,
-        productId: productId,
-        customerId: `customer${i}`,
-        customerName: `Khách hàng ${i}`,
-        customerAvatar: `https://ui-avatars.com/api/?name=KH${i}&background=ff4d4d&color=fff`,
-        orderItemId: 100 + i,
-        rating: Math.floor(Math.random() * 2) + 4, // 4 or 5 stars
-        images: images,
-        comment: comments[Math.floor(Math.random() * comments.length)],
-        createAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-      });
-    }
-
-    return reviews;
-  }, [productId]);
-
-  const [reviews, setReviews] = useState<Review[]>(mockReviews);
+export const ProductReview: React.FC<ProductReviewProps> = ({ 
+  productId, 
+  customerId, 
+  orderItemId 
+}) => {
+  const [reviews, setReviews] = useState<ReviewResponse[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingReview, setEditingReview] = useState<Review | null>(null);
+  const [editingReview, setEditingReview] = useState<ReviewResponse | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   
   // Form state
   const [formRating, setFormRating] = useState(5);
   const [formComment, setFormComment] = useState('');
-  const [formImages, setFormImages] = useState<string[]>([]);
+  const [formImages, setFormImages] = useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
-  // Check if customer has reviewed
+  // Form validation errors
+  const [errors, setErrors] = useState<{
+    rating?: string;
+    comment?: string;
+    images?: string;
+  }>({});
+
+  // Fetch reviews on component mount
+  useEffect(() => {
+    fetchReviews();
+  }, [productId]);
+
+  const fetchReviews = async () => {
+    setLoading(true);
+    try {
+      const result = await reviewService.getReviewsByProductId(productId);
+      if (!result.success || !result.data) {
+        console.error('Failed to fetch reviews:', result.message);
+        setReviews([]);
+        return;
+      }
+
+      // ReviewResponse đã có đầy đủ thông tin, không cần gọi customerService
+      setReviews(result.data);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      setReviews([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const customerReview = reviews.find(r => r.customerId === customerId);
   const displayedReviews = showAll ? reviews : reviews.slice(0, 5);
 
@@ -83,72 +71,174 @@ export const ProductReview: React.FC<ProductReviewProps> = ({ productId, custome
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : '0.0';
 
-  const handleOpenModal = (review?: Review) => {
+  // Helper function to get customer display info
+  const getCustomerDisplayInfo = (review: ReviewResponse) => {
+    const fullName = `${review.firstName || ''} ${review.lastName || ''}`.trim() || 'Khách hàng';
+    const avatarUrl = review.image || 
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=ff4d4d&color=fff`;
+    
+    return { fullName, avatarUrl };
+  };
+
+  const handleOpenModal = (review?: ReviewResponse) => {
     if (review) {
       setEditingReview(review);
       setFormRating(review.rating);
-      setFormComment(review.comment);
-      setFormImages(review.images);
+      setFormComment(review.comment || '');
+
+      // Load ảnh cũ để hiển thị
+      const oldImages = review.images || [];
+      setExistingImageUrls(oldImages);
+      setImagePreviewUrls(oldImages.map(img => img)); // Preview ảnh cũ
+
+      setFormImages([]); // Chưa có ảnh mới
     } else {
+      // Viết mới
       setEditingReview(null);
       setFormRating(5);
       setFormComment('');
+      setExistingImageUrls([]);
+      setImagePreviewUrls([]);
       setFormImages([]);
     }
+    setErrors({});
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingReview(null);
+    setFormImages([]);
+    setExistingImageUrls([]);
+    // Dọn dẹp URL preview
+    imagePreviewUrls.forEach(url => {
+      if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+    });
+    setImagePreviewUrls([]);
+    setErrors({});
   };
 
-  const handleSubmitReview = () => {
-    if (editingReview) {
-      // Update existing review
-      setReviews(reviews.map(r => 
-        r.id === editingReview.id 
-          ? { ...r, rating: formRating, comment: formComment, images: formImages }
-          : r
-      ));
-    } else {
-      // Add new review
-      const newReview: Review = {
-        id: Date.now(),
-        productId: productId,
-        customerId: customerId!,
-        customerName: 'Bạn',
-        customerAvatar: `https://ui-avatars.com/api/?name=You&background=ff4d4d&color=fff`,
-        orderItemId: orderItemId!,
-        rating: formRating,
-        images: formImages,
-        comment: formComment,
-        createAt: new Date().toISOString()
-      };
-      setReviews([newReview, ...reviews]);
+  const validateForm = (): boolean => {
+    const newErrors: typeof errors = {};
+
+    if (!formRating || formRating < 1 || formRating > 5) {
+      newErrors.rating = 'Đánh giá tối thiểu là 1 và tối đa là 5';
     }
-    handleCloseModal();
+
+    if (!formComment || formComment.trim().length === 0) {
+      newErrors.comment = 'Nhận xét không được để trống';
+    }
+
+    if (formImages.length > 5) {
+      newErrors.images = 'Tối đa 5 ảnh';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleDeleteReview = (reviewId: number) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa đánh giá này?')) {
-      setReviews(reviews.filter(r => r.id !== reviewId));
+  const handleSubmitReview = async () => {
+    if (!validateForm()) return;
+    if (!customerId || !orderItemId) {
+      alert('Thông tin không hợp lệ');
+      return;
+    }
+
+    setSubmitting(true);
+    setUploadingImages(formImages.length > 0);
+
+    try {
+      let finalImageUrls: string[] = [...existingImageUrls]; // Giữ ảnh cũ
+
+      // Upload ảnh mới
+      if (formImages.length > 0) {
+        const uploadPromises = formImages.map(file => uploadImageToCloudinary(file));
+        const newUrls = await Promise.all(uploadPromises);
+        finalImageUrls.push(...newUrls);
+      }
+
+      const reviewData = {
+        productId,
+        customerId,
+        orderItemId,
+        rating: formRating,
+        comment: formComment.trim(),
+        images: finalImageUrls
+      };
+
+      let result;
+      if (editingReview) {
+        result = await reviewService.updateReview(editingReview.id, reviewData);
+      } else {
+        result = await reviewService.createReview(reviewData);
+      }
+
+      if (result.success) {
+        alert(editingReview ? 'Cập nhật thành công!' : 'Gửi đánh giá thành công!');
+        await fetchReviews();
+        handleCloseModal();
+      } else {
+        alert(result.message || 'Thao tác thất bại');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Có lỗi xảy ra');
+    } finally {
+      setSubmitting(false);
+      setUploadingImages(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: number) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa đánh giá này?')) {
+      return;
+    }
+
+    try {
+      const result = await reviewService.deleteReview(reviewId);
+      if (result.success) {
+        alert('Xóa đánh giá thành công!');
+        await fetchReviews();
+      } else {
+        alert(result.message || 'Xóa đánh giá thất bại');
+      }
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      alert('Có lỗi xảy ra khi xóa đánh giá');
     }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
-      setFormImages([...formImages, ...newImages].slice(0, 5));
+      const fileArray = Array.from(files);
+      const totalImages = formImages.length + fileArray.length;
+      
+      if (totalImages > 5) {
+        alert('Tối đa 5 ảnh');
+        return;
+      }
+
+      // Create preview URLs
+      const newPreviewUrls = fileArray.map(file => URL.createObjectURL(file));
+      
+      setFormImages([...formImages, ...fileArray]);
+      setImagePreviewUrls([...imagePreviewUrls, ...newPreviewUrls]);
     }
   };
 
   const handleRemoveImage = (index: number) => {
+    // Revoke the preview URL to free memory
+    if (imagePreviewUrls[index].startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreviewUrls[index]);
+    }
+    
     setFormImages(formImages.filter((_, i) => i !== index));
+    setImagePreviewUrls(imagePreviewUrls.filter((_, i) => i !== index));
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN');
   };
@@ -163,25 +253,34 @@ export const ProductReview: React.FC<ProductReviewProps> = ({ productId, custome
     </div>
   );
 
-  // Show warning messages
+  // Show warning if not logged in
   if (!customerId) {
     return (
       <div className={styles.review_container}>
         <div className={styles.review_warning}>
           <p className={styles.review_warning__text}>
-            ⚠️ Vui lòng đăng nhập để xem và viết đánh giá sản phẩm.
+            Vui lòng đăng nhập để xem và viết đánh giá sản phẩm.
           </p>
         </div>
       </div>
     );
   }
 
+  if (loading) {
+    return (
+      <div className={styles.review_container}>
+        <div className={styles.review_loading}>Đang tải đánh giá...</div>
+      </div>
+    );
+  }
+
+  // Show reviews only if customer hasn't purchased
   if (!orderItemId) {
     return (
       <div className={styles.review_container}>
         <div className={styles.review_warning}>
           <p className={styles.review_warning__text}>
-            ⚠️ Bạn chưa mua sản phẩm này. Vui lòng mua sản phẩm để có thể đánh giá.
+            Bạn chưa mua sản phẩm này. Vui lòng mua sản phẩm để có thể đánh giá.
           </p>
         </div>
         
@@ -197,41 +296,48 @@ export const ProductReview: React.FC<ProductReviewProps> = ({ productId, custome
         </div>
 
         <div className={styles.review_list}>
-          {displayedReviews.map(review => (
-            <div key={review.id} className={styles.review_item}>
-              <div className={styles.review_item__header}>
-                <img 
-                  src={review.customerAvatar} 
-                  alt={review.customerName}
-                  className={styles.review_item__avatar}
-                />
-                <div className={styles.review_item__info}>
-                  <h4 className={styles.review_item__name}>{review.customerName}</h4>
-                  <span className={styles.review_item__date}>{formatDate(review.createAt)}</span>
-                </div>
-              </div>
-              
-              <div className={styles.review_item__rating}>
-                <StarRating rating={review.rating} />
-              </div>
-
-              {review.images.length > 0 && (
-                <div className={styles.review_item__images}>
-                  {review.images.map((img, idx) => (
+          {reviews.length === 0 ? (
+            <p className={styles.review_list__empty}>Chưa có đánh giá nào cho sản phẩm này.</p>
+          ) : (
+            displayedReviews.map(review => {
+              const { fullName, avatarUrl } = getCustomerDisplayInfo(review);
+              return (
+                <div key={review.id} className={styles.review_item}>
+                  <div className={styles.review_item__header}>
                     <img 
-                      key={idx}
-                      src={img}
-                      alt={`Review ${idx + 1}`}
-                      className={styles.review_item__image}
-                      onClick={() => setSelectedImage(img)}
+                      src={avatarUrl}
+                      alt={fullName}
+                      className={styles.review_item__avatar}
                     />
-                  ))}
-                </div>
-              )}
+                    <div className={styles.review_item__info}>
+                      <h4 className={styles.review_item__name}>{fullName}</h4>
+                      <span className={styles.review_item__date}>{formatDate(review.createAt)}</span>
+                    </div>
+                  </div>
+                  
+                  <div className={styles.review_item__rating}>
+                    <StarRating rating={review.rating} />
+                  </div>
 
-              <p className={styles.review_item__comment}>{review.comment}</p>
-            </div>
-          ))}
+                  {review.images && review.images.length > 0 && (
+                    <div className={styles.review_item__images}>
+                      {review.images.map((img, idx) => (
+                        <img 
+                          key={idx}
+                          src={img}
+                          alt={`Review ${idx + 1}`}
+                          className={styles.review_item__image}
+                          onClick={() => setSelectedImage(img)}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  <p className={styles.review_item__comment}>{review.comment}</p>
+                </div>
+              );
+            })
+          )}
         </div>
 
         {reviews.length > 5 && (
@@ -244,10 +350,30 @@ export const ProductReview: React.FC<ProductReviewProps> = ({ productId, custome
             </button>
           </div>
         )}
+
+        {/* Image Modal */}
+        {selectedImage && (
+          <div className={styles.image_modal_overlay} onClick={() => setSelectedImage(null)}>
+            <div className={styles.image_modal_container}>
+              <button 
+                className={styles.image_modal__close}
+                onClick={() => setSelectedImage(null)}
+              >
+                ✕
+              </button>
+              <img 
+                src={selectedImage} 
+                alt="Review"
+                className={styles.image_modal__image}
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
+  // Full review interface for customers who purchased
   return (
     <div className={styles.review_container}>
       <div className={styles.review_header}>
@@ -288,60 +414,67 @@ export const ProductReview: React.FC<ProductReviewProps> = ({ productId, custome
       </div>
 
       <div className={styles.review_list}>
-        {displayedReviews.map(review => (
-          <div key={review.id} className={styles.review_item}>
-            <div className={styles.review_item__header}>
-              <img 
-                src={review.customerAvatar} 
-                alt={review.customerName}
-                className={styles.review_item__avatar}
-              />
-              <div className={styles.review_item__info}>
-                <h4 className={styles.review_item__name}>
-                  {review.customerId === customerId ? 'Bạn' : review.customerName}
-                </h4>
-                <span className={styles.review_item__date}>{formatDate(review.createAt)}</span>
-              </div>
-            </div>
-            
-            <div className={styles.review_item__rating}>
-              <StarRating rating={review.rating} />
-            </div>
-
-            {review.images.length > 0 && (
-              <div className={styles.review_item__images}>
-                {review.images.map((img, idx) => (
+        {reviews.length === 0 ? (
+          <p className={styles.review_list__empty}>Chưa có đánh giá nào cho sản phẩm này. Hãy là người đầu tiên!</p>
+        ) : (
+          displayedReviews.map(review => {
+            const { fullName, avatarUrl } = getCustomerDisplayInfo(review);
+            return (
+              <div key={review.id} className={styles.review_item}>
+                <div className={styles.review_item__header}>
                   <img 
-                    key={idx}
-                    src={img}
-                    alt={`Review ${idx + 1}`}
-                    className={styles.review_item__image}
-                    onClick={() => setSelectedImage(img)}
+                    src={avatarUrl}
+                    alt={fullName}
+                    className={styles.review_item__avatar}
                   />
-                ))}
-              </div>
-            )}
+                  <div className={styles.review_item__info}>
+                    <h4 className={styles.review_item__name}>
+                      {review.customerId === customerId ? 'Bạn' : fullName}
+                    </h4>
+                    <span className={styles.review_item__date}>{formatDate(review.createAt)}</span>
+                  </div>
+                </div>
+                
+                <div className={styles.review_item__rating}>
+                  <StarRating rating={review.rating} />
+                </div>
 
-            <p className={styles.review_item__comment}>{review.comment}</p>
+                {review.images && review.images.length > 0 && (
+                  <div className={styles.review_item__images}>
+                    {review.images.map((img, idx) => (
+                      <img 
+                        key={idx}
+                        src={img}
+                        alt={`Review ${idx + 1}`}
+                        className={styles.review_item__image}
+                        onClick={() => setSelectedImage(img)}
+                      />
+                    ))}
+                  </div>
+                )}
 
-            {review.customerId === customerId && (
-              <div className={styles.review_item__actions}>
-                <button 
-                  className={styles.review_item__action_button}
-                  onClick={() => handleOpenModal(review)}
-                >
-                  Sửa
-                </button>
-                <button 
-                  className={styles.review_item__action_button}
-                  onClick={() => handleDeleteReview(review.id)}
-                >
-                  Xóa
-                </button>
+                <p className={styles.review_item__comment}>{review.comment}</p>
+
+                {review.customerId === customerId && (
+                  <div className={styles.review_item__actions}>
+                    <button 
+                      className={styles.review_item__action_button}
+                      onClick={() => handleOpenModal(review)}
+                    >
+                      Sửa
+                    </button>
+                    <button 
+                      className={styles.review_item__action_button}
+                      onClick={() => handleDeleteReview(review.id)}
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+            );
+          })
+        )}
       </div>
 
       {reviews.length > 5 && (
@@ -370,7 +503,9 @@ export const ProductReview: React.FC<ProductReviewProps> = ({ productId, custome
 
             <div className={styles.modal_body}>
               <div className={styles.modal_rating}>
-                <label className={styles.modal_rating__label}>Đánh giá của bạn</label>
+                <label className={styles.modal_rating__label}>
+                  Đánh giá của bạn <span style={{ color: 'red' }}>*</span>
+                </label>
                 <div className={styles.modal_rating__stars}>
                   {[1, 2, 3, 4, 5].map(star => (
                     <span
@@ -384,10 +519,13 @@ export const ProductReview: React.FC<ProductReviewProps> = ({ productId, custome
                     </span>
                   ))}
                 </div>
+                {errors.rating && <span className={styles.error_message}>{errors.rating}</span>}
               </div>
 
               <div className={styles.modal_comment}>
-                <label className={styles.modal_comment__label}>Nhận xét</label>
+                <label className={styles.modal_comment__label}>
+                  Nhận xét <span style={{ color: 'red' }}>*</span>
+                </label>
                 <textarea
                   className={styles.modal_comment__textarea}
                   value={formComment}
@@ -395,6 +533,7 @@ export const ProductReview: React.FC<ProductReviewProps> = ({ productId, custome
                   placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm..."
                   rows={5}
                 />
+                {errors.comment && <span className={styles.error_message}>{errors.comment}</span>}
               </div>
 
               <div className={styles.modal_images}>
@@ -409,38 +548,72 @@ export const ProductReview: React.FC<ProductReviewProps> = ({ productId, custome
                   onChange={handleImageUpload}
                   disabled={formImages.length >= 5}
                 />
+                {errors.images && <span className={styles.error_message}>{errors.images}</span>}
                 
-                {formImages.length > 0 && (
+                {imagePreviewUrls.length > 0 && (
                   <div className={styles.modal_images__preview}>
-                    {formImages.map((img, idx) => (
+                    {imagePreviewUrls.map((url, idx) => (
                       <div key={idx} className={styles.modal_images__preview_item}>
-                        <img src={img} alt={`Preview ${idx + 1}`} />
+                        <img 
+                          src={url} 
+                          alt={`Preview ${idx + 1}`}
+                          style={{ 
+                            width: '80px', 
+                            height: '80px', 
+                            objectFit: 'cover', 
+                            borderRadius: '8px' 
+                          }} 
+                        />
                         <button
                           className={styles.modal_images__preview_remove}
-                          onClick={() => handleRemoveImage(idx)}
+                          onClick={() => {
+                            // Xóa ảnh cũ
+                            if (idx < existingImageUrls.length) {
+                              setExistingImageUrls(prev => prev.filter((_, i) => i !== idx));
+                            }
+                            // Xóa ảnh mới
+                            else {
+                              const newFileIndex = idx - existingImageUrls.length;
+                              setFormImages(prev => prev.filter((_, i) => i !== newFileIndex));
+                              // Revoke the preview URL to free memory
+                              if (imagePreviewUrls[idx].startsWith('blob:')) {
+                                URL.revokeObjectURL(imagePreviewUrls[idx]);
+                              }
+                            }
+                            // Cập nhật preview
+                            setImagePreviewUrls(prev => prev.filter((_, i) => i !== idx));
+                          }}
+                          type="button"
                         >
-                          ✕
+                          X
                         </button>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
+
+              {uploadingImages && (
+                <div className={styles.upload_progress}>
+                  Đang tải ảnh lên...
+                </div>
+              )}
             </div>
 
             <div className={styles.modal_footer}>
               <button 
                 className={`${styles.modal_footer__button} ${styles.modal_footer__button_cancel}`}
                 onClick={handleCloseModal}
+                disabled={submitting}
               >
                 Hủy
               </button>
               <button 
                 className={`${styles.modal_footer__button} ${styles.modal_footer__button_submit}`}
                 onClick={handleSubmitReview}
-                disabled={!formComment.trim()}
+                disabled={submitting || uploadingImages}
               >
-                {editingReview ? 'Cập nhật' : 'Gửi đánh giá'}
+                {submitting ? 'Đang xử lý...' : (editingReview ? 'Cập nhật' : 'Gửi đánh giá')}
               </button>
             </div>
           </div>

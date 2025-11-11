@@ -27,9 +27,8 @@ export interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ 
   product, 
-  buttonText = 'Tùy chọn',
-  onButtonClick,
-  onFavoriteChange
+  buttonText = 'Xem chi tiết',
+  onButtonClick 
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isToggling, setIsToggling] = useState(false);

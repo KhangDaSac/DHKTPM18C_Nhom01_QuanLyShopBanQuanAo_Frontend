@@ -1,4 +1,6 @@
+
 import { createContext, useState, useContext, type ReactNode } from "react";
+
 import type { CartDto, CartItemDto } from '../services/cart';
 
 interface CartItem {
@@ -85,7 +87,6 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     </CartContext.Provider>
   );
 };
-
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
@@ -93,3 +94,4 @@ export const useCart = () => {
   }
   return context;
 };
+
