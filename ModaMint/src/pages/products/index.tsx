@@ -250,13 +250,24 @@ const ProductList: React.FC = () => {
     }
   }, [products, sort]);
 
+  // Hàm reset toàn bộ filter
+  const handleResetAllFilters = () => {
+    setBrand(undefined);
+    setCategory(undefined);
+    setFilters({ prices: [], colors: [], sizes: [] });
+    setPage(1);
+  };
+
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE) || 1;
   const pageItems = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: 12 }}>
       <div style={{ marginBottom: 24 }}>
-        <BrandCarousel onSelect={(id: number) => setBrand(id)} />
+        <BrandCarousel 
+          onSelect={(id: number) => setBrand(id === 0 ? undefined : id)} 
+          selectedBrand={brand}
+        />
       </div>
 
       <div style={{ display: 'flex' }}>
@@ -390,6 +401,7 @@ const ProductList: React.FC = () => {
             onCategory={setCategory}
             filtersSelected={filters}
             onFiltersChange={setFilters}
+            onResetAll={handleResetAllFilters} // Thêm prop mới
           />
         </aside>
       </div>

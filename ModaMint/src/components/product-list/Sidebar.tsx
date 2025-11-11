@@ -7,11 +7,12 @@ type Props = {
   onCategory?: (catId?: string) => void;
   filtersSelected?: { prices: string[]; colors: string[]; sizes: string[] };
   onFiltersChange?: (next: { prices: string[]; colors: string[]; sizes: string[] }) => void;
+  onResetAll?: () => void; // Thêm prop mới
 };
 
-const Sidebar: React.FC<Props> = ({ onCategory, filtersSelected, onFiltersChange }) => {
+const Sidebar: React.FC<Props> = ({ onCategory, filtersSelected, onFiltersChange, onResetAll }) => {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [colors, setColors] = useState<string[]>([]);  // State cho colors (hex)
+  const [colors, setColors] = useState<string[]>([]);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,17 +57,16 @@ const Sidebar: React.FC<Props> = ({ onCategory, filtersSelected, onFiltersChange
           throw new Error('Failed to fetch colors');
         }
         const colorsData = await colorsResponse.json();
-        const topColors = colorsData.result.map((item: { color: string }) => item.color);  // Lấy tên color
+        const topColors = colorsData.result.map((item: { color: string }) => item.color);
 
-        // Map tên color sang hex (mở rộng map này dựa trên database)
+        // Map tên color sang hex
         const colorMap: Record<string, string> = {
           'Trắng': '#ffffff',
           'Xanh': '#0000ff',
           'Đen': '#000000',
           'Đỏ': '#ff0000',
-          // Thêm các color khác nếu cần
         };
-        const hexColors = topColors.map((name: string) => colorMap[name] || '#cccccc');  // Default gray nếu không map
+        const hexColors = topColors.map((name: string) => colorMap[name] || '#cccccc');
         setColors(hexColors);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -81,12 +81,19 @@ const Sidebar: React.FC<Props> = ({ onCategory, filtersSelected, onFiltersChange
 
   const toggleOpen = (id: string) => setOpen(prev => ({ ...prev, [id]: !prev[id] }));
 
+  // Hàm reset toàn bộ
+  const handleReset = () => {
+    onFiltersChange?.({ prices: [], colors: [], sizes: [] });
+    onCategory?.(undefined);
+    onResetAll?.(); // Gọi hàm reset all từ parent
+  };
+
   if (error) {
     return <aside style={{ paddingLeft: 12 }}><div style={{ color: 'red' }}>Error: {error}</div></aside>;
   }
 
   if (loading) {
-    return <aside style={{ paddingLeft: 12 }}><div>Loading...</div></aside>;  // Hoặc Spinner như trước
+    return <aside style={{ paddingLeft: 12 }}><div>Loading...</div></aside>;
   }
 
   return (
@@ -125,19 +132,16 @@ const Sidebar: React.FC<Props> = ({ onCategory, filtersSelected, onFiltersChange
           { id: 'p4', label: '700.000đ - 1.000.000đ', min: 700000, max: 1000000 },
           { id: 'p5', label: 'Trên 1.000.000đ', min: 1000000 }
         ]}
-        colors={colors}  // Pass colors động từ state
+        colors={colors}
         sizes={['S','M','L','XL']}
         selected={filtersSelected ?? { prices: [], colors: [], sizes: [] }}
         onChange={onFiltersChange ?? (() => {})}
       />
 
-      {/* Phần reset giữ nguyên */}
+      {/* Phần reset - sử dụng hàm handleReset mới */}
       <div style={{ marginTop: 12 }}>
         <button
-          onClick={() => {
-            onFiltersChange?.({ prices: [], colors: [], sizes: [] });
-            onCategory?.(undefined);
-          }}
+          onClick={handleReset}
           style={{
             width: '100%',
             padding: '10px 12px',
