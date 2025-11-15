@@ -22,7 +22,7 @@ export interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ 
   product, 
-  buttonText = 'Tùy chọn',
+  buttonText = 'Xem chi tiết',
   onButtonClick 
 }) => {
   const [isHovered, setIsHovered] = useState(false);

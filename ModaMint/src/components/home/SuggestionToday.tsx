@@ -1,44 +1,75 @@
-import React, { useState } from 'react';
-import { ProductCard } from '@/components/product';
+import React, { useState, useMemo } from 'react';
 import styles from './styles.module.css';
-
-interface Product {
-  id: number;
-  image: string;
-  name: string;
-  discount?: string;
-  originalPrice: string;
-  currentPrice: string;
-  soldCount?: number;
-  category?: string;
-}
+import type { ProductResponse } from '@/services/product';
+import { ProductCard } from './item-components/ProductCardHome';
 
 interface SuggestionTodayProps {
-  products: Product[];
-  tabs: string[];
+  products: ProductResponse[];
+  tabs?: string[];
 }
 
-const SuggestionToday: React.FC<SuggestionTodayProps> = ({ products, tabs }) => {
-  const [activeTab, setActiveTab] = useState('Hàng mới về');
+const DEFAULT_TABS = [
+  'Hàng mới về',
+  'Giá tốt nhất',
+  'Còn ít hàng',
+  'Còn nhiều hàng'
+] as const;
 
+type DefaultTab = typeof DEFAULT_TABS[number];
 
-  const filterProducts = (tab: string) => {
-    switch (tab) {
-      case 'Hàng mới về':
-        return products;
-        // return products.filter(p => !p.discount);
-      case 'Giá tốt':
-        return products.filter(p => parseInt(p.currentPrice.replace(/[^\d]/g, '')) < 600000);
-      case 'Tiết kiệm nhiều nhất':
-        return products.filter(p => p.discount && parseInt(p.discount.replace(/[^-\d]/g, '')) <= -40);
-      case 'Demo':
-        return products.filter(p => p.category === 'Demo');
-      default:
-        return products;
+const SuggestionToday: React.FC<SuggestionTodayProps> = ({
+  products,
+  tabs = DEFAULT_TABS
+}) => {
+  const [activeTab, setActiveTab] = useState(tabs[0]);
+
+  const filteredProducts = useMemo(() => {
+    const activeProducts = products.filter(p => p.active);
+    const now = Date.now();
+    const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000; // 7 ngày trước
+
+    // Kiểm tra tab mặc định
+    const isDefaultTab = DEFAULT_TABS.includes(activeTab as DefaultTab);
+
+    if (isDefaultTab) {
+      let result: ProductResponse[] = [];
+
+      switch (activeTab) {
+        case 'Hàng mới về':
+          result = activeProducts.filter(p => {
+            const createdAt = new Date(p.createAt || 0).getTime();
+            return createdAt >= sevenDaysAgo;
+          });
+          break;
+
+        case 'Giá tốt nhất':
+          result = activeProducts.filter(p => p.price <= 500_000);
+          break;
+
+        case 'Còn ít hàng':
+          result = activeProducts.filter(p =>
+            p.quantity !== undefined && p.quantity > 0 && p.quantity <= 10
+          );
+          break;
+
+        case 'Còn nhiều hàng':
+          result = activeProducts.filter(p =>
+            p.quantity !== undefined && p.quantity >= 50
+          );
+          break;
+
+        default:
+          result = activeProducts;
+      }
+
+      return result.slice(0, 12); // Giới hạn 12 sản phẩm
     }
-  };
 
-  const filteredProducts = filterProducts(activeTab);
+    // === XỬ LÝ TAB BRAND ===
+    return activeProducts
+      .filter(p => p.brandName === activeTab)
+      .slice(0, 12);
+  }, [products, activeTab]);
 
   return (
     <div className={styles.suggestion_today}>
@@ -46,17 +77,34 @@ const SuggestionToday: React.FC<SuggestionTodayProps> = ({ products, tabs }) => 
         {tabs.map((tab) => (
           <button
             key={tab}
-            className={`${styles.suggestion_today__tab_button} ${activeTab === tab ? styles["suggestion_today__tab_button--active"] : ""}`}
+            className={`${styles.suggestion_today__tab_button} ${
+              activeTab === tab ? styles["suggestion_today__tab_button--active"] : ""
+            }`}
             onClick={() => setActiveTab(tab)}
           >
             {tab}
           </button>
         ))}
       </div>
+
       <div className={styles.suggestion_today__product_grid}>
-        {filteredProducts.map((product) => (
-          <ProductCard key={product.id} product={product} buttonText="Tùy chọn" />
-        ))}
+        {filteredProducts.length > 0 ? (
+          filteredProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              buttonText="Xem chi tiết"
+            />
+          ))
+        ) : (
+          <p className={styles.no_products}>
+            {DEFAULT_TABS.includes(activeTab as DefaultTab)
+              ? (activeTab === 'Còn ít hàng'
+                  ? 'Không có sản phẩm sắp hết'
+                  : 'Không có sản phẩm phù hợp')
+              : `Không có sản phẩm của ${activeTab}`}
+          </p>
+        )}
       </div>
     </div>
   );
