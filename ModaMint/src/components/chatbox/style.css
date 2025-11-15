@@ -83,6 +83,60 @@
   font-size: 0.98rem;
   font-family: inherit;
 }
+
+.modamint-chatbox-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.modamint-chatbox-mode-switch {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.mode-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.mode-btn.active {
+  background: #fff;
+  color: #ff6347;
+  border-color: #fff;
+  font-weight: 600;
+}
+
+.mode-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ws-status {
+  font-size: 0.75rem;
+  margin-top: 2px;
+  opacity: 0.9;
+}
+
+.ws-status .connected {
+  color: #4ade80;
+}
+
+.ws-status .disconnected {
+  color: #fbbf24;
+}
 .modamint-chatbox-messages {
   flex: 1;
   padding: 1rem 0.95rem;
@@ -93,13 +147,34 @@
   font-family: inherit;
   font-size: 0.95rem;
 }
+
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #8a2a0f;
+}
+
+.empty-state p {
+  margin: 0.5rem 0;
+}
+
+.empty-state .hint {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
 .modamint-chatbox-row {
   display: flex;
   align-items: flex-end;
   margin-bottom: 0.6rem;
 }
 
-.modamint-chatbox-row.bot { justify-content: flex-start; }
+.modamint-chatbox-row.bot,
+.modamint-chatbox-row.ai,
+.modamint-chatbox-row.staff { 
+  justify-content: flex-start; 
+}
+
 .modamint-chatbox-row.user { justify-content: flex-end; }
 
 .modamint-chatbox-avatar {
@@ -115,10 +190,32 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-.modamint-chatbox-avatar.user { background: linear-gradient(135deg,#ff6347,#ff9582); color: #fff }
+.modamint-chatbox-avatar.user { 
+  background: linear-gradient(135deg,#ff6347,#ff9582); 
+  color: #fff 
+}
 
 .modamint-chatbox-msg {
   max-width: 74%;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.sender-name {
+  font-weight: 600;
+  color: #8a2a0f;
+}
+
+.timestamp {
+  font-size: 0.7rem;
+  color: #999;
 }
 
 .modamint-chatbox-bubble {
@@ -131,16 +228,57 @@
   box-shadow: 0 3px 10px rgba(255,99,71,0.04);
 }
 
-.modamint-chatbox-row.bot .modamint-chatbox-bubble {
+.modamint-chatbox-row.bot .modamint-chatbox-bubble,
+.modamint-chatbox-row.ai .modamint-chatbox-bubble,
+.modamint-chatbox-row.staff .modamint-chatbox-bubble {
   background: #ffefe9;
   color: #8a2a0f;
   border-bottom-left-radius: 6px;
+}
+
+.modamint-chatbox-row.staff .modamint-chatbox-bubble {
+  background: #e0f2fe;
+  color: #0c4a6e;
 }
 
 .modamint-chatbox-row.user .modamint-chatbox-bubble {
   background: linear-gradient(135deg,#ff6347,#ff7f50);
   color: #fff;
   border-bottom-right-radius: 6px;
+}
+
+/* Loading animation */
+.modamint-chatbox-bubble.loading {
+  display: flex;
+  gap: 4px;
+  padding: 0.6rem 1.2rem;
+}
+
+.modamint-chatbox-bubble.loading .dot {
+  width: 8px;
+  height: 8px;
+  background: #ff6347;
+  border-radius: 50%;
+  animation: loading-dot 1.4s infinite;
+}
+
+.modamint-chatbox-bubble.loading .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.modamint-chatbox-bubble.loading .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes loading-dot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
 }
 .modamint-chatbox-input {
   display: flex;
@@ -170,10 +308,22 @@
   border-radius: 0 0 1rem 0;
   cursor: pointer;
   transition: background 0.18s, transform 0.08s;
+  font-size: 1.2rem;
 }
-.modamint-chatbox-input button:hover {
+
+.modamint-chatbox-input button:hover:not(:disabled) {
   background: #e94a29;
   transform: translateY(-1px);
+}
+
+.modamint-chatbox-input button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modamint-chatbox-input input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Responsive tweak: keep large but usable on small screens */
