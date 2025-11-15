@@ -71,7 +71,7 @@ const OrderSummary = () => {
 
       <button disabled={loading} onClick={handlePlaceOrder} className="place-order">{loading ? 'Đang xử lý...' : 'ĐẶT HÀNG'}</button>
 
-      <p onClick={() => navigate('/cart')} className="back-to-cart">&lt; Quay về giỏ hàng</p>
+      <p onClick={() => navigate('/carts')} className="back-to-cart">&lt; Quay về giỏ hàng</p>
     </div>
   );
 };
