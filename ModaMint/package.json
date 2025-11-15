@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.2",
+    "@stomp/stompjs": "^7.2.1",
     "@types/xlsx": "^0.0.35",
     "antd": "^5.27.4",
     "axios": "^1.13.2",
@@ -24,6 +25,7 @@
     "react-router-dom": "^7.9.1",
     "react-toastify": "^11.0.5",
     "recharts": "^3.2.1",
+    "sockjs-client": "^1.6.1",
     "vietnam-provinces-js": "^2.0.0",
     "xlsx": "^0.18.5"
   },
@@ -32,6 +34,7 @@
     "@types/node": "^24.9.2",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
+    "@types/sockjs-client": "^1.5.4",
     "@vitejs/plugin-react": "^5.0.3",
     "autoprefixer": "^10.4.21",
     "daisyui": "^4.12.24",
@@ -46,4 +49,3 @@
     "vite": "^7.1.7"
   }
 }
-
