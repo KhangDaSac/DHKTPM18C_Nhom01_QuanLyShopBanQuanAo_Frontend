@@ -3,6 +3,8 @@ import styles from './styles.module.css';
 import { Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { ProductResponse } from '@/services/product';
+import { useFavorites } from '@/contexts/favoritesContext';
+import { toast } from 'react-toastify';
 
 const formatVND = (amount: number | string): string => {
   const num = typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.-]+/g, '')) : amount;
@@ -30,6 +32,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const navigate = useNavigate();
   const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
+  const favorites = useFavorites();
+  const [isFavorite, setIsFavorite] = useState(false);
 
   // Lấy danh sách ảnh, mặc định có ít nhất 1 ảnh
   const images = product.images && product.images.length > 0 ? product.images : [''];
@@ -63,6 +67,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       setCurrentImageIndex(0);
     }
   }, [isHovered]);
+
+  // initialize favorite state from context
+  useEffect(() => {
+    try {
+      setIsFavorite(favorites.isFavorite(product.id));
+    } catch (e) {
+      // ignore
+    }
+  }, [product, favorites]);
 
   const handleButtonClick = () => {
     if (onButtonClick) {
@@ -101,8 +114,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         
         <button
           className={`${styles.heart_icon} ${isHovered ? styles.visible : ''}`}
+          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          onClick={async (e) => {
+            e.stopPropagation();
+            try {
+              if (!isFavorite) {
+                const ok = await favorites.addToFavorites(product.id);
+                if (ok) {
+                  setIsFavorite(true);
+                  toast.success('Đã thêm vào yêu thích');
+                } else {
+                  toast.error('Không thể thêm vào yêu thích');
+                }
+              } else {
+                const ok = await favorites.removeFromFavorites(product.id);
+                if (ok) {
+                  setIsFavorite(false);
+                  toast.success('Đã xóa khỏi yêu thích');
+                } else {
+                  toast.error('Không thể xóa khỏi yêu thích');
+                }
+              }
+            } catch (err) {
+              console.error('Favorite toggle error', err);
+              toast.error('Có lỗi xảy ra. Vui lòng thử lại');
+            }
+          }}
         >
-          <Heart />
+          <Heart fill={isFavorite ? '#FF6347' : undefined} color={isFavorite ? '#FF6347' : undefined} />
         </button>
 
         {/* Navigation buttons - chỉ hiện khi hover và có nhiều hơn 1 ảnh */}

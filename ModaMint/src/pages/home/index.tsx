@@ -137,16 +137,25 @@ export default function Home() {
         }
 
         // Hợp nhất 2 loại promotions thành 1 mảng chung
-        const percentagePromos: Promotion[] = percentageRes.map(p => ({
+        // The backend /active endpoints should already return active items.
+        // Be defensive here: accept different response shapes and treat undefined isActive as active.
+        const percentageArray = Array.isArray(percentageRes) ? percentageRes : ((percentageRes as any)?.result ?? []);
+        const amountArray = Array.isArray(amountRes) ? amountRes : ((amountRes as any)?.result ?? []);
+
+        if (!Array.isArray(percentageArray) || !Array.isArray(amountArray)) {
+          console.warn('Unexpected promotion response shapes', { percentageRes, amountRes });
+        }
+
+        const percentagePromos: Promotion[] = (percentageArray || []).map((p: any) => ({
           ...p,
           type: 'percentage' as const,
         }));
-        const amountPromos: Promotion[] = amountRes.map(p => ({
+        const amountPromos: Promotion[] = (amountArray || []).map((p: any) => ({
           ...p,
           type: 'amount' as const,
         }));
         const allPromotions = [...percentagePromos, ...amountPromos]
-          .filter(p => p.isActive) // Đảm bảo chỉ lấy active
+          .filter(p => p.isActive ?? true) // treat undefined as active
           .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime()) // Sắp xếp theo startAt mới nhất
           .slice(0, 6); // Giới hạn 6 promotions cho carousel
         setPromotions(allPromotions);
@@ -269,7 +278,7 @@ export default function Home() {
       <TitleLine title="Sản phẩm nổi bật" />
       <div className={styles.outstanding_container}>
         {outstandingProducts.map((p) => (
-          <ProductImgCard key={p.id} imageUrl={p.images?.[0]} />
+          <ProductImgCard key={p.id} imageUrl={p.images?.[0]} productId={p.id} />
         ))}
       </div>
     </div>
