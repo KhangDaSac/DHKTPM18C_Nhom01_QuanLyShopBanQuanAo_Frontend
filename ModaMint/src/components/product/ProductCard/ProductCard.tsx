@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './ProductCard.module.css'
 import { Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useFavorites } from '@/contexts/favoritesContext';
+import { useAuth } from '@/contexts/authContext';
+import { toast } from 'react-toastify';
 
 export interface ProductCardData {
   id: number;
@@ -12,12 +15,14 @@ export interface ProductCardData {
   currentPrice: string;
   soldCount?: number;
   variantId?: number; // ID của product variant để thêm vào giỏ hàng
+  isFavorite?: boolean; // Trạng thái yêu thích
 }
 
 export interface ProductCardProps {
   product: ProductCardData;
   buttonText?: string; // Text của nút, mặc định là "Tùy chọn"
   onButtonClick?: (product: ProductCardData) => void; // Callback khi click nút
+  onFavoriteChange?: (productId: number, isFavorite: boolean) => void; // Callback khi thay đổi trạng thái yêu thích
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ 
@@ -26,9 +31,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onButtonClick 
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
   const percentage = product.soldCount && product.soldCount > 0 ? (product.soldCount / 200) * 100 : 0;
   const progressWidth = Math.min(percentage, 100);
+  
+  const isProductFavorite = isFavorite(product.id);
 
   const handleButtonClick = () => {
     if (onButtonClick) {
@@ -36,6 +46,39 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     } else {
       // Default action: navigate to product detail page
       navigate(`/detail/${product.id}`);
+    }
+  };
+
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Ngăn chặn event bubbling
+    
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để thêm sản phẩm yêu thích');
+      return;
+    }
+
+    if (isToggling) return; // Ngăn chặn nhiều click liên tiếp
+
+    setIsToggling(true);
+
+    try {
+      if (isProductFavorite) {
+        // Bỏ yêu thích
+        const success = await removeFromFavorites(product.id);
+        if (success) {
+          onFavoriteChange?.(product.id, false);
+        }
+      } else {
+        // Thêm vào yêu thích
+        const success = await addToFavorites(product.id);
+        if (success) {
+          onFavoriteChange?.(product.id, true);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    } finally {
+      setIsToggling(false);
     }
   };
 
@@ -51,9 +94,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <div className={styles.discount_badge}>{product.discount}</div>
         )}
         <button
-          className={`${styles.heart_icon} ${isHovered ? styles.visible : ''}`}
+          className={`${styles.heart_icon} ${isHovered ? styles.visible : ''} ${isProductFavorite ? styles.favorited : ''}`}
+          onClick={handleFavoriteClick}
+          disabled={isToggling}
+          title={isProductFavorite ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
         >
-          <Heart/>
+          <Heart fill={isProductFavorite ? 'currentColor' : 'none'} />
         </button>
       </div>
       <div className={styles.product_details}>

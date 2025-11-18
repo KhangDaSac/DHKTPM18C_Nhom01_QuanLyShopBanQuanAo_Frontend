@@ -2,32 +2,26 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./style.module.css";
 import { AiOutlineMinusCircle, AiOutlinePlusCircle, AiOutlineCloseCircle } from 'react-icons/ai';
-import { useAuth } from '@/contexts/authContext';
 // Connect to backend cart service
 import { cartService } from '@/services/cart';
 import type { CartDto, CartItemDto } from '@/services/cart';
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [cart, setCart] = useState<CartDto | null>(null);
   const [loading, setLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      console.log('🛒 Loading cart for user:', user?.id);
-      const res = await cartService.getCart(user?.id);
-      console.log('📦 Cart response:', res);
+      const res = await cartService.getCart();
       if (res.success && res.data) {
-        console.log('✅ Cart loaded:', res.data);
         setCart(res.data);
       } else {
-        console.warn('⚠️ Cart loading failed:', res.message);
         setCart(null);
       }
     } catch (error) {
-      console.error('❌ Error loading cart:', error);
+      console.error('Error loading cart:', error);
       setCart(null);
     } finally {
       setLoading(false);
@@ -35,12 +29,8 @@ const Cart = () => {
   };
 
   useEffect(() => {
-    if (user?.id) {
-      load();
-    } else {
-      console.warn('⚠️ No user ID found, cannot load cart');
-    }
-  }, [user?.id]);
+    load();
+  }, []);
 
   const removeFromCart = async (variantId?: number) => {
     if (!variantId) return;
@@ -115,20 +105,7 @@ const Cart = () => {
     }
   };
 
-  // Calculate total from cart data
-  const cartItems = cart?.items || [];
-  const total = cart?.total || cart?.subtotal || cartItems.reduce((sum, item) => {
-    const price = item.unitPrice || item.price || 0;
-    const qty = item.quantity || 0;
-    return sum + (price * qty);
-  }, 0);
-
-  console.log('💰 Cart total calculation:', {
-    cartTotal: cart?.total,
-    cartSubtotal: cart?.subtotal,
-    calculatedTotal: total,
-    itemsCount: cartItems.length
-  });
+  const total = cart?.totalPrice ?? 0;
 
   if (loading) {
     return (

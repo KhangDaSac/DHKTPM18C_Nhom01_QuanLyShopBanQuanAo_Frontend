@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Heart, Share2, Zap, Award, Package, Clock, X } from 'lucide-react';
 import ProductTabs from '@/components/detail/DetailInforTab';
 
@@ -11,6 +11,9 @@ import type { ProductResponse } from '@/services/product';
 import type { ProductVariant } from '@/services/productVariant';
 import { productService } from '@/services/product';
 import { productVariantService } from '@/services/productVariant';
+import { cartService } from '@/services/cart';
+import { useFavorites } from '@/contexts/favoritesContext';
+import { toast } from 'react-toastify';
 
 // Lightbox Component (Đã refactor)
 const ImageLightbox: React.FC<{
@@ -134,6 +137,10 @@ const ProductDetailPage: React.FC = () => {
   const [showSizeModal, setShowSizeModal] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [added, setAdded] = useState(false);
+  const navigate = useNavigate();
+  const favorites = useFavorites();
 
   const uniqueColors = Array.from(new Set(variants.map((v) => v.color)));
   const uniqueSizes = Array.from(new Set(variants.map((v) => v.size)));
@@ -244,19 +251,84 @@ const ProductDetailPage: React.FC = () => {
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (isOutOfStock) return;
-    alert(`Đã thêm: ${quantity} x ${product?.name} (${selectedColor}, ${selectedSize})`);
+    if (!currentVariant) return;
+    setAddingToCart(true);
+    try {
+      const res = await cartService.addItem({ variantId: currentVariant.id, quantity });
+      if (res && res.success) {
+        setAdded(true);
+        toast.success('Đã thêm sản phẩm vào giỏ hàng!');
+        // show added state briefly
+        setTimeout(() => setAdded(false), 1800);
+      } else {
+        console.error('Add to cart failed', res?.message);
+        toast.error(res?.message || 'Không thể thêm sản phẩm vào giỏ hàng');
+      }
+    } catch (e) {
+      console.error('Add to cart error', e);
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (isOutOfStock) return;
-    alert(`Mua ngay: ${quantity} x ${product?.name} (${selectedColor}, ${selectedSize})`);
+    if (!currentVariant) return;
+    setAddingToCart(true);
+    try {
+      const res = await cartService.addItem({ variantId: currentVariant.id, quantity });
+      if (res && res.success) {
+        // Navigate to checkout page
+        toast.success('Đã thêm vào giỏ hàng, chuyển đến thanh toán...');
+        navigate('/checkoutpage');
+      } else {
+        console.error('Buy now add to cart failed', res?.message);
+        toast.error(res?.message || 'Không thể thêm sản phẩm để thanh toán ngay');
+      }
+    } catch (e) {
+      console.error('Buy now error', e);
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
-  const handleFavorite = () => {
-    setIsFavorite(!isFavorite);
+  const handleFavorite = async () => {
+    if (!product) return;
+    try {
+      if (!isFavorite) {
+        const ok = await favorites.addToFavorites(product.id);
+        if (ok) {
+          setIsFavorite(true);
+          toast.success('Đã thêm vào yêu thích');
+        } else {
+          toast.error('Không thể thêm vào yêu thích');
+        }
+      } else {
+        const ok = await favorites.removeFromFavorites(product.id);
+        if (ok) {
+          setIsFavorite(false);
+          toast.success('Đã xóa khỏi yêu thích');
+        } else {
+          toast.error('Không thể xóa khỏi yêu thích');
+        }
+      }
+    } catch (e) {
+      console.error('Favorite error', e);
+      toast.error('Có lỗi xảy ra. Vui lòng thử lại');
+    }
   };
+
+  // Initialize favorite state from context when product or favorites change
+  useEffect(() => {
+    if (!product) return;
+    try {
+      setIsFavorite(favorites.isFavorite(product.id));
+    } catch (e) {
+      // ignore
+    }
+  }, [product, favorites]);
 
   if (loading) return <div className={styles.loading}>Đang tải...</div>;
   if (error || !product)
@@ -340,7 +412,7 @@ const ProductDetailPage: React.FC = () => {
               <span className={styles.product_info_current_price}>
                 {currentPrice.toLocaleString('vi-VN')}₫
               </span>
-              {currentVariant?.discount > 0 && (
+              {(currentVariant?.discount ?? 0) > 0 && (
                 <span className={styles.product_info_original_price}>
                   {originalPrice.toLocaleString('vi-VN')}₫
                 </span>
@@ -485,14 +557,14 @@ const ProductDetailPage: React.FC = () => {
           <div className={styles.product_info_action_buttons}>
             <button
               onClick={handleAddToCart}
-              disabled={isOutOfStock}
+              disabled={isOutOfStock || addingToCart}
               className={`${styles.product_info_button} ${styles.product_info_button_primary_dark}`}
               style={{
                 opacity: isOutOfStock ? 0.5 : 1,
                 cursor: isOutOfStock ? 'not-allowed' : 'pointer',
               }}
             >
-              {isOutOfStock ? 'HẾT HÀNG' : 'THÊM VÀO GIỎ'}
+              {isOutOfStock ? 'HẾT HÀNG' : addingToCart ? 'ĐANG THÊM...' : added ? 'ĐÃ THÊM' : 'THÊM VÀO GIỎ'}
             </button>
             <button
               onClick={handleFavorite}
