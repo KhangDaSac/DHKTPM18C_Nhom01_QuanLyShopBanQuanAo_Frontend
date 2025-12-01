@@ -290,7 +290,6 @@ const ProductList: React.FC = () => {
         <main style={{ flex: 3, paddingRight: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <h4>
-              Tất cả sản phẩm
               {!loading && (
                 <span style={{ color: '#666', fontSize: '14px', fontWeight: 'normal' }}>
                   ({products.length} sản phẩm)
@@ -319,6 +318,56 @@ const ProductList: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Active Filters Display */}
+          {(brand || urlCategoryId || filters.prices.length > 0 || filters.colors.length > 0 || filters.sizes.length > 0) && (
+            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: '600', color: '#333' }}>Đang lọc theo:</span>
+              
+              {/* Reusable Filter Tag Component */}
+              {[
+                urlCategoryId ? { label: 'Danh mục', onRemove: () => handleCategorySelect(undefined) } : null,
+                brand ? { label: 'Thương hiệu', onRemove: () => setBrand(undefined) } : null,
+                filters.prices.length > 0 ? { label: `Giá (${filters.prices.length})`, onRemove: () => setFilters({ ...filters, prices: [] }) } : null,
+                filters.colors.length > 0 ? { label: `Màu (${filters.colors.length})`, onRemove: () => setFilters({ ...filters, colors: [] }) } : null,
+                filters.sizes.length > 0 ? { label: `Size (${filters.sizes.length})`, onRemove: () => setFilters({ ...filters, sizes: [] }) } : null
+              ].filter((f): f is { label: string; onRemove: () => void } => f !== null).map((filter, idx) => (
+                <div 
+                  key={idx}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    backgroundColor: '#ff6347',
+                    color: 'white',
+                    padding: '6px 12px',
+                    borderRadius: '4px',
+                    fontSize: '13px',
+                    fontWeight: '500'
+                  }}
+                >
+                  <span>{filter.label}</span>
+                  <button
+                    onClick={filter.onRemove}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      padding: '0 4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      lineHeight: '1'
+                    }}
+                    title="Xóa bộ lọc"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {error && (
             <div style={{
