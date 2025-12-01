@@ -13,8 +13,6 @@ const SortSelect: React.FC<Props> = ({ value, onChange }) => {
       <option value="za">Z-A</option>
       <option value="price-asc">Giá tăng dần</option>
       <option value="price-desc">Giá giảm dần</option>
-      <option value="newest">Hàng mới nhất</option>
-      <option value="oldest">Hàng cũ nhất</option>
     </select>
   );
 };
