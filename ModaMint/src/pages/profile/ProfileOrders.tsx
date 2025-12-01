@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Card,
@@ -10,136 +10,235 @@ import {
     Empty,
     Row,
     Col,
-    Statistic
+    Statistic,
+    Spin,
+    message
 } from 'antd';
 import {
     ShoppingCartOutlined,
     EyeOutlined,
     ReloadOutlined,
-    LeftOutlined
+    LeftOutlined,
+    CreditCardOutlined,
+    ClockCircleOutlined
 } from '@ant-design/icons';
+import { useAuth } from '@/contexts/authContext';
+import { orderService, type OrderResponse } from '@/services/order';
 
 const { Title, Text } = Typography;
 
-interface Order {
-    id: string;
-    orderNumber: string;
-    date: string;
-    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-    total: number;
-    items: number;
-    products: Array<{
-        name: string;
-        quantity: number;
-        price: number;
-        image: string;
-    }>;
-}
-
 export default function ProfileOrders() {
     const navigate = useNavigate();
+    const { user } = useAuth();
 
-    // Mock data cho đơn hàng
-    const [orders] = useState<Order[]>([
-        {
-            id: '1',
-            orderNumber: 'DH001',
-            date: '2024-01-15',
-            status: 'delivered',
-            total: 1299000,
-            items: 3,
-            products: [
-                { name: 'Áo thun cotton', quantity: 2, price: 299000, image: '/placeholder.jpg' },
-                { name: 'Quần jean slim', quantity: 1, price: 599000, image: '/placeholder.jpg' }
-            ]
-        },
-        {
-            id: '2',
-            orderNumber: 'DH002',
-            date: '2024-01-20',
-            status: 'shipped',
-            total: 599000,
-            items: 2,
-            products: [
-                { name: 'Giày sneaker', quantity: 1, price: 599000, image: '/placeholder.jpg' }
-            ]
-        },
-        {
-            id: '3',
-            orderNumber: 'DH003',
-            date: '2024-01-25',
-            status: 'processing',
-            total: 299000,
-            items: 1,
-            products: [
-                { name: 'Áo khoác bomber', quantity: 1, price: 299000, image: '/placeholder.jpg' }
-            ]
-        },
-        {
-            id: '4',
-            orderNumber: 'DH004',
-            date: '2024-01-28',
-            status: 'pending',
-            total: 899000,
-            items: 2,
-            products: [
-                { name: 'Váy maxi', quantity: 1, price: 699000, image: '/placeholder.jpg' },
-                { name: 'Túi xách', quantity: 1, price: 200000, image: '/placeholder.jpg' }
-            ]
+    const [orders, setOrders] = useState<OrderResponse[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [currentTime, setCurrentTime] = useState(Date.now());
+    const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
+
+    // Fetch orders từ API
+    const fetchOrders = async () => {
+        if (!user?.id) {
+            message.error('Vui lòng đăng nhập để xem đơn hàng');
+            return;
         }
-    ]);
+
+        setLoading(true);
+        try {
+            const result = await orderService.getOrdersByCustomerId(user.id);
+            if (result.success && result.data) {
+                setOrders(result.data);
+
+                // DEBUG: Log orders để kiểm tra
+                console.log('=== ORDERS FETCHED ===');
+                console.log('Total orders:', result.data.length);
+                console.log('ALL ORDERS:', result.data.map(o => ({
+                    id: o.id,
+                    orderCode: o.orderCode,
+                    status: o.orderStatus,
+                    paymentMethod: o.paymentMethod,
+                    createAt: o.createAt
+                })));
+
+                const pendingOrders = result.data.filter(o => o.orderStatus === 'PENDING' && o.paymentMethod === 'BANK_TRANSFER');
+                console.log('PENDING VNPAY orders:', pendingOrders.length);
+                if (pendingOrders.length > 0) {
+                    const firstOrder = pendingOrders[0];
+                    console.log('First PENDING order createAt:', firstOrder.createAt);
+                    console.log('Parsed as Date:', new Date(firstOrder.createAt));
+                    console.log('Current time:', new Date());
+                    const elapsed = Math.floor((Date.now() - new Date(firstOrder.createAt).getTime()) / 60000);
+                    console.log('Minutes elapsed:', elapsed);
+                    console.log('Should show button?', elapsed < 15);
+                }
+                console.log('=====================');
+            } else {
+                message.error(result.message || 'Không thể tải danh sách đơn hàng');
+            }
+        } catch (error) {
+            message.error('Lỗi khi tải đơn hàng');
+            console.error('Fetch orders error:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Load orders khi component mount
+    useEffect(() => {
+        fetchOrders();
+    }, [user?.id]);
+
+    // Update current time mỗi giây để cập nhật đếm ngược
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTime(Date.now());
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // Tính thời gian hết hạn (createAt + 15 phút)
+    const calculateExpiryTime = (createAt: string) => {
+        // Backend trả về LocalDateTime theo timezone server (GMT+7)
+        // Parse như local time (không thêm 'Z' để tránh parse như UTC)
+        const createTime = new Date(createAt).getTime();
+
+        // DEBUG: Log để kiểm tra
+        console.log('=== DEBUG TIMEZONE ===');
+        console.log('createAt from backend:', createAt);
+        console.log('createTime parsed:', new Date(createTime));
+        console.log('Current time:', new Date());
+        console.log('Minutes elapsed:', Math.floor((Date.now() - createTime) / 60000));
+        console.log('=====================');
+
+        return createTime + 15 * 60 * 1000; // +15 phút
+    };
+
+    // Tính thời gian còn lại
+    const calculateTimeRemaining = (createAt: string) => {
+        const expiryTime = calculateExpiryTime(createAt);
+        const remaining = expiryTime - currentTime;
+
+        if (remaining <= 0) return null;
+
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+
+        return { minutes, seconds, total: remaining };
+    };
+
+    // Kiểm tra order có thể thanh toán không
+    const canPayOrder = (order: OrderResponse) => {
+        if (order.orderStatus !== 'PENDING') return false;
+        if (order.paymentMethod !== 'BANK_TRANSFER') return false;
+
+        const timeRemaining = calculateTimeRemaining(order.createAt);
+        return timeRemaining !== null;
+    };
+
+    // Xử lý tiếp tục thanh toán
+    const handleContinuePayment = async (order: OrderResponse) => {
+        try {
+            const result = await orderService.retryPayment(order.id);
+
+            if (result.success && result.data) {
+                // Mở payment URL trong tab mới
+                window.open(result.data.paymentUrl, '_blank');
+                message.success('Da tao lien ket thanh toan moi');
+            } else {
+                message.error(result.message || 'Khong the tao lien ket thanh toan');
+                // Refresh danh sách sau khi lỗi để cập nhật trạng thái
+                fetchOrders();
+            }
+        } catch (error) {
+            message.error('Loi khi tao lien ket thanh toan');
+            console.error('Retry payment error:', error);
+        }
+    };
 
     const orderColumns = [
         {
             title: 'Mã đơn hàng',
-            dataIndex: 'orderNumber',
-            key: 'orderNumber',
+            dataIndex: 'orderCode',
+            key: 'orderCode',
             render: (text: string) => <Text strong>{text}</Text>
         },
         {
             title: 'Ngày đặt',
-            dataIndex: 'date',
-            key: 'date',
-            render: (date: string) => new Date(date).toLocaleDateString('vi-VN')
+            dataIndex: 'createAt',
+            key: 'createAt',
+            render: (date: string) => new Date(date).toLocaleString('vi-VN')
         },
         {
             title: 'Trạng thái',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status: string) => {
+            dataIndex: 'orderStatus',
+            key: 'orderStatus',
+            render: (status: OrderResponse['orderStatus']) => {
                 const statusConfig = {
-                    pending: { color: 'orange', text: 'Chờ xử lý' },
-                    processing: { color: 'blue', text: 'Đang xử lý' },
-                    shipped: { color: 'cyan', text: 'Đã gửi hàng' },
-                    delivered: { color: 'green', text: 'Đã giao' },
-                    cancelled: { color: 'red', text: 'Đã hủy' }
+                    PENDING: { color: 'orange', text: 'Chờ thanh toán' },
+                    PREPARING: { color: 'blue', text: 'Đang chuẩn bị' },
+                    ARRIVED_AT_LOCATION: { color: 'cyan', text: 'Đã đến khu vực' },
+                    SHIPPED: { color: 'geekblue', text: 'Đang giao' },
+                    DELIVERED: { color: 'green', text: 'Đã giao' },
+                    CANCELLED: { color: 'red', text: 'Đã hủy' },
+                    RETURNED: { color: 'volcano', text: 'Đã trả hàng' }
                 };
-                const config = statusConfig[status as keyof typeof statusConfig];
+                const config = statusConfig[status] || { color: 'default', text: status || 'Không xác định' };
                 return <Tag color={config.color}>{config.text}</Tag>;
             }
         },
         {
-            title: 'Số lượng',
-            dataIndex: 'items',
-            key: 'items',
-            render: (items: number) => `${items} sản phẩm`
+            title: 'Phương thức',
+            dataIndex: 'paymentMethod',
+            key: 'paymentMethod',
+            render: (method: string) => {
+                const methodConfig = {
+                    CASH_ON_DELIVERY: { color: 'default', text: 'COD' },
+                    BANK_TRANSFER: { color: 'blue', text: 'VNPAY' }
+                };
+                const config = methodConfig[method as keyof typeof methodConfig] || { color: 'default', text: method || 'N/A' };
+                return <Tag color={config.color}>{config.text}</Tag>;
+            }
         },
         {
             title: 'Tổng tiền',
-            dataIndex: 'total',
-            key: 'total',
+            dataIndex: 'subTotal',
+            key: 'subTotal',
             render: (total: number) => new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND'
             }).format(total)
         },
         {
+            title: 'Thời gian còn lại',
+            key: 'timeRemaining',
+            render: (record: OrderResponse) => {
+                if (record.orderStatus !== 'PENDING' || record.paymentMethod !== 'BANK_TRANSFER') {
+                    return '-';
+                }
+
+                const timeRemaining = calculateTimeRemaining(record.createAt);
+                if (!timeRemaining) {
+                    return <Text type="danger">Hết hạn</Text>;
+                }
+
+                return (
+                    <Space>
+                        <ClockCircleOutlined style={{ color: '#faad14' }} />
+                        <Text type="warning">
+                            {timeRemaining.minutes}:{String(timeRemaining.seconds).padStart(2, '0')}
+                        </Text>
+                    </Space>
+                );
+            }
+        },
+        {
             title: 'Thao tác',
             key: 'action',
-            render: (record: Order) => (
+            render: (record: OrderResponse) => (
                 <Space>
-                    <Button 
-                        type="link" 
+                    <Button
+                        type="link"
                         size="small"
                         icon={<EyeOutlined />}
                         onClick={() => {
@@ -149,13 +248,23 @@ export default function ProfileOrders() {
                     >
                         Xem chi tiết
                     </Button>
-                    {record.status === 'pending' && (
-                        <Button 
-                            type="link" 
+                    {canPayOrder(record) && (
+                        <Button
+                            type="primary"
+                            size="small"
+                            icon={<CreditCardOutlined />}
+                            onClick={() => handleContinuePayment(record)}
+                        >
+                            Tiếp tục thanh toán
+                        </Button>
+                    )}
+                    {record.orderStatus === 'PENDING' && !canPayOrder(record) && (
+                        <Button
+                            type="link"
                             size="small"
                             danger
                         >
-                            Hủy đơn
+                            Đã hết hạn
                         </Button>
                     )}
                 </Space>
@@ -163,18 +272,37 @@ export default function ProfileOrders() {
         }
     ];
 
+    // Filter orders based on selected status
+    const filteredOrders = selectedStatus === 'ALL'
+        ? orders
+        : orders.filter(o => o.orderStatus === selectedStatus);
+
     // Statistics
     const totalOrders = orders.length;
-    const completedOrders = orders.filter(o => o.status === 'delivered').length;
-    const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
-    const totalSpent = orders.reduce((sum, o) => sum + o.total, 0);
+    const completedOrders = orders.filter(o => o.orderStatus === 'DELIVERED').length;
+    const pendingOrders = orders.filter(o => o.orderStatus === 'PENDING' || o.orderStatus === 'PREPARING').length;
+    const totalSpent = orders
+        .filter(o => o.orderStatus !== 'CANCELLED')
+        .reduce((sum, o) => sum + (o.subTotal || 0), 0);
+
+    // Status filter buttons configuration
+    const statusFilters = [
+        { key: 'ALL', label: 'Tất cả', color: 'default' },
+        { key: 'PENDING', label: 'Chờ thanh toán', color: 'orange' },
+        { key: 'PREPARING', label: 'Đang chuẩn bị', color: 'blue' },
+        { key: 'ARRIVED_AT_LOCATION', label: 'Đã đến khu vực', color: 'cyan' },
+        { key: 'SHIPPED', label: 'Đang giao', color: 'geekblue' },
+        { key: 'DELIVERED', label: 'Đã giao', color: 'green' },
+        { key: 'CANCELLED', label: 'Đã hủy', color: 'red' },
+        { key: 'RETURNED', label: 'Đã trả hàng', color: 'volcano' }
+    ];
 
     return (
         <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
             {/* Header */}
             <div style={{ marginBottom: '24px' }}>
-                <Button 
-                    icon={<LeftOutlined />} 
+                <Button
+                    icon={<LeftOutlined />}
                     onClick={() => navigate('/profile')}
                     style={{ marginBottom: '16px' }}
                 >
@@ -183,7 +311,7 @@ export default function ProfileOrders() {
                 <Title level={2}>Đơn hàng của bạn</Title>
             </div>
 
-            {/* Statistics */}
+            {/* Statistics
             <Row gutter={16} style={{ marginBottom: '24px' }}>
                 <Col xs={24} sm={6}>
                     <Card>
@@ -227,37 +355,71 @@ export default function ProfileOrders() {
                         />
                     </Card>
                 </Col>
-            </Row>
+            </Row> */}
+
+            {/* Status Filter Buttons */}
+            <Card style={{ marginBottom: '16px' }}>
+                <div style={{ marginBottom: '8px' }}>
+                    <Text strong>Lọc theo trạng thái:</Text>
+                </div>
+                <Space wrap>
+                    {statusFilters.map(filter => {
+                        const count = filter.key === 'ALL'
+                            ? orders.length
+                            : orders.filter(o => o.orderStatus === filter.key).length;
+
+                        return (
+                            <Button
+                                key={filter.key}
+                                type={selectedStatus === filter.key ? 'primary' : 'default'}
+                                onClick={() => setSelectedStatus(filter.key)}
+                                style={{
+                                    borderColor: selectedStatus === filter.key ? undefined : filter.color,
+                                    color: selectedStatus === filter.key ? undefined : filter.color
+                                }}
+                            >
+                                {filter.label} ({count})
+                            </Button>
+                        );
+                    })}
+                </Space>
+            </Card>
 
             {/* Orders Table */}
             <Card
                 title="Danh sách đơn hàng"
                 extra={
-                    <Button icon={<ReloadOutlined />}>
+                    <Button
+                        icon={<ReloadOutlined />}
+                        onClick={fetchOrders}
+                        loading={loading}
+                    >
                         Làm mới
                     </Button>
                 }
             >
-                <Table
-                    columns={orderColumns}
-                    dataSource={orders}
-                    rowKey="id"
-                    pagination={{
-                        pageSize: 10,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                        showTotal: (total, range) =>
-                            `${range[0]}-${range[1]} của ${total} đơn hàng`,
-                    }}
-                    locale={{
-                        emptyText: (
-                            <Empty
-                                description="Chưa có đơn hàng nào"
-                                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                            />
-                        )
-                    }}
-                />
+                <Spin spinning={loading}>
+                    <Table
+                        columns={orderColumns}
+                        dataSource={filteredOrders}
+                        rowKey="id"
+                        pagination={{
+                            pageSize: 10,
+                            showSizeChanger: true,
+                            showQuickJumper: true,
+                            showTotal: (total, range) =>
+                                `${range[0]}-${range[1]} của ${total} đơn hàng`,
+                        }}
+                        locale={{
+                            emptyText: (
+                                <Empty
+                                    description="Chưa có đơn hàng nào"
+                                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                />
+                            )
+                        }}
+                    />
+                </Spin>
             </Card>
         </div>
     );
