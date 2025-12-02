@@ -36,6 +36,7 @@ import OrderSuccessPage from './pages/order-success';
 import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
 import dashboardRoutes from './dashboard/routes';
 import CheckoutPage from './pages/checkout';
+import OrderDetailPage from './pages/order-detail';
 
 
 
@@ -124,6 +125,7 @@ function App() {
         { path: "favorites", element: <FavoritesPage /> },
         { path: 'checkoutpage', element: <CheckoutPage /> },
         { path: 'order-success/:orderId', element: <OrderSuccessPage /> },
+        {path: 'order/:id', element: <OrderDetailPage/>},
       ]
     },
 
