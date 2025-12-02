@@ -6,7 +6,6 @@ export interface Product {
     categoryId: number;
     categoryName?: string;
     description: string;
-    price: number;
     active: boolean;
     createAt?: string;
     updateAt?: string;
@@ -19,7 +18,7 @@ export interface ProductVariant {
     productId: number;
     size?: string;
     color?: string;
-    additionalPrice?: number;
+    price: number;
     createAt?: string;
 }
 
@@ -35,7 +34,6 @@ export interface ProductRequest {
     brandId: number;
     categoryId: number;
     description: string;
-    price: number;
     active?: boolean;
 }
 

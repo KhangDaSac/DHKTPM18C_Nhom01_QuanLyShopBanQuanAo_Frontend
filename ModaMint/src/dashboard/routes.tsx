@@ -8,6 +8,7 @@ import Settings from './pages/settings';
 import Products from './pages/products';
 import Customers from './pages/customers';
 import Categories from './pages/categories';
+import Brands from './pages/brands';
 import Orders from './pages/orders';
 import Promotions from './pages/promotions';
 import PercentagePromotions from './pages/promotions/percentage';
@@ -30,6 +31,7 @@ const dashboardRoutes: RouteObject = {
         { path: 'products', element: <Products /> },
         { path: 'customers', element: <Customers /> },
         { path: 'categories', element: <Categories /> },
+        { path: 'brands', element: <Brands /> },
         { path: 'orders', element: <Orders /> },
         { path: 'promotions', element: <Promotions /> },
         { path: 'promotions/percentage', element: <PercentagePromotions /> },

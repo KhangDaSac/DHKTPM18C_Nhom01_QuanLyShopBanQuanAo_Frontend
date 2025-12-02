@@ -76,7 +76,7 @@ const Customers: React.FC = () => {
     const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
-    
+
     // State cho địa chỉ
     const [provinces, setProvinces] = useState<Province[]>([]);
     const [districts, setDistricts] = useState<District[]>([]);
@@ -121,14 +121,14 @@ const Customers: React.FC = () => {
             console.error('Province not found:', provinceName);
             return;
         }
-        
+
         const provinceCode = province.code;
         setSelectedProvinceCode(provinceCode);
         setSelectedDistrictCode(undefined);
         setDistricts([]);
         setWards([]);
         form.setFieldsValue({ district: undefined, ward: undefined });
-        
+
         if (provinceCode) {
             setLoadingDistricts(true);
             try {
@@ -151,12 +151,12 @@ const Customers: React.FC = () => {
             console.error('District not found:', districtName);
             return;
         }
-        
+
         const districtCode = district.code;
         setSelectedDistrictCode(districtCode);
         setWards([]);
         form.setFieldsValue({ ward: undefined });
-        
+
         if (districtCode) {
             setLoadingWards(true);
             try {
@@ -177,7 +177,7 @@ const Customers: React.FC = () => {
             console.log('🔄 Đang gọi API getAllCustomers...');
             const result = await customerService.getAllCustomers();
             console.log('📦 Kết quả từ API:', result);
-            
+
             if (result.success && result.data) {
                 console.log('✅ Dữ liệu customers:', result.data);
                 // Chuyển đổi customer response sang customer format cho display
@@ -185,35 +185,39 @@ const Customers: React.FC = () => {
                     .filter(customer => customer && customer.user) // Lọc các customer có user data
                     .map((customer, index) => {
                         const user = customer.user!; // Safe vì đã filter
-                        const primaryAddress = customer.addresses && customer.addresses.length > 0 
-                            ? customer.addresses[0] 
+                        const primaryAddress = customer.addresses && customer.addresses.length > 0
+                            ? customer.addresses[0]
                             : null;
                         const orders = customer.orders || [];
                         const totalSpent = orders.reduce((sum, order) => sum + (parseFloat(order.id.toString()) || 0), 0);
-                        
-                    return {
-                        id: index + 1,
-                        userId: customer.userId, // Lưu userId từ backend
-                        username: user.username || '',
-                        name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Chưa có tên',
-                        email: user.email || '',
-                        phone: user.phone || '',
-                        addressDetail: primaryAddress?.addressDetail || 'Chưa cập nhật',
-                        city: primaryAddress?.city || 'Chưa cập nhật',
-                        district: primaryAddress?.district || 'Chưa cập nhật',
-                        ward: primaryAddress?.ward || 'Chưa cập nhật',
-                        gender: (user.gender?.toLowerCase() === 'male' ? 'male' : 
-                                 user.gender?.toLowerCase() === 'female' ? 'female' : 'other') as 'male' | 'female' | 'other',
-                        dateOfBirth: user.dob || '',
-                        status: 'active' as const,
-                        customerType: 'regular' as const,
-                        totalOrders: orders.length,
-                        totalSpent: totalSpent,
-                        createdAt: new Date().toISOString().split('T')[0],
-                        firstName: user.firstName || '',
-                        lastName: user.lastName || '',
-                        avatar: user.image || ''
-                    };
+
+                        // Lấy userId - quan trọng để xóa customer
+                        const userId = customer.userId || user.username;
+                        console.log(`📋 Customer ${index}: userId=${userId}, username=${user.username}`);
+
+                        return {
+                            id: index + 1,
+                            userId: userId, // Lưu userId từ backend hoặc dùng username làm fallback
+                            username: user.username || '',
+                            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Chưa có tên',
+                            email: user.email || '',
+                            phone: user.phone || '',
+                            addressDetail: primaryAddress?.addressDetail || 'Chưa cập nhật',
+                            city: primaryAddress?.city || 'Chưa cập nhật',
+                            district: primaryAddress?.district || 'Chưa cập nhật',
+                            ward: primaryAddress?.ward || 'Chưa cập nhật',
+                            gender: (user.gender?.toLowerCase() === 'male' ? 'male' :
+                                user.gender?.toLowerCase() === 'female' ? 'female' : 'other') as 'male' | 'female' | 'other',
+                            dateOfBirth: user.dob || '',
+                            status: 'active' as const,
+                            customerType: 'regular' as const,
+                            totalOrders: orders.length,
+                            totalSpent: totalSpent,
+                            createdAt: new Date().toISOString().split('T')[0],
+                            firstName: user.firstName || '',
+                            lastName: user.lastName || '',
+                            avatar: user.image || ''
+                        };
                     });
                 console.log('👥 Customers data mapped:', customersData);
                 console.log('👥 Total customers:', customersData.length);
@@ -283,9 +287,9 @@ const Customers: React.FC = () => {
             key: 'customer',
             width: 300,
             render: (record: Customer) => (
-                <div style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
                     justifyContent: 'center',
                     height: '70px',
                     padding: '8px 0'
@@ -431,9 +435,9 @@ const Customers: React.FC = () => {
             width: 120,
             align: 'center' as const,
             render: (status: string) => (
-                <Badge 
-                    status={status === 'active' ? 'success' : 'error'} 
-                    text={status === 'active' ? 'Hoạt động' : 'Bị khóa'} 
+                <Badge
+                    status={status === 'active' ? 'success' : 'error'}
+                    text={status === 'active' ? 'Hoạt động' : 'Bị khóa'}
                 />
             ),
         },
@@ -444,52 +448,52 @@ const Customers: React.FC = () => {
             align: 'center' as const,
             render: (record: Customer) => (
                 <Space size="small">
+                    <Button
+                        type="text"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleView(record)}
+                        title="Xem chi tiết"
+                    />
+                    <Button
+                        type="text"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                        title="Chỉnh sửa"
+                    />
+                    <Popconfirm
+                        title="Bạn có chắc muốn xóa khách hàng này?"
+                        onConfirm={() => handleDelete(record.id)}
+                        okText="Xóa"
+                        cancelText="Hủy"
+                    >
                         <Button
                             type="text"
-                            icon={<EyeOutlined />}
-                            onClick={() => handleView(record)}
-                            title="Xem chi tiết"
+                            danger
+                            icon={<DeleteOutlined />}
+                            title="Xóa"
                         />
-                        <Button
-                            type="text"
-                            icon={<EditOutlined />}
-                            onClick={() => handleEdit(record)}
-                            title="Chỉnh sửa"
-                        />
-                        <Popconfirm
-                            title="Bạn có chắc muốn xóa khách hàng này?"
-                            onConfirm={() => handleDelete(record.id)}
-                            okText="Xóa"
-                            cancelText="Hủy"
-                        >
-                            <Button
-                                type="text"
-                                danger
-                                icon={<DeleteOutlined />}
-                                title="Xóa"
-                            />
-                        </Popconfirm>
-                    </Space>
+                    </Popconfirm>
+                </Space>
             ),
         },
     ];
 
     const handleEdit = async (customer: Customer) => {
         setEditingCustomer(customer);
-        
+
         // Reset address dropdowns
         setSelectedProvinceCode(undefined);
         setSelectedDistrictCode(undefined);
         setDistricts([]);
         setWards([]);
-        
+
         // Load districts và wards nếu có city và district
         if (customer.city && customer.city !== 'Chưa cập nhật') {
             // Tìm province từ name
             const province = provinces.find(p => p.name === customer.city);
             if (province) {
                 await handleProvinceChange(customer.city);
-                
+
                 // Load districts và tìm district
                 if (customer.district && customer.district !== 'Chưa cập nhật') {
                     setTimeout(async () => {
@@ -503,7 +507,7 @@ const Customers: React.FC = () => {
                 }
             }
         }
-        
+
         form.setFieldsValue({
             ...customer,
             dateOfBirth: customer.dateOfBirth ? customer.dateOfBirth : undefined
@@ -521,7 +525,7 @@ const Customers: React.FC = () => {
             setLoading(true);
             // Tìm customer theo id
             const customerToDelete = customers.find(c => c.id === id);
-            
+
             if (!customerToDelete) {
                 toast.error('Không tìm thấy khách hàng');
                 return;
@@ -530,15 +534,15 @@ const Customers: React.FC = () => {
             // Gọi API xóa customer (sử dụng userId từ backend)
             const userIdToDelete = customerToDelete.userId;
             console.log('🗑️ Attempting to delete customer with userId:', userIdToDelete);
-            
+
             if (!userIdToDelete) {
                 toast.error('Không có userId để xóa');
                 return;
             }
-            
+
             const result = await customerService.deleteCustomer(userIdToDelete);
             console.log('🗑️ Delete result:', result);
-            
+
             if (result.success) {
                 setCustomers(customers.filter(c => c.id !== id));
                 console.log('✅ Showing success message');
@@ -871,12 +875,12 @@ const Customers: React.FC = () => {
                     </Row>
                     <Row gutter={16}>
                         <Col span={8}>
-                            <Form.Item 
-                                name="city" 
+                            <Form.Item
+                                name="city"
                                 label="Tỉnh/Thành phố"
                                 rules={[{ required: true, message: 'Vui lòng chọn tỉnh/thành phố' }]}
                             >
-                                <Select 
+                                <Select
                                     placeholder="Chọn tỉnh/thành phố"
                                     loading={loadingProvinces}
                                     onChange={handleProvinceChange}
@@ -894,12 +898,12 @@ const Customers: React.FC = () => {
                             </Form.Item>
                         </Col>
                         <Col span={8}>
-                            <Form.Item 
-                                name="district" 
+                            <Form.Item
+                                name="district"
                                 label="Quận/Huyện"
                                 rules={[{ required: true, message: 'Vui lòng chọn quận/huyện' }]}
                             >
-                                <Select 
+                                <Select
                                     placeholder="Chọn quận/huyện"
                                     loading={loadingDistricts}
                                     disabled={!selectedProvinceCode || districts.length === 0}
@@ -918,12 +922,12 @@ const Customers: React.FC = () => {
                             </Form.Item>
                         </Col>
                         <Col span={8}>
-                            <Form.Item 
-                                name="ward" 
+                            <Form.Item
+                                name="ward"
                                 label="Phường/Xã"
                                 rules={[{ required: true, message: 'Vui lòng chọn phường/xã' }]}
                             >
-                                <Select 
+                                <Select
                                     placeholder="Chọn phường/xã"
                                     loading={loadingWards}
                                     disabled={!selectedDistrictCode || wards.length === 0}
@@ -941,8 +945,8 @@ const Customers: React.FC = () => {
                             </Form.Item>
                         </Col>
                     </Row>
-                    <Form.Item 
-                        name="addressDetail" 
+                    <Form.Item
+                        name="addressDetail"
                         label="Địa chỉ chi tiết"
                         rules={[{ required: true, message: 'Vui lòng nhập địa chỉ chi tiết' }]}
                     >

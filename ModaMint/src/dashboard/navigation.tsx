@@ -12,6 +12,7 @@ import {
     ShopOutlined,
     PercentageOutlined,
     DollarOutlined,
+    TagsOutlined,
 } from '@ant-design/icons';
 
 export interface SidebarLink {
@@ -46,6 +47,12 @@ export const DASHBOARD_SIDEBAR_LINKS: SidebarLink[] = [
         label: 'Danh Mục Sản Phẩm',
         path: '/dashboard/categories',
         icon: <AppstoreOutlined />,
+    },
+    {
+        key: 'brands',
+        label: 'Thương Hiệu',
+        path: '/dashboard/brands',
+        icon: <TagsOutlined />,
     },
     {
         key: 'orders',
