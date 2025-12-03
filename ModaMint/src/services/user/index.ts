@@ -8,7 +8,7 @@ export interface User {
     firstName: string;
     lastName: string;
     dob?: string;
-    image?:string;
+    image?: string;
     // createdAt?: string; 
     // updatedAt?: string; 
 }
@@ -60,21 +60,27 @@ apiClient.interceptors.request.use(
         console.log('🔍 Request interceptor - URL:', config.url);
         console.log('🔍 Request interceptor - Method:', config.method);
         console.log('🔍 Request interceptor - Headers:', config.headers);
-        
-        // Không thêm token chỉ cho POST /users (đăng ký)
-        if (config.url?.includes('/users') && config.method === 'post') {
-            console.log('🔍 Skipping token for registration endpoint');
+
+        // Không thêm token CHỈ cho POST /users (đăng ký user mới)
+        // KHÔNG bao gồm các endpoint khác như /users/deactivate, /users/activate
+        if (config.url === '/users' && config.method === 'post') {
+            console.log('🔍 Skipping token for user registration endpoint');
             return config;
         }
-        
+
         // Thêm token cho tất cả các request khác
         const authDataStr = localStorage.getItem("authData");
         const authData = authDataStr ? JSON.parse(authDataStr) : null;
-        if (authData && authData.token) {
-            config.headers.Authorization = `Bearer ${authData.token}`;
+
+        // Thử lấy token từ nhiều field có thể: accessToken, token
+        const token = authData?.accessToken || authData?.token;
+
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
             console.log('✅ Token added to request');
         } else {
             console.log('⚠️ No token found in localStorage');
+            console.log('⚠️ AuthData:', authData);
         }
         return config;
     },
@@ -162,9 +168,9 @@ class UserService {
                 headers: apiClient.defaults.headers,
                 data: userData
             });
-            
+
             const response = await apiClient.post<ApiResponse<User>>('/users', userData);
-            
+
             console.log('📥 Registration response:', response.data);
 
             const apiResponse = response.data;
@@ -185,13 +191,13 @@ class UserService {
             };
         } catch (error) {
             console.error('💥 Registration API error:', error);
-            
+
             if (axios.isAxiosError(error)) {
                 console.error('📡 HTTP Status:', error.response?.status);
                 console.error('📡 Response data:', error.response?.data);
-                
+
                 const errorResponse = error.response?.data as ApiResponse<any>;
-                
+
                 // Xử lý các lỗi HTTP cụ thể
                 if (error.response?.status === 400) {
                     return {
@@ -209,13 +215,13 @@ class UserService {
                         message: 'Lỗi server. Vui lòng thử lại sau',
                     };
                 }
-                
+
                 return {
                     success: false,
                     message: errorResponse?.message || 'Tạo người dùng thất bại',
                 };
             }
-            
+
             // Lỗi không phải từ HTTP
             return {
                 success: false,
@@ -282,6 +288,123 @@ class UserService {
                 return {
                     success: false,
                     message: errorResponse?.message || 'Xóa người dùng thất bại',
+                };
+            }
+            return {
+                success: false,
+                message: 'Lỗi kết nối đến server',
+            };
+        }
+    }
+
+    // 6. Vô hiệu hóa user (POST /users/deactivate?userId={userId})
+    async deactivateUser(userId: string): Promise<{ success: boolean; data?: User; message?: string }> {
+        try {
+            console.log('🔒 Deactivating user with userId:', userId);
+            const response = await apiClient.post<ApiResponse<User>>(`/users/deactivate?userId=${userId}`);
+
+            const apiResponse = response.data;
+            console.log('🔒 Deactivate response:', apiResponse);
+
+            if (apiResponse.code !== 1000) {
+                return {
+                    success: false,
+                    message: apiResponse.message || 'Vô hiệu hóa người dùng thất bại',
+                };
+            }
+
+            return {
+                success: true,
+                data: apiResponse.result,
+                message: apiResponse.message || 'Đã vô hiệu hóa người dùng thành công',
+            };
+        } catch (error) {
+            console.error('❌ Deactivate user error:', error);
+            if (axios.isAxiosError(error)) {
+                if (error.response?.status === 404) {
+                    return {
+                        success: false,
+                        message: 'Endpoint không tồn tại. Vui lòng kiểm tra backend đã restart chưa.',
+                    };
+                }
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return {
+                    success: false,
+                    message: errorResponse?.message || `Lỗi ${error.response?.status}: Vô hiệu hóa người dùng thất bại`,
+                };
+            }
+            return {
+                success: false,
+                message: 'Lỗi kết nối đến server',
+            };
+        }
+    }
+
+    // 7. Kích hoạt lại user (POST /users/activate?userId={userId})
+    async activateUser(userId: string): Promise<{ success: boolean; data?: User; message?: string }> {
+        try {
+            console.log('✅ Activating user with userId:', userId);
+            const response = await apiClient.post<ApiResponse<User>>(`/users/activate?userId=${userId}`);
+
+            const apiResponse = response.data;
+            console.log('✅ Activate response:', apiResponse);
+
+            if (apiResponse.code !== 1000) {
+                return {
+                    success: false,
+                    message: apiResponse.message || 'Kích hoạt người dùng thất bại',
+                };
+            }
+
+            return {
+                success: true,
+                data: apiResponse.result,
+                message: apiResponse.message || 'Đã kích hoạt người dùng thành công',
+            };
+        } catch (error) {
+            console.error('❌ Activate user error:', error);
+            if (axios.isAxiosError(error)) {
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return {
+                    success: false,
+                    message: errorResponse?.message || 'Kích hoạt người dùng thất bại',
+                };
+            }
+            return {
+                success: false,
+                message: 'Lỗi kết nối đến server',
+            };
+        }
+    }
+
+    // 8. Cập nhật thông tin user (PUT /users/{userId})
+    async updateUser(userId: string, updateData: UpdateUserRequest): Promise<{ success: boolean; data?: User; message?: string }> {
+        try {
+            console.log('📝 Updating user with userId:', userId, 'Data:', updateData);
+            const response = await apiClient.put<ApiResponse<User>>(`/users/${userId}`, updateData);
+
+            const apiResponse = response.data;
+            console.log('📝 Update response:', apiResponse);
+
+            if (apiResponse.code !== 1000) {
+                return {
+                    success: false,
+                    message: apiResponse.message || 'Cập nhật thông tin thất bại',
+                };
+            }
+
+            return {
+                success: true,
+                data: apiResponse.result,
+                message: apiResponse.message || 'Cập nhật thông tin thành công',
+            };
+        } catch (error) {
+            console.error('❌ Update user error:', error);
+            if (axios.isAxiosError(error)) {
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return {
+                    success: false,
+                    message: errorResponse?.message || 'Cập nhật thông tin thất bại',
                 };
             }
             return {

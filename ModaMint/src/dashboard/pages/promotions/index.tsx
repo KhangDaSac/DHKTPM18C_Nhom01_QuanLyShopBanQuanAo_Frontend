@@ -1,9 +1,10 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Tag, Modal, Form, Input, InputNumber, message, Card, Row, Col, Statistic, Typography, Popconfirm, Tabs, DatePicker, Select, Descriptions, Badge } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, PercentageOutlined, DollarOutlined, ReloadOutlined, CalendarOutlined, CheckCircleOutlined, CloseCircleOutlined, GiftOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, PercentageOutlined, DollarOutlined, ReloadOutlined, CalendarOutlined, CheckCircleOutlined, CloseCircleOutlined, GiftOutlined, ExclamationCircleOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { percentagePromotionService, amountPromotionService, type PercentagePromotion, type AmountPromotion } from '../../../services/promotion';
+import * as XLSX from 'xlsx';
 import './style.css';
 import '../../components/common-styles.css';
 
@@ -54,6 +55,43 @@ const PromotionsPage: React.FC = () => {
         } finally {
             setLoadingAmount(false);
         }
+    };
+
+    // Export Excel functions
+    const handleExportPercentageExcel = () => {
+        const worksheet = XLSX.utils.json_to_sheet(percentagePromotions.map((promo, index) => ({
+            'STT': index + 1,
+            'Mã khuyến mãi': promo.code,
+            'Tên khuyến mãi': promo.name,
+            'Giảm giá (%)': promo.discountPercent,
+            'Giá trị đơn tối thiểu (đ)': promo.minOrderValue,
+            'Ngày bắt đầu': dayjs(promo.startAt).format('DD/MM/YYYY HH:mm'),
+            'Ngày kết thúc': dayjs(promo.endAt).format('DD/MM/YYYY HH:mm'),
+            'Số lượng': promo.quantity,
+            'Trạng thái': promo.isActive ? 'Hoạt động' : 'Tạm dừng'
+        })));
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Khuyến mãi phần trăm');
+        XLSX.writeFile(workbook, `Khuyen_mai_phan_tram_${dayjs().format('DDMMYYYY_HHmmss')}.xlsx`);
+        message.success('Xuất file Excel thành công!');
+    };
+
+    const handleExportAmountExcel = () => {
+        const worksheet = XLSX.utils.json_to_sheet(amountPromotions.map((promo, index) => ({
+            'STT': index + 1,
+            'Mã khuyến mãi': promo.code,
+            'Tên khuyến mãi': promo.name,
+            'Giảm giá (đ)': promo.discountAmount,
+            'Giá trị đơn tối thiểu (đ)': promo.minOrderValue,
+            'Ngày bắt đầu': dayjs(promo.startAt).format('DD/MM/YYYY HH:mm'),
+            'Ngày kết thúc': dayjs(promo.endAt).format('DD/MM/YYYY HH:mm'),
+            'Số lượng': promo.quantity,
+            'Trạng thái': promo.isActive ? 'Hoạt động' : 'Tạm dừng'
+        })));
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Khuyến mãi số tiền');
+        XLSX.writeFile(workbook, `Khuyen_mai_so_tien_${dayjs().format('DDMMYYYY_HHmmss')}.xlsx`);
+        message.success('Xuất file Excel thành công!');
     };
 
     // Percentage Promotion handlers
@@ -502,7 +540,7 @@ const PromotionsPage: React.FC = () => {
                                 </Row>
 
                                 {/* Actions */}
-                                <div style={{ marginBottom: '16px' }}>
+                                <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
                                     <Space>
                                         <Button
                                             type="primary"
@@ -518,6 +556,13 @@ const PromotionsPage: React.FC = () => {
                                             loading={loadingPercentage}
                                         >
                                             Làm mới khuyến mãi
+                                        </Button>
+                                        <Button
+                                            type="default"
+                                            icon={<DownloadOutlined />}
+                                            onClick={handleExportPercentageExcel}
+                                        >
+                                            Xuất Excel
                                         </Button>
                                     </Space>
                                 </div>
@@ -585,7 +630,7 @@ const PromotionsPage: React.FC = () => {
                                 </Row>
 
                                 {/* Actions */}
-                                <div style={{ marginBottom: '16px' }}>
+                                <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
                                     <Space>
                                         <Button
                                             type="primary"
@@ -601,6 +646,13 @@ const PromotionsPage: React.FC = () => {
                                             loading={loadingAmount}
                                         >
                                             Làm mới khuyến mãi
+                                        </Button>
+                                        <Button
+                                            type="default"
+                                            icon={<DownloadOutlined />}
+                                            onClick={handleExportAmountExcel}
+                                        >
+                                            Xuất Excel
                                         </Button>
                                     </Space>
                                 </div>

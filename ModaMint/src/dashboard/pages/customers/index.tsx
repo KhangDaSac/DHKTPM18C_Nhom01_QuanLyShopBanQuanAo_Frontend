@@ -27,7 +27,6 @@ import {
     DownloadOutlined,
     UserOutlined,
     TeamOutlined,
-    CrownOutlined,
     MailOutlined,
     PhoneOutlined
 } from '@ant-design/icons';
@@ -55,8 +54,7 @@ interface Customer {
     ward?: string;
     gender?: 'male' | 'female' | 'other';
     dateOfBirth?: string;
-    status: 'active' | 'blocked';
-    customerType: 'regular' | 'vip' | 'premium';
+    status: 'active' | 'blocked' | 'inactive';
     totalOrders: number;
     totalSpent: number;
     lastOrderDate?: string;
@@ -174,12 +172,9 @@ const Customers: React.FC = () => {
     const loadCustomers = async () => {
         setLoading(true);
         try {
-            console.log('🔄 Đang gọi API getAllCustomers...');
             const result = await customerService.getAllCustomers();
-            console.log('📦 Kết quả từ API:', result);
 
             if (result.success && result.data) {
-                console.log('✅ Dữ liệu customers:', result.data);
                 // Chuyển đổi customer response sang customer format cho display
                 const customersData: Customer[] = result.data
                     .filter(customer => customer && customer.user) // Lọc các customer có user data
@@ -191,26 +186,24 @@ const Customers: React.FC = () => {
                         const orders = customer.orders || [];
                         const totalSpent = orders.reduce((sum, order) => sum + (parseFloat(order.id.toString()) || 0), 0);
 
-                        // Lấy userId - quan trọng để xóa customer
-                        const userId = customer.userId || user.username;
-                        console.log(`📋 Customer ${index}: userId=${userId}, username=${user.username}`);
+                        // Lấy customerId - PHẢI là UUID từ backend, không phải username
+                        const userId = customer.customerId; // customerId là UUID từ bảng customers
+                        console.log('Loading customer - Username:', user.username, 'CustomerId (UUID):', userId);
 
                         return {
                             id: index + 1,
-                            userId: userId, // Lưu userId từ backend hoặc dùng username làm fallback
+                            userId: userId, // UUID từ backend (lưu vào userId cho tương thích)
                             username: user.username || '',
                             name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Chưa có tên',
                             email: user.email || '',
                             phone: user.phone || '',
                             addressDetail: primaryAddress?.addressDetail || 'Chưa cập nhật',
                             city: primaryAddress?.city || 'Chưa cập nhật',
-                            district: primaryAddress?.district || 'Chưa cập nhật',
+                            district: 'Chưa cập nhật', // AddressResponse không có district
                             ward: primaryAddress?.ward || 'Chưa cập nhật',
-                            gender: (user.gender?.toLowerCase() === 'male' ? 'male' :
-                                user.gender?.toLowerCase() === 'female' ? 'female' : 'other') as 'male' | 'female' | 'other',
+                            gender: 'other' as const, // UserResponse không có gender
                             dateOfBirth: user.dob || '',
                             status: 'active' as const,
-                            customerType: 'regular' as const,
                             totalOrders: orders.length,
                             totalSpent: totalSpent,
                             createdAt: new Date().toISOString().split('T')[0],
@@ -219,15 +212,11 @@ const Customers: React.FC = () => {
                             avatar: user.image || ''
                         };
                     });
-                console.log('👥 Customers data mapped:', customersData);
-                console.log('👥 Total customers:', customersData.length);
                 setCustomers(customersData);
             } else {
-                console.error('❌ Lỗi:', result.message);
                 toast.error(result.message || 'Không thể tải danh sách khách hàng');
             }
         } catch (err) {
-            console.error('❌ Exception:', err);
             toast.error('Lỗi kết nối đến server');
         } finally {
             setLoading(false);
@@ -237,19 +226,16 @@ const Customers: React.FC = () => {
     // States cho filtering
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [filterStatus, setFilterStatus] = useState<string>('all');
-    const [filterCustomerType, setFilterCustomerType] = useState<string>('all');
 
     // Filtered customers
     const filteredCustomers = customers.filter(customer => {
         if (filterStatus !== 'all' && customer.status !== filterStatus) return false;
-        if (filterCustomerType !== 'all' && customer.customerType !== filterCustomerType) return false;
         return true;
     });
 
     // Statistics
     const totalCustomers = customers.length;
     const activeCustomers = customers.filter(c => c.status === 'active').length;
-    const vipCustomers = customers.filter(c => c.customerType === 'vip' || c.customerType === 'premium').length;
     const totalRevenue = customers.reduce((sum, c) => sum + c.totalSpent, 0);
 
     const columns = [
@@ -296,12 +282,6 @@ const Customers: React.FC = () => {
                 }}>
                     <div style={{ fontWeight: 'bold', marginBottom: '3px', fontSize: '14px', lineHeight: '1.3' }}>
                         {record.name}
-                        {record.customerType === 'vip' &&
-                            <CrownOutlined style={{ color: '#faad14', marginLeft: '6px' }} />
-                        }
-                        {record.customerType === 'premium' &&
-                            <CrownOutlined style={{ color: '#722ed1', marginLeft: '6px' }} />
-                        }
                     </div>
                     <div style={{ fontSize: '11px', color: '#666', marginBottom: '1px', lineHeight: '1.2' }}>
                         <MailOutlined style={{ marginRight: '4px' }} />
@@ -357,32 +337,6 @@ const Customers: React.FC = () => {
                     </div>
                 </div>
             ),
-        },
-        {
-            title: 'Loại KH',
-            dataIndex: 'customerType',
-            key: 'customerType',
-            width: 100,
-            align: 'center' as const,
-            render: (type: string) => {
-                const config = {
-                    regular: { color: 'default', text: 'Thường' },
-                    vip: { color: 'gold', text: 'VIP' },
-                    premium: { color: 'purple', text: 'Premium' }
-                };
-                const { color, text } = config[type as keyof typeof config];
-                return (
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        height: '70px',
-                        padding: '8px 0'
-                    }}>
-                        <Tag color={color}>{text}</Tag>
-                    </div>
-                );
-            },
         },
         {
             title: 'Đơn hàng',
@@ -501,7 +455,9 @@ const Customers: React.FC = () => {
                         setDistricts(districtsData);
                         const district = districtsData.find(d => d.name === customer.district);
                         if (district) {
-                            await handleDistrictChange(customer.district);
+                            if (customer.district) {
+                                await handleDistrictChange(customer.district);
+                            }
                         }
                     }, 500);
                 }
@@ -531,29 +487,28 @@ const Customers: React.FC = () => {
                 return;
             }
 
-            // Gọi API xóa customer (sử dụng userId từ backend)
+            // Vô hiệu hóa customer (thay vì xóa)
             const userIdToDelete = customerToDelete.userId;
-            console.log('🗑️ Attempting to delete customer with userId:', userIdToDelete);
+            console.log('Deactivating customer - ID:', id, 'UserId:', userIdToDelete);
 
             if (!userIdToDelete) {
-                toast.error('Không có userId để xóa');
+                toast.error('Không có userId để vô hiệu hóa');
                 return;
             }
 
-            const result = await customerService.deleteCustomer(userIdToDelete);
-            console.log('🗑️ Delete result:', result);
+            const result = await customerService.deactivateCustomer(userIdToDelete);
 
             if (result.success) {
-                setCustomers(customers.filter(c => c.id !== id));
-                console.log('✅ Showing success message');
-                toast.success(result.message || 'Đã xóa khách hàng thành công');
+                // Cập nhật status của customer thành 'inactive'
+                setCustomers(customers.map(c =>
+                    c.id === id ? { ...c, status: 'inactive' } : c
+                ));
+                toast.success(result.message || 'Đã vô hiệu hóa khách hàng thành công');
             } else {
-                console.log('❌ Showing error message');
-                toast.error(result.message || 'Xóa khách hàng thất bại');
+                toast.error(result.message || 'Vô hiệu hóa khách hàng thất bại');
             }
         } catch (err) {
-            console.error('❌ Delete customer error:', err);
-            toast.error('Lỗi khi xóa khách hàng');
+            toast.error('Lỗi khi vô hiệu hóa khách hàng');
         } finally {
             setLoading(false);
         }
@@ -600,14 +555,12 @@ const Customers: React.FC = () => {
             'Tên khách hàng': customer.name,
             'Email': customer.email,
             'Số điện thoại': customer.phone,
-            'Địa chỉ': customer.address,
             'Thành phố': customer.city,
             'Quận/Huyện': customer.district,
             'Phường/Xã': customer.ward,
             'Giới tính': customer.gender === 'male' ? 'Nam' : customer.gender === 'female' ? 'Nữ' : 'Khác',
             'Ngày sinh': customer.dateOfBirth || '',
             'Trạng thái': customer.status === 'active' ? 'Hoạt động' : 'Bị khóa',
-            'Loại khách hàng': customer.customerType === 'regular' ? 'Thường' : customer.customerType === 'vip' ? 'VIP' : 'Premium',
             'Tổng đơn hàng': customer.totalOrders,
             'Tổng chi tiêu': customer.totalSpent,
             'Đơn hàng cuối': customer.lastOrderDate || '',
@@ -652,16 +605,6 @@ const Customers: React.FC = () => {
                 <Col xs={24} sm={12} lg={6}>
                     <Card>
                         <Statistic
-                            title="VIP & Premium"
-                            value={vipCustomers}
-                            prefix={<CrownOutlined />}
-                            valueStyle={{ color: '#faad14' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                        <Statistic
                             title="Tổng doanh thu"
                             value={totalRevenue}
                             prefix="₫"
@@ -691,17 +634,6 @@ const Customers: React.FC = () => {
                             >
                                 <Option value="active">Hoạt động</Option>
                                 <Option value="blocked">Bị khóa</Option>
-                            </Select>
-                            <Select
-                                placeholder="Loại khách hàng"
-                                style={{ width: 150 }}
-                                value={filterCustomerType === 'all' ? undefined : filterCustomerType}
-                                onChange={(value) => setFilterCustomerType(value || 'all')}
-                                allowClear
-                            >
-                                <Option value="regular">Thường</Option>
-                                <Option value="vip">VIP</Option>
-                                <Option value="premium">Premium</Option>
                             </Select>
                         </Space>
                     </Col>
@@ -953,16 +885,7 @@ const Customers: React.FC = () => {
                         <TextArea rows={3} placeholder="Nhập địa chỉ chi tiết (số nhà, tên đường, ...)" />
                     </Form.Item>
                     <Row gutter={16}>
-                        <Col span={12}>
-                            <Form.Item name="customerType" label="Loại khách hàng">
-                                <Select placeholder="Chọn loại khách hàng">
-                                    <Option value="regular">Thường</Option>
-                                    <Option value="vip">VIP</Option>
-                                    <Option value="premium">Premium</Option>
-                                </Select>
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
+                        <Col span={24}>
                             <Form.Item name="status" label="Trạng thái">
                                 <Select placeholder="Chọn trạng thái">
                                     <Option value="active">Hoạt động</Option>
@@ -997,20 +920,7 @@ const Customers: React.FC = () => {
                                     />
                                     <Title level={4} style={{ marginTop: '12px', marginBottom: '4px' }}>
                                         {viewingCustomer.name}
-                                        {viewingCustomer.customerType === 'vip' &&
-                                            <CrownOutlined style={{ color: '#faad14', marginLeft: '8px' }} />
-                                        }
-                                        {viewingCustomer.customerType === 'premium' &&
-                                            <CrownOutlined style={{ color: '#722ed1', marginLeft: '8px' }} />
-                                        }
                                     </Title>
-                                    <Tag color={
-                                        viewingCustomer.customerType === 'vip' ? 'gold' :
-                                            viewingCustomer.customerType === 'premium' ? 'purple' : 'default'
-                                    }>
-                                        {viewingCustomer.customerType === 'vip' ? 'VIP' :
-                                            viewingCustomer.customerType === 'premium' ? 'Premium' : 'Thường'}
-                                    </Tag>
                                 </div>
                             </Col>
                             <Col span={16}>
