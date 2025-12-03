@@ -1,22 +1,21 @@
-
-import './App.css'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import "./App.css";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Components
-import { RootLayout } from './components/layout';
-import ErrorBoundary from './components/ErrorBoundary';
+import { RootLayout } from "./components/layout";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Context
-import { CartProvider } from './contexts/CartContext';
+import { CartProvider } from "./contexts/CartContext";
 
 // Pages
-import HomePage from "./pages/home"
-import NewsPage from "./pages/news"
-import AboutPage from "./pages/about"
-import LoginPage from "./pages/login"
-import RegisterPage from './pages/register';
+import HomePage from "./pages/home";
+import NewsPage from "./pages/news";
+import AboutPage from "./pages/about";
+import LoginPage from "./pages/login";
+import RegisterPage from "./pages/register";
 import StoresPage from "./pages/stores";
 import ContactPage from "./pages/contact";
 import NotFoundPage from "./pages/not-found";
@@ -25,22 +24,19 @@ import ProfileAddress from "./pages/profile/ProfileAddress";
 import ProfileOrders from "./pages/profile/ProfileOrders";
 import ProfileChangePassword from "./pages/profile/ProfileChangePassword";
 import AuthTestPage from "./pages/auth-test";
-import Detail from "./pages/detail"
-import ProductList from './pages/products';
-import CartPage from './pages/cart';
-import FavoritesPage from './pages/favorites/FavoritesPage';
-import OrderSuccessPage from './pages/order-success';
-
+import Detail from "./pages/detail";
+import ProductList from "./pages/products";
+import CartPage from "./pages/cart";
+import FavoritesPage from "./pages/favorites/FavoritesPage";
+import OrderSuccessPage from "./pages/order-success";
+import GoogleAuthCallback from "./pages/google-auth-callback";
 
 // Routes
-import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
-import dashboardRoutes from './dashboard/routes';
-import CheckoutPage from './pages/checkout';
-
-
+import { ProtectedRoute, AuthRoute } from "./routes/ProtectedRoute";
+import dashboardRoutes from "./dashboard/routes";
+import CheckoutPage from "./pages/checkout";
 
 function App() {
-
   const router = createBrowserRouter([
     {
       path: "/",
@@ -60,7 +56,7 @@ function App() {
             <AuthRoute>
               <LoginPage />
             </AuthRoute>
-          )
+          ),
         },
         {
           path: "register",
@@ -68,7 +64,11 @@ function App() {
             <AuthRoute>
               <RegisterPage />
             </AuthRoute>
-          )
+          ),
+        },
+        {
+          path: "auth/google",
+          element: <GoogleAuthCallback />,
         },
 
         // Routes chỉ cho phép user ĐÃ đăng nhập
@@ -78,7 +78,7 @@ function App() {
             <ProtectedRoute>
               <ProfilePage />
             </ProtectedRoute>
-          )
+          ),
         },
         {
           path: "profile/address",
@@ -86,7 +86,7 @@ function App() {
             <ProtectedRoute>
               <ProfileAddress />
             </ProtectedRoute>
-          )
+          ),
         },
         {
           path: "profile/order",
@@ -94,7 +94,7 @@ function App() {
             <ProtectedRoute>
               <ProfileOrders />
             </ProtectedRoute>
-          )
+          ),
         },
         {
           path: "profile/changepassword",
@@ -102,7 +102,7 @@ function App() {
             <ProtectedRoute>
               <ProfileChangePassword />
             </ProtectedRoute>
-          )
+          ),
         },
         {
           path: "auth-test",
@@ -110,21 +110,23 @@ function App() {
             <ProtectedRoute>
               <AuthTestPage />
             </ProtectedRoute>
-          )
+          ),
         },
 
+        // Product listing & gender/slug routes
         { path: "products", element: <ProductList /> },
+        { path: "nam/:slug", element: <ProductList /> },
+        { path: "nu/:slug", element: <ProductList /> },
         { path: "carts", element: <CartPage /> },
-
 
         { path: "detail/:id", element: <Detail /> },
 
         // Phần sản phẩm
 
         { path: "favorites", element: <FavoritesPage /> },
-        { path: 'checkoutpage', element: <CheckoutPage /> },
-        { path: 'order-success/:orderId', element: <OrderSuccessPage /> },
-      ]
+        { path: "checkoutpage", element: <CheckoutPage /> },
+        { path: "order-success/:orderId", element: <OrderSuccessPage /> },
+      ],
     },
 
     // Dashboard routes
@@ -134,8 +136,7 @@ function App() {
       path: "*",
       element: <NotFoundPage />,
     },
-  ])
-
+  ]);
 
   return (
     <ErrorBoundary>
@@ -155,10 +156,7 @@ function App() {
         />
       </CartProvider>
     </ErrorBoundary>
-  )
+  );
 }
 
-
-
-
-export default App
+export default App;
