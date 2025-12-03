@@ -237,7 +237,7 @@ const OrderDetailPage: React.FC = () => {
       {/* Nút quay lại */}
       <div className={styles.actions}>
         <Link to="/account/orders" className={styles.back_btn}>
-          ← Quay lại danh sách đơn hàng
+          Quay lại danh sách đơn hàng
         </Link>
       </div>
 

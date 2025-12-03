@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Heart, Share2, Zap, Award, Package, Clock, X } from 'lucide-react';
 import ProductTabs from '@/components/detail/DetailInforTab';
 
@@ -337,9 +337,9 @@ const ProductDetailPage: React.FC = () => {
   return (
     <div className={styles.product_detail_page}>
       <div className={styles.product_detail_page_breadcrumb}>
-        <span className={styles.product_detail_page_breadcrumb_link}>Trang chủ</span>
+        <span className={styles.product_detail_page_breadcrumb_link}><Link to={'/'}>Trang chủ</Link></span>
         <span className={styles.product_detail_page_breadcrumb_separator}>›</span>
-        <span className={styles.product_detail_page_breadcrumb_link}>Sản phẩm nổi bật</span>
+        <span className={styles.product_detail_page_breadcrumb_link}><Link to={'/products'}>Sản phẩm nổi bật</Link></span>
         <span className={styles.product_detail_page_breadcrumb_separator}>›</span>
         <span className={styles.product_detail_page_breadcrumb_active}>{product.name}</span>
       </div>
