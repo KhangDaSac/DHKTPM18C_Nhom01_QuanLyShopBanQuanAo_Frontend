@@ -47,17 +47,25 @@ const CheckoutPage: React.FC = () => {
     const [applyingPromo, setApplyingPromo] = useState(false);
 
     const cartItems = cart?.items || [];
-    const subtotal = cart?.subtotal || cartItems.reduce((sum, item) => {
-        const price = item.unitPrice || 0;
-        const qty = item.quantity || 0;
-        return sum + (price * qty);
+    
+    // Tính subtotal từ từng item để đảm bảo chính xác
+    const subtotal = cartItems.reduce((sum, item) => {
+        const itemPrice = (item.unitPrice ?? (item as any).price) ?? 0;
+        const itemQty = item.quantity || 0;
+        const itemTotal = (item.totalPrice ?? (item as any).totalPrice) ?? (itemPrice * itemQty);
+        return sum + itemTotal;
     }, 0);
+    
     const shippingFee = cart?.shipping || 30000;
+    
+    // Tính giảm giá
     const discountAmount = selectedPromotion
         ? (selectedPromotion.type === 'PERCENTAGE'
             ? (subtotal * (selectedPromotion.discountPercent || 0) / 100)
             : (selectedPromotion.discountAmount || 0))
         : 0;
+    
+    // Tổng tiền cuối cùng
     const totalAmount = subtotal + shippingFee - discountAmount;
 
     const applyPromoCode = async () => {
