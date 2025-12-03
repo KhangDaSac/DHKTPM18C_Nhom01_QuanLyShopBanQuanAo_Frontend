@@ -1,11 +1,14 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import styles from "./Header.module.css"
 import { AiOutlineLeft, AiOutlineRight, AiOutlineSearch, AiOutlineHeart, AiOutlineUser, AiOutlineShoppingCart, AiFillCaretDown } from "react-icons/ai";
 
 import { useAuth } from '@/contexts/authContext';
+import { useCart } from '@/hooks/useCart';
+import { cartService } from '@/services/cart';
 
 export default function Header() {
+    const navigate = useNavigate();
     const announcements = [
         "CHÀO ĐÓN BỘ SƯU TẬP ĐÔNG 2025",
         "PHÁI ĐẸP ĐỂ YÊU",
@@ -16,7 +19,27 @@ export default function Header() {
     const [currentAnnouncementIndex, setCurrentAnnouncementIndex] = useState(0);
     const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const { isAuthenticated, user, logout } = useAuth();
+
+    const { getTotalItems, setCartFromBackend } = useCart();
+
+    // Refresh cart every 2 seconds to update badge count
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            try {
+                const res = await cartService.getCart();
+                if (res.success && res.data) {
+                    setCartFromBackend(res.data);
+                }
+            } catch (error) {
+                console.error('Failed to refresh cart:', error);
+            }
+        }, 2000);
+
+        return () => clearInterval(interval);
+    }, [setCartFromBackend]);
+
     const getDisplayName = () => {
         if (user) {
             if (user.firstName && user.lastName) {
@@ -58,7 +81,12 @@ export default function Header() {
         }, 300);
     };
 
-    // No auto-rotation needed
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+        }
+    };
 
     return (
         <>
@@ -96,15 +124,17 @@ export default function Header() {
                             </Link>
                         </div>
                         <div className={styles['header__search-container']}>
-                            <div className={styles['header__search-box']}>
+                            <form onSubmit={handleSearch} className={styles['header__search-box']}>
                                 <input type="text"
                                     className={styles['header__search-input']}
                                     placeholder='Tìm kiếm...'
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
                                 />
-                                <button className={styles['header__search-button']}>
+                                <button type="submit" className={styles['header__search-button']}>
                                     <AiOutlineSearch />
                                 </button>
-                            </div>
+                            </form>
                         </div>
                         <div className={styles.header__actions}>
                             <Link to="/favorites" className={`${styles.header__action} ${styles['header__action--link']}`}>
@@ -135,7 +165,7 @@ export default function Header() {
                             <Link to="/carts" className={`${styles.header__action} ${styles['header__action--link']}`}>
                                 <div className={styles['header__cart-wrapper']}>
                                     <AiOutlineShoppingCart className={styles['header__action-icon']} />
-                                    <span className={styles['header__cart-count']}>1</span>
+                                    <span className={styles['header__cart-count']}>{getTotalItems()}</span>
                                 </div>
                                 <span className={styles['header__action-text']}>Giỏ hàng</span>
                             </Link>

@@ -27,6 +27,7 @@ import ProfileChangePassword from "./pages/profile/ProfileChangePassword";
 import AuthTestPage from "./pages/auth-test";
 import Detail from "./pages/detail"
 import ProductList from './pages/products';
+import SearchPage from './pages/search';
 import CartPage from './pages/cart';
 import FavoritesPage from './pages/favorites/FavoritesPage';
 import OrderSuccessPage from './pages/order-success';
@@ -114,6 +115,7 @@ function App() {
         },
 
         { path: "products", element: <ProductList /> },
+        { path: "search", element: <SearchPage /> },
         { path: "carts", element: <CartPage /> },
 
 

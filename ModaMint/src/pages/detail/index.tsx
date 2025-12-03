@@ -13,6 +13,7 @@ import { productService } from '@/services/product';
 import { productVariantService } from '@/services/productVariant';
 import { cartService } from '@/services/cart';
 import { useFavorites } from '@/contexts/favoritesContext';
+import { useCart } from '@/hooks/useCart';
 import { toast } from 'react-toastify';
 
 // Lightbox Component (Đã refactor)
@@ -258,6 +259,11 @@ const ProductDetailPage: React.FC = () => {
     try {
       const res = await cartService.addItem({ variantId: currentVariant.id, quantity });
       if (res && res.success) {
+        // Reload cart from backend to update context
+        const cartRes = await cartService.getCart();
+        if (cartRes.success && cartRes.data) {
+          // Update cart context will be called via provider
+        }
         setAdded(true);
         toast.success('Đã thêm sản phẩm vào giỏ hàng!');
         // show added state briefly

@@ -1,5 +1,6 @@
-import { createContext, useState, type ReactNode } from "react";
+import { createContext, useState, useEffect, type ReactNode } from "react";
 import type { CartDto, CartItemDto } from '../services/cart';
+import { cartService } from '../services/cart';
 
 interface CartItem {
   id: string;
@@ -28,6 +29,21 @@ interface CartProviderProps {
 
 export const CartProvider = ({ children }: CartProviderProps) => {
   const [cart, setCart] = useState<CartItem[]>([]);
+
+  // Load cart from backend on mount
+  useEffect(() => {
+    const loadCart = async () => {
+      try {
+        const res = await cartService.getCart();
+        if (res.success && res.data) {
+          setCartFromBackend(res.data);
+        }
+      } catch (error) {
+        console.error('Failed to load cart:', error);
+      }
+    };
+    loadCart();
+  }, []);
 
   // Thêm sản phẩm vào giỏ (local fallback)
   const addToCart = (product: Omit<CartItem, 'qty'>) => {
