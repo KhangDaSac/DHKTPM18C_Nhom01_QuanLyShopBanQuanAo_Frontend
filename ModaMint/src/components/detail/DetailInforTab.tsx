@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Package, RefreshCcw, Star } from 'lucide-react';
 import styles from './styles.module.css';
-import { ProductReview } from './ReviewProduct';
+import { ProductReviewList } from './ProductReviewList';
 import { useAuth } from '@/contexts/authContext';
 
 interface ProductTabsProps {
@@ -160,12 +160,7 @@ LIÊN HỆ HỖ TRỢ:
         {/* Product Review */}
         {currentTab && currentTab.id === 'reviews' && (
 
-          
-          <ProductReview 
-            productId={productId} 
-            customerId={user?.id || 'd12ea12f-82d0-43bc-817f-32a3802e7800'} 
-            orderItemId={1} 
-          />
+          <ProductReviewList productId={productId} customerId={user?.id}/>
         )}
       </div>
     </div>

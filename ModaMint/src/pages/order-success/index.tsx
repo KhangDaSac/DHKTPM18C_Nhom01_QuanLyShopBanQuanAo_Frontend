@@ -227,7 +227,7 @@ const OrderSuccessPage: React.FC = () => {
                 {/* Action Buttons */}
                 <div className={styles['actions']}>
                     <button
-                        onClick={() => navigate('/profile/order')}
+                        onClick={() => navigate(`profile/order/${orderId}`)}
                         className={styles['btn-primary']}
                     >
                         <FiList /> Xem đơn hàng của tôi

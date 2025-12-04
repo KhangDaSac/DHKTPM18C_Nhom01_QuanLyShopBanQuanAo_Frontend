@@ -32,9 +32,12 @@ import OrderSuccessPage from "./pages/order-success";
 import GoogleAuthCallback from "./pages/google-auth-callback";
 
 // Routes
-import { ProtectedRoute, AuthRoute } from "./routes/ProtectedRoute";
-import dashboardRoutes from "./dashboard/routes";
-import CheckoutPage from "./pages/checkout";
+import { ProtectedRoute, AuthRoute } from './routes/ProtectedRoute';
+import dashboardRoutes from './dashboard/routes';
+import CheckoutPage from './pages/checkout';
+import OrderDetailPage from './pages/order-detail';
+
+
 
 function App() {
   const router = createBrowserRouter([
@@ -124,9 +127,10 @@ function App() {
         // Phần sản phẩm
 
         { path: "favorites", element: <FavoritesPage /> },
-        { path: "checkoutpage", element: <CheckoutPage /> },
-        { path: "order-success/:orderId", element: <OrderSuccessPage /> },
-      ],
+        { path: 'checkoutpage', element: <CheckoutPage /> },
+        { path: 'order-success/:orderId', element: <OrderSuccessPage /> },
+        {path: '/profile/order/:id', element: <OrderDetailPage/>},
+      ]
     },
 
     // Dashboard routes
