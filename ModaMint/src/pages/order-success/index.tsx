@@ -78,6 +78,14 @@ const OrderSuccessPage: React.FC = () => {
     // Debug: Log order data
     React.useEffect(() => {
         console.log('📦 Order Success Page - Order Data:', orderData);
+        if (orderData) {
+            console.log('💰 PRICING INFO:');
+            console.log('   Subtotal (tạm tính):', orderData.subtotal);
+            console.log('   Shipping Fee:', orderData.shippingFee);
+            console.log('   Discount Amount:', orderData.discountAmount);
+            console.log('   Total Amount (cuối cùng):', orderData.totalAmount);
+            console.log('   Applied Promotion:', orderData.appliedPromotion);
+        }
         if (orderData?.orderItems) {
             console.log('📦 Order Items:', orderData.orderItems);
             orderData.orderItems.forEach((item: any, index: number) => {
@@ -86,6 +94,7 @@ const OrderSuccessPage: React.FC = () => {
                     price: item.price,
                     unitPrice: item.unitPrice,
                     quantity: item.quantity,
+                    totalPrice: item.totalPrice,
                     imageUrl: item.imageUrl,
                     productImage: item.productImage
                 });
@@ -113,6 +122,50 @@ const OrderSuccessPage: React.FC = () => {
         }
     };
 
+    if (loading) {
+        return (
+            <div className={styles['success-page']}>
+                <div className={styles['success-card']}>
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+                        <h2>Đang tải thông tin đơn hàng...</h2>
+                        <p style={{ color: '#666', marginTop: '8px' }}>Vui lòng chờ trong giây lát</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !orderData) {
+        return (
+            <div className={styles['success-page']}>
+                <div className={styles['success-card']}>
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                        <div style={{ fontSize: '48px', marginBottom: '16px', color: '#ff4d4f' }}>⚠️</div>
+                        <h2>Không tìm thấy thông tin đơn hàng</h2>
+                        <p style={{ color: '#666', marginTop: '8px', marginBottom: '24px' }}>
+                            Đơn hàng đã được tạo thành công nhưng không thể hiển thị chi tiết
+                        </p>
+                        <div className={styles['actions']}>
+                            <button
+                                onClick={() => navigate('/products')}
+                                className={styles['btn-primary']}
+                            >
+                                <FiShoppingBag /> Tiếp tục mua sắm
+                            </button>
+                            <button
+                                onClick={() => navigate('/')}
+                                className={styles['btn-outline']}
+                            >
+                                <FiHome /> Về trang chủ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={styles['success-page']}>
             <div className={styles['breadcrumb']}>
@@ -130,6 +183,24 @@ const OrderSuccessPage: React.FC = () => {
                 <p className={styles['success-subtitle']}>
                     Cảm ơn bạn đã tin tưởng và mua sắm tại <strong>ModaMint</strong>
                 </p>
+
+                {/* Guest Notice */}
+                {orderData && orderData.customerId && orderData.customerId.startsWith('guest_') && (
+                    <div style={{ 
+                        margin: '20px auto', 
+                        padding: '16px', 
+                        backgroundColor: '#e6f7ff', 
+                        borderRadius: '8px', 
+                        border: '1px solid #91d5ff',
+                        maxWidth: '600px'
+                    }}>
+                        <p style={{ margin: 0, fontSize: '14px', color: '#0050b3', textAlign: 'center' }}>
+                            💡 Bạn đã đặt hàng với tư cách khách vãng lai. Vui lòng lưu lại mã đơn hàng để tra cứu.
+                            <br />
+                            Thông tin đơn hàng đã được gửi đến email: <strong>{orderData.customerEmail}</strong>
+                        </p>
+                    </div>
+                )}
 
                 {/* Order Summary */}
                 {orderData && (
@@ -165,7 +236,9 @@ const OrderSuccessPage: React.FC = () => {
                                     Địa chỉ giao hàng
                                 </span>
                                 <span className={styles['detail-value'] + ' ' + styles['address']}>
-                                    {orderData.shippingAddress?.fullAddress}
+                                    {orderData.shippingAddress?.fullAddress || 
+                                     `${orderData.shippingAddress?.addressDetail || ''}, ${orderData.shippingAddress?.ward || ''}, ${orderData.shippingAddress?.district || ''}, ${orderData.shippingAddress?.city || ''}`.replace(/^,\s*|,\s*$/g, '').replace(/,\s*,/g, ',') || 
+                                     'Không có thông tin'}
                                 </span>
                             </div>
 
@@ -181,6 +254,37 @@ const OrderSuccessPage: React.FC = () => {
 
                             <div className={styles['divider']}></div>
 
+                            {/* Price breakdown */}
+                            {(orderData.subtotal || orderData.shippingFee || orderData.discountAmount) && (
+                                <>
+                                    {orderData.subtotal && (
+                                        <div className={styles['detail-row']}>
+                                            <span className={styles['detail-label']}>Tạm tính</span>
+                                            <span className={styles['detail-value']}>
+                                                {formatCurrency(orderData.subtotal)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {orderData.shippingFee && (
+                                        <div className={styles['detail-row']}>
+                                            <span className={styles['detail-label']}>Phí vận chuyển</span>
+                                            <span className={styles['detail-value']}>
+                                                {formatCurrency(orderData.shippingFee)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {orderData.discountAmount > 0 && (
+                                        <div className={styles['detail-row']}>
+                                            <span className={styles['detail-label']}>Giảm giá</span>
+                                            <span className={styles['detail-value']} style={{ color: '#52c41a' }}>
+                                                -{formatCurrency(orderData.discountAmount)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className={styles['divider']}></div>
+                                </>
+                            )}
+
                             <div className={styles['detail-row'] + ' ' + styles['total']}>
                                 <span className={styles['detail-label']}>
                                     <FiDollarSign className={styles['icon']} />
@@ -193,32 +297,50 @@ const OrderSuccessPage: React.FC = () => {
                         </div>
 
                         {/* Order Items */}
-                        {orderData.orderItems && orderData.orderItems.length > 0 && (
+                        {orderData.orderItems && orderData.orderItems.length > 0 ? (
                             <div className={styles['order-items']}>
                                 <h3>Sản phẩm đã đặt ({orderData.orderItems.length})</h3>
                                 <div className={styles['items-list']}>
-                                    {orderData.orderItems.map((item: any, index: number) => (
-                                        <div key={index} className={styles['item']}>
-                                            <img
-                                                src={item.productImage || item.imageUrl || '/placeholder.jpg'}
-                                                alt={item.productName}
-                                                className={styles['item-image']}
-                                            />
-                                            <div className={styles['item-info']}>
-                                                <h4 className={styles['item-name']}>{item.productName}</h4>
-                                                <p className={styles['item-variant']}>
-                                                    {item.size} / {item.color}
-                                                </p>
-                                                <p className={styles['item-quantity']}>
-                                                    Số lượng: {item.quantity}
-                                                </p>
+                                    {orderData.orderItems.map((item: any, index: number) => {
+                                        const itemImage = item.imageUrl || item.productImage || item.image || '/placeholder.jpg';
+                                        const itemPrice = item.price || item.unitPrice || 0;
+                                        const itemQty = item.quantity || 1;
+                                        const itemTotal = itemPrice * itemQty;
+                                        
+                                        return (
+                                            <div key={index} className={styles['item']}>
+                                                <img 
+                                                    src={itemImage} 
+                                                    alt={item.productName || 'Sản phẩm'} 
+                                                    className={styles['item-image']}
+                                                    onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = '/placeholder.jpg';
+                                                    }}
+                                                />
+                                                <div className={styles['item-info']}>
+                                                    <h4 className={styles['item-name']}>{item.productName || 'Sản phẩm'}</h4>
+                                                    {(item.color || item.size) && (
+                                                        <p className={styles['item-variant']}>
+                                                            {item.color && `Màu: ${item.color}`}
+                                                            {item.color && item.size && ' / '}
+                                                            {item.size && `Size: ${item.size}`}
+                                                        </p>
+                                                    )}
+                                                    <p className={styles['item-quantity']}>
+                                                        Số lượng: {itemQty}
+                                                    </p>
+                                                </div>
+                                                <div className={styles['item-price']}>
+                                                    {formatCurrency(itemTotal)}
+                                                </div>
                                             </div>
-                                            <div className={styles['item-price']}>
-                                                {formatCurrency((item.price || item.unitPrice || 0) * (item.quantity || 1))}
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '24px', color: '#999' }}>
+                                <p>Không có thông tin chi tiết sản phẩm</p>
                             </div>
                         )}
                     </div>
@@ -226,12 +348,14 @@ const OrderSuccessPage: React.FC = () => {
 
                 {/* Action Buttons */}
                 <div className={styles['actions']}>
-                    <button
-                        onClick={() => navigate(`profile/order/${orderId}`)}
-                        className={styles['btn-primary']}
-                    >
-                        <FiList /> Xem đơn hàng của tôi
-                    </button>
+                    {orderData.customerId && !orderData.customerId.startsWith('guest_') && (
+                        <button
+                            onClick={() => navigate('/profile/order')}
+                            className={styles['btn-primary']}
+                        >
+                            <FiList /> Xem đơn hàng của tôi
+                        </button>
+                    )}
                     <button
                         onClick={() => navigate('/products')}
                         className={styles['btn-secondary']}

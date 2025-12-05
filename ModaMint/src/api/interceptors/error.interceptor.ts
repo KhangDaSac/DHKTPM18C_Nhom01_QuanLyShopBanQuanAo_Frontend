@@ -7,8 +7,10 @@ import type { AxiosError } from 'axios';
  * Xử lý các lỗi HTTP và hiển thị thông báo phù hợp
  */
 export const errorInterceptor = (error: AxiosError) => {
-    // Lỗi đã được xử lý bởi auth interceptor
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url || '';
+    
+    // Lỗi đã được xử lý bởi auth interceptor (but not for checkout endpoints)
+    if (error.response?.status === 401 && !requestUrl.includes('/checkout')) {
         return Promise.reject(error);
     }
 
