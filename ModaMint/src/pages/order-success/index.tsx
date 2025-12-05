@@ -1,6 +1,6 @@
 import React from 'react';
-import { useState,useEffect } from 'react';
-import { useLocation, useNavigate, useParams} from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FiCheckCircle, FiPackage, FiPhone, FiMapPin, FiCreditCard, FiDollarSign, FiShoppingBag, FiHome, FiList, FiInfo } from 'react-icons/fi';
 import styles from './style-simple.module.css';
 import apiClient from '../../api/client';
@@ -15,65 +15,65 @@ const OrderSuccessPage: React.FC = () => {
 
     // Fetch order nếu không có từ state. (khi redirect VNPay mất state) Khoa
     useEffect(() => {
-    if (!orderData && orderId) {
-        const fetchOrder = async () => {
-            try {
-                setLoading(true);
-                
-                // 1. ƯU TIÊN ĐỌC TỪ LOCALSTORAGE 
-                const key = `orderData_${orderId}`;
-                const stored = localStorage.getItem(key);
-                
-                if (stored) {
-                    console.log('✅ Found CheckoutResponse in localStorage');
-                    const parsed = JSON.parse(stored);
-                    console.log('📦 CheckoutResponse data:', parsed);
-                    console.log('📦 Order items:', parsed.orderItems);
-                    
-                    // Set dữ liệu vào state
-                    setOrderData(parsed);
-                    setLoading(false);
-                    
-                    setTimeout(() => {
-                        localStorage.removeItem(key);
-                        console.log(' Đã xóa dữ liệu khỏi localStorage sau khi load xong');
-                    }, 1000);
-                    
-                    return; 
-                }
-                
-                // 2. Fallback: Fetch từ backend (nếu không có localStorage)
-                console.log('⚠️ No localStorage, fetching from backend:', orderId);
-                const response = await apiClient.get(`/orders/${orderId}`);
-                const data = response.data?.result ?? response.data;
-                
-                console.log('📡 Backend response:', data);
-                setOrderData(data);
-                
-            } catch (err) {
-                console.error('❌ Error loading order:', err);
-                setError(err as any);
-                
-                // Last resort: Thử localStorage lần nữa
+        if (!orderData && orderId) {
+            const fetchOrder = async () => {
                 try {
-                    const key2 = `orderData_${orderId}`;
-                    const stored2 = localStorage.getItem(key2);
-                    if (stored2) {
-                        console.log('💾 Found backup in localStorage');
-                        setOrderData(JSON.parse(stored2));
-                        localStorage.removeItem(key2);
+                    setLoading(true);
+
+                    // 1. ƯU TIÊN ĐỌC TỪ LOCALSTORAGE 
+                    const key = `orderData_${orderId}`;
+                    const stored = localStorage.getItem(key);
+
+                    if (stored) {
+                        console.log('✅ Found CheckoutResponse in localStorage');
+                        const parsed = JSON.parse(stored);
+                        console.log('📦 CheckoutResponse data:', parsed);
+                        console.log('📦 Order items:', parsed.orderItems);
+
+                        // Set dữ liệu vào state
+                        setOrderData(parsed);
+                        setLoading(false);
+
+                        setTimeout(() => {
+                            localStorage.removeItem(key);
+                            console.log(' Đã xóa dữ liệu khỏi localStorage sau khi load xong');
+                        }, 1000);
+
+                        return;
                     }
-                } catch (e) {
-                    console.warn('Warning reading orderData fallback:', e);
+
+                    // 2. Fallback: Fetch từ backend (nếu không có localStorage)
+                    console.log('⚠️ No localStorage, fetching from backend:', orderId);
+                    const response = await apiClient.get(`/orders/${orderId}`);
+                    const data = response.data?.result ?? response.data;
+
+                    console.log('📡 Backend response:', data);
+                    setOrderData(data);
+
+                } catch (err) {
+                    console.error('❌ Error loading order:', err);
+                    setError(err as any);
+
+                    // Last resort: Thử localStorage lần nữa
+                    try {
+                        const key2 = `orderData_${orderId}`;
+                        const stored2 = localStorage.getItem(key2);
+                        if (stored2) {
+                            console.log('💾 Found backup in localStorage');
+                            setOrderData(JSON.parse(stored2));
+                            localStorage.removeItem(key2);
+                        }
+                    } catch (e) {
+                        console.warn('Warning reading orderData fallback:', e);
+                    }
+                } finally {
+                    setLoading(false);
                 }
-            } finally {
-                setLoading(false);
-            }
-        };
-        
-        fetchOrder();
-    }
-}, [orderId, orderData]);
+            };
+
+            fetchOrder();
+        }
+    }, [orderId, orderData]);
 
     // Debug: Log order data
     React.useEffect(() => {
@@ -101,7 +101,7 @@ const OrderSuccessPage: React.FC = () => {
     };
 
     const getPaymentMethodText = (method: string) => {
-        switch(method) {
+        switch (method) {
             case 'CASH_ON_DELIVERY':
                 return 'Thanh toán khi nhận hàng (COD)';
             case 'BANK_TRANSFER':
@@ -199,10 +199,10 @@ const OrderSuccessPage: React.FC = () => {
                                 <div className={styles['items-list']}>
                                     {orderData.orderItems.map((item: any, index: number) => (
                                         <div key={index} className={styles['item']}>
-                                            <img 
-                                                src={item.productImage || item.imageUrl || '/placeholder.jpg'} 
-                                                alt={item.productName} 
-                                                className={styles['item-image']} 
+                                            <img
+                                                src={item.productImage || item.imageUrl || '/placeholder.jpg'}
+                                                alt={item.productName}
+                                                className={styles['item-image']}
                                             />
                                             <div className={styles['item-info']}>
                                                 <h4 className={styles['item-name']}>{item.productName}</h4>
