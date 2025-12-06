@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { ProductCard } from '@/components/product';
 import Sidebar from '@/components/product-list/Sidebar';
 import Pagination from '@/components/product-list/Pagination';
@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/authContext';
 import { productVariantService } from '@/services/productVariant';
 import BrandCarousel from '@/components/product-list/BrandCarousel';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 interface Product {
   id: number;
@@ -44,10 +45,11 @@ const COLOR_NAME_MAP: Record<string, string> = {
 const PAGE_SIZE = 12;
 
 const ProductList: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [sort, setSort] = useState<string>('default');
   const [page, setPage] = useState<number>(1);
   const [brand, setBrand] = useState<number | undefined>(undefined);
-  const [category, setCategory] = useState<string | undefined>(undefined);
   const [filters, setFilters] = useState<{ prices: string[]; colors: string[]; sizes: string[] }>({ 
     prices: [], 
     colors: [], 
@@ -59,8 +61,20 @@ const ProductList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
 
-  // Fetch products with filters from backend
-  const fetchProducts = async () => {
+  // Get categoryId directly from URL - don't need intermediate state
+  const urlCategoryId = searchParams.get('categoryId');
+
+  // Callback để handle category click từ Sidebar
+  const handleCategorySelect = useCallback((catId: string | undefined) => {
+    if (catId) {
+      navigate(`?categoryId=${catId}`);
+    } else {
+      navigate('');
+    }
+  }, [navigate]);
+
+  // Fetch products with filters from backend - memoized to prevent infinite loops
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -72,8 +86,9 @@ const ProductList: React.FC = () => {
         params.append('brandId', brand.toString());
       }
       
-      if (category) {
-        params.append('categoryId', category);
+      // Use urlCategoryId directly instead of state
+      if (urlCategoryId) {
+        params.append('categoryId', urlCategoryId);
       }
       
       // Handle price ranges
@@ -167,16 +182,11 @@ const ProductList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [brand, urlCategoryId, filters]);
 
   // Handle add to cart
   const handleAddToCart = async (product: any) => {
     console.log('🛒 Adding to cart, product:', product);
-
-    if (!isAuthenticated) {
-      toast.warning('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
-      return;
-    }
 
     let variantId = product.variantId;
     console.log('🔑 variantId from product:', variantId);
@@ -206,21 +216,43 @@ const ProductList: React.FC = () => {
       return;
     }
 
-    console.log('📤 Calling cartService.addItem with variantId:', variantId);
+    console.log('📤 Adding to cart with variantId:', variantId);
     try {
-      const result = await cartService.addItem({
-        variantId: variantId,
-        quantity: 1
-      });
+      if (isAuthenticated) {
+        // Authenticated user - use backend cart
+        const result = await cartService.addItem({
+          variantId: variantId,
+          quantity: 1
+        });
 
-      if (result.success) {
+        if (result.success) {
+          toast.success('Đã thêm sản phẩm vào giỏ hàng!');
+          const event = new CustomEvent('cartUpdated', {
+            detail: { timestamp: Date.now() }
+          });
+          window.dispatchEvent(event);
+        } else {
+          toast.error(result.message || 'Không thể thêm sản phẩm vào giỏ hàng');
+        }
+      } else {
+        // Guest user - use localStorage cart
+        cartService.addItemToGuestCart({
+          variantId: variantId,
+          productId: product.id,
+          productName: product.name,
+          image: product.imageUrl || product.image,
+          imageUrl: product.imageUrl || product.image,
+          unitPrice: product.price,
+          price: product.price,
+          quantity: 1,
+          color: product.color,
+          size: product.size
+        });
         toast.success('Đã thêm sản phẩm vào giỏ hàng!');
         const event = new CustomEvent('cartUpdated', {
           detail: { timestamp: Date.now() }
         });
         window.dispatchEvent(event);
-      } else {
-        toast.error(result.message || 'Không thể thêm sản phẩm vào giỏ hàng');
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng');
@@ -229,9 +261,10 @@ const ProductList: React.FC = () => {
 
   // Fetch products when filters change
   useEffect(() => {
+    console.log('🔄 useEffect triggered - brand:', brand, 'urlCategoryId:', urlCategoryId, 'filters:', filters);
     fetchProducts();
     setPage(1); // Reset to page 1 when filters change
-  }, [brand, category, filters]);
+  }, [brand, urlCategoryId, filters, fetchProducts]);
 
   // Client-side sorting only
   const sorted = useMemo(() => {
@@ -253,7 +286,7 @@ const ProductList: React.FC = () => {
   // Hàm reset toàn bộ filter
   const handleResetAllFilters = () => {
     setBrand(undefined);
-    setCategory(undefined);
+    navigate(''); // Clear category from URL
     setFilters({ prices: [], colors: [], sizes: [] });
     setPage(1);
   };
@@ -274,7 +307,6 @@ const ProductList: React.FC = () => {
         <main style={{ flex: 3, paddingRight: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <h4>
-              Tất cả sản phẩm
               {!loading && (
                 <span style={{ color: '#666', fontSize: '14px', fontWeight: 'normal' }}>
                   ({products.length} sản phẩm)
@@ -299,10 +331,60 @@ const ProductList: React.FC = () => {
                 }}
                 title="Tải lại danh sách sản phẩm"
               >
-                {loading ? '⟳' : '↻'} Refresh
+                {loading ? '⟳' : '↻'} 
               </button>
             </div>
           </div>
+
+          {/* Active Filters Display */}
+          {(brand || urlCategoryId || filters.prices.length > 0 || filters.colors.length > 0 || filters.sizes.length > 0) && (
+            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: '600', color: '#333' }}>Đang lọc theo:</span>
+              
+              {/* Reusable Filter Tag Component */}
+              {[
+                urlCategoryId ? { label: 'Danh mục', onRemove: () => handleCategorySelect(undefined) } : null,
+                brand ? { label: 'Thương hiệu', onRemove: () => setBrand(undefined) } : null,
+                filters.prices.length > 0 ? { label: `Giá (${filters.prices.length})`, onRemove: () => setFilters({ ...filters, prices: [] }) } : null,
+                filters.colors.length > 0 ? { label: `Màu (${filters.colors.length})`, onRemove: () => setFilters({ ...filters, colors: [] }) } : null,
+                filters.sizes.length > 0 ? { label: `Size (${filters.sizes.length})`, onRemove: () => setFilters({ ...filters, sizes: [] }) } : null
+              ].filter((f): f is { label: string; onRemove: () => void } => f !== null).map((filter, idx) => (
+                <div 
+                  key={idx}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    backgroundColor: '#ff6347',
+                    color: 'white',
+                    padding: '6px 12px',
+                    borderRadius: '4px',
+                    fontSize: '13px',
+                    fontWeight: '500'
+                  }}
+                >
+                  <span>{filter.label}</span>
+                  <button
+                    onClick={filter.onRemove}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      padding: '0 4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      lineHeight: '1'
+                    }}
+                    title="Xóa bộ lọc"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {error && (
             <div style={{
@@ -398,7 +480,7 @@ const ProductList: React.FC = () => {
 
         <aside style={{ flex: 1, maxWidth: 260 }}>
           <Sidebar
-            onCategory={setCategory}
+            onCategory={handleCategorySelect}
             filtersSelected={filters}
             onFiltersChange={setFilters}
             onResetAll={handleResetAllFilters} // Thêm prop mới

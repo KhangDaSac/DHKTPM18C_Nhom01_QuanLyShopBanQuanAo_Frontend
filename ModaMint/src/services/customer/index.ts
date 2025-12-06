@@ -40,7 +40,7 @@ export interface UserResponse {
 }
 
 export interface CustomerResponse {
-    userId: string;
+    customerId: string;  // ID của customer từ backend
     user: UserResponse;
     addresses?: AddressResponse[];
     cart?: CartResponse;
@@ -49,7 +49,7 @@ export interface CustomerResponse {
 }
 
 export interface CustomerRequest {
-    userId: string;
+    customerId: string;
     addresses?: any[];
 }
 
@@ -71,17 +71,17 @@ customerApiClient.interceptors.request.use(
     (config) => {
         console.log('🔍 Customer Request - URL:', config.url);
         console.log('🔍 Customer Request - Method:', config.method);
-        
+
         // Thêm token cho tất cả các request
         const authDataStr = localStorage.getItem("authData");
         console.log('🔍 AuthData from localStorage:', authDataStr);
-        
+
         const authData = authDataStr ? JSON.parse(authDataStr) : null;
         console.log('🔍 Parsed authData:', authData);
-        
+
         // Sử dụng accessToken thay vì token
         const token = authData?.accessToken || authData?.token;
-        
+
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
             console.log('✅ Token added to customer request');
@@ -105,10 +105,10 @@ class CustomerService {
     async getAllCustomers(): Promise<{ success: boolean; data?: CustomerResponse[]; message?: string }> {
         try {
             const response = await customerApiClient.get<ApiResponse<CustomerResponse[]>>('/customers');
-            
+
             const apiResponse = response.data;
 
-            
+
             if (apiResponse.code !== 2000) {
                 console.warn('⚠️ Response code is not 2000:', apiResponse.code);
                 return {
@@ -116,7 +116,7 @@ class CustomerService {
                     message: apiResponse.message || 'Lấy danh sách khách hàng thất bại',
                 };
             }
-            
+
             console.log('✅ Success! Returning data...');
             return {
                 success: true,
@@ -145,16 +145,16 @@ class CustomerService {
     async getCustomerById(userId: string): Promise<{ success: boolean; data?: CustomerResponse; message?: string }> {
         try {
             const response = await customerApiClient.get<ApiResponse<CustomerResponse>>(`/customers/${userId}`);
-            
+
             const apiResponse = response.data;
-            
+
             if (apiResponse.code !== 2000) {
                 return {
                     success: false,
                     message: apiResponse.message || 'Không tìm thấy khách hàng',
                 };
             }
-            
+
             return {
                 success: true,
                 data: apiResponse.result,
@@ -178,16 +178,16 @@ class CustomerService {
     async createCustomer(request: CustomerRequest): Promise<{ success: boolean; data?: CustomerResponse; message?: string }> {
         try {
             const response = await customerApiClient.post<ApiResponse<CustomerResponse>>('/customers', request);
-            
+
             const apiResponse = response.data;
-            
+
             if (apiResponse.code !== 2000) {
                 return {
                     success: false,
                     message: apiResponse.message || 'Tạo khách hàng thất bại',
                 };
             }
-            
+
             return {
                 success: true,
                 data: apiResponse.result,
@@ -211,16 +211,16 @@ class CustomerService {
     async updateCustomer(userId: string, request: CustomerRequest): Promise<{ success: boolean; data?: CustomerResponse; message?: string }> {
         try {
             const response = await customerApiClient.put<ApiResponse<CustomerResponse>>(`/customers/${userId}`, request);
-            
+
             const apiResponse = response.data;
-            
+
             if (apiResponse.code !== 2000) {
                 return {
                     success: false,
                     message: apiResponse.message || 'Cập nhật khách hàng thất bại',
                 };
             }
-            
+
             return {
                 success: true,
                 data: apiResponse.result,
@@ -240,28 +240,28 @@ class CustomerService {
         }
     }
 
-    // Xóa customer
+    // Xóa customer (DEPRECATED - Nên dùng deactivateCustomer thay thế)
     async deleteCustomer(userId: string): Promise<{ success: boolean; message?: string }> {
         try {
             console.log('🗑️ Service deleteCustomer called with userId:', userId);
             const url = `/customers/${userId}`;
             console.log('🗑️ Request URL:', url);
             console.log('🗑️ Full URL:', `${customerApiClient.defaults.baseURL}${url}`);
-            
+
             const response = await customerApiClient.delete<ApiResponse<void>>(url);
-            
+
             console.log('🗑️ Delete response:', response);
             const apiResponse = response.data;
             console.log('🗑️ API Response code:', apiResponse.code);
             console.log('🗑️ API Response message:', apiResponse.message);
-            
+
             if (apiResponse.code !== 2000) {
                 return {
                     success: false,
                     message: apiResponse.message || 'Xóa khách hàng thất bại',
                 };
             }
-            
+
             return {
                 success: true,
                 message: 'Đã xóa khách hàng thành công',
@@ -281,6 +281,44 @@ class CustomerService {
             return {
                 success: false,
                 message: 'Lỗi kết nối đến server',
+            };
+        }
+    }
+
+    // Vô hiệu hóa customer thông qua việc vô hiệu hóa user
+    async deactivateCustomer(userId: string): Promise<{ success: boolean; message?: string }> {
+        try {
+            console.log('🔒 Deactivating customer via user deactivation, userId:', userId);
+
+            // Import userService để vô hiệu hóa user
+            const { userService } = await import('../user');
+            const result = await userService.deactivateUser(userId);
+
+            return result;
+        } catch (error) {
+            console.error('❌ Deactivate customer error:', error);
+            return {
+                success: false,
+                message: 'Lỗi khi vô hiệu hóa khách hàng',
+            };
+        }
+    }
+
+    // Kích hoạt lại customer thông qua việc kích hoạt user
+    async activateCustomer(userId: string): Promise<{ success: boolean; message?: string }> {
+        try {
+            console.log('✅ Activating customer via user activation, userId:', userId);
+
+            // Import userService để kích hoạt user
+            const { userService } = await import('../user');
+            const result = await userService.activateUser(userId);
+
+            return result;
+        } catch (error) {
+            console.error('❌ Activate customer error:', error);
+            return {
+                success: false,
+                message: 'Lỗi khi kích hoạt khách hàng',
             };
         }
     }

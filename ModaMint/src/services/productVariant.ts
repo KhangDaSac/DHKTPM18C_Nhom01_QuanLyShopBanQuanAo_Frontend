@@ -10,6 +10,7 @@ export interface ProductVariant {
     discount: number;
     quantity: number;
     additionalPrice: number;
+    active?: boolean;
     createAt?: string;
 }
 
@@ -17,11 +18,12 @@ export interface ProductVariantRequest {
     productId: number;
     size: string;
     color: string;
-    image?: string;
+    imageUrl?: string;  // ✅ Đổi image → imageUrl để khớp backend
     price: number;
     discount?: number;
     quantity: number;
     additionalPrice?: number;
+    active?: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -44,7 +46,7 @@ class ProductVariantService {
         // Lấy token từ localStorage như các service khác
         const authDataStr = localStorage.getItem('authData');
         let token: string | null = null;
-        
+
         if (authDataStr) {
             try {
                 const authData = JSON.parse(authDataStr);
@@ -53,7 +55,7 @@ class ProductVariantService {
                 console.error('Error parsing authData:', error);
             }
         }
-        
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
             headers: {
@@ -73,7 +75,7 @@ class ProductVariantService {
     async getAllProductVariants(): Promise<ServiceResponse<ProductVariant[]>> {
         try {
             const response = await this.fetchApi<ProductVariant[]>('/product-variants');
-            
+
             if (response.code === 1000) {
                 return {
                     success: true,
@@ -81,7 +83,7 @@ class ProductVariantService {
                     data: response.result
                 };
             }
-            
+
             return {
                 success: false,
                 message: response.message || 'Không thể lấy danh sách biến thể'
@@ -98,7 +100,7 @@ class ProductVariantService {
     async getProductVariantById(id: number): Promise<ServiceResponse<ProductVariant>> {
         try {
             const response = await this.fetchApi<ProductVariant>(`/product-variants/${id}`);
-            
+
             if (response.code === 1000) {
                 return {
                     success: true,
@@ -106,7 +108,7 @@ class ProductVariantService {
                     data: response.result
                 };
             }
-            
+
             return {
                 success: false,
                 message: response.message || 'Không thể lấy thông tin biến thể'
@@ -123,7 +125,7 @@ class ProductVariantService {
     async getProductVariantsByProductId(productId: number): Promise<ServiceResponse<ProductVariant[]>> {
         try {
             const response = await this.fetchApi<ProductVariant[]>(`/product-variants/product/${productId}`);
-            
+
             // API có thể trả về code 2000 (thành công) hoặc 1000
             if (response.code === 2000 || response.code === 1000) {
                 return {
@@ -132,7 +134,7 @@ class ProductVariantService {
                     data: response.result
                 };
             }
-            
+
             console.error('❌ API returned error code:', response.code, response.message);
             return {
                 success: false,
@@ -153,7 +155,7 @@ class ProductVariantService {
                 method: 'POST',
                 body: JSON.stringify(data),
             });
-            
+
             if (response.code === 1000) {
                 return {
                     success: true,
@@ -161,7 +163,7 @@ class ProductVariantService {
                     data: response.result
                 };
             }
-            
+
             return {
                 success: false,
                 message: response.message || 'Không thể tạo biến thể'
@@ -181,7 +183,7 @@ class ProductVariantService {
                 method: 'PUT',
                 body: JSON.stringify(data),
             });
-            
+
             if (response.code === 1000) {
                 return {
                     success: true,
@@ -189,7 +191,7 @@ class ProductVariantService {
                     data: response.result
                 };
             }
-            
+
             return {
                 success: false,
                 message: response.message || 'Không thể cập nhật biến thể'
@@ -205,26 +207,54 @@ class ProductVariantService {
 
     async deleteProductVariant(id: number): Promise<ServiceResponse<void>> {
         try {
+            // Soft delete - set active = false
             const response = await this.fetchApi<void>(`/product-variants/${id}`, {
                 method: 'DELETE',
             });
-            
+
             if (response.code === 1000) {
                 return {
                     success: true,
-                    message: 'Xóa biến thể thành công'
+                    message: 'Đã vô hiệu hóa biến thể thành công'
                 };
             }
-            
+
             return {
                 success: false,
-                message: response.message || 'Không thể xóa biến thể'
+                message: response.message || 'Không thể vô hiệu hóa biến thể'
             };
         } catch (error) {
-            console.error('Error deleting product variant:', error);
+            console.error('Error soft deleting product variant:', error);
             return {
                 success: false,
-                message: 'Lỗi khi xóa biến thể'
+                message: 'Lỗi khi vô hiệu hóa biến thể'
+            };
+        }
+    }
+
+    async restoreProductVariant(id: number): Promise<ServiceResponse<void>> {
+        try {
+            // Restore - set active = true
+            const response = await this.fetchApi<void>(`/product-variants/${id}/restore`, {
+                method: 'PUT',
+            });
+
+            if (response.code === 1000) {
+                return {
+                    success: true,
+                    message: 'Đã khôi phục biến thể thành công'
+                };
+            }
+
+            return {
+                success: false,
+                message: response.message || 'Không thể khôi phục biến thể'
+            };
+        } catch (error) {
+            console.error('Error restoring product variant:', error);
+            return {
+                success: false,
+                message: 'Lỗi khi khôi phục biến thể'
             };
         }
     }

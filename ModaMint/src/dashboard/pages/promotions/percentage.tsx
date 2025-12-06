@@ -80,18 +80,18 @@ const PercentagePromotions: React.FC = () => {
             'Số lượng': item.quantity,
             'Trạng thái': item.isActive ? 'Hoạt động' : 'Tạm dừng',
         }));
-        
+
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Khuyến mãi');
-        
+
         // Auto-width columns
         const maxWidth = 20;
         const colWidths = Object.keys(data[0] || {}).map(key => ({
             wch: Math.min(Math.max(key.length, (data[0] as any)[key]?.toString().length || 0), maxWidth)
         }));
         ws['!cols'] = colWidths;
-        
+
         XLSX.writeFile(wb, `KhuyenMai_PhanTram_${new Date().toISOString().split('T')[0]}.xlsx`);
         message.success('Xuất Excel thành công!');
     };
@@ -317,7 +317,7 @@ const PercentagePromotions: React.FC = () => {
 
             {/* Action Bar */}
             <Card style={{ marginBottom: '16px', marginTop: 0 }}>
-                <Row justify="space-between" align="middle">
+                <Row justify="end" align="middle">
                     <Col>
                         <Space>
                             <Button

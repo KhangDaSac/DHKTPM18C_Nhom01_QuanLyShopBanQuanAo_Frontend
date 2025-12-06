@@ -25,12 +25,20 @@ import {
     UserOutlined,
     RiseOutlined,
     EyeOutlined,
-    
+
     StarFilled,
     ShoppingOutlined,
     ReloadOutlined
 } from '@ant-design/icons';
 import { useProducts } from '../hooks/useProducts';
+import { useAnalytics } from '../hooks/useAnalytics';
+import SalesAnalytics from './components/SalesAnalytics';
+import TopSellingProducts from './components/TopSellingProducts';
+import InventoryAnalytics from './components/InventoryAnalytics';
+import VariantMatrix from './components/VariantMatrix';
+import OrderStatusChart from './components/OrderStatusChart';
+import CustomerAnalyticsTab from './components/CustomerAnalyticsTab';
+import PromotionAnalyticsTab from './components/PromotionAnalyticsTab';
 import './style.css';
 
 const { Title, Text } = Typography;
@@ -40,7 +48,9 @@ interface Product {
     id: string;
     name: string;
     category: string;
-    price: number;
+    minPrice: number;
+    maxPrice: number;
+    priceRange: string; // Chuỗi hiển thị giá "100,000đ - 200,000đ"
     stock: number;
     sold: number;
     rating: number;
@@ -56,7 +66,28 @@ const Dashboard: React.FC = () => {
     const [localProducts] = useState<Product[]>([]);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isViewModalVisible, setIsViewModalVisible] = useState(false);
-    
+
+    // Analytics data
+    const {
+        dailySales,
+        monthlySales,
+        salesLoading,
+        salesError,
+        topProducts,
+        topProductsLoading,
+        topProductsError,
+        inventoryData,
+        categoryData,
+        inventoryLoading,
+        inventoryError,
+        variantMatrix,
+        variantLoading,
+        variantError,
+        orderStatus,
+        orderStatusLoading,
+        orderStatusError
+    } = useAnalytics();
+
     // Reset tab to overview when component mounts or route changes
     useEffect(() => {
         setActiveTab('overview');
@@ -71,30 +102,45 @@ const Dashboard: React.FC = () => {
         setIsViewModalVisible(true);
     };
 
-    
+
 
     // Kết hợp dữ liệu từ API và mock data
     const allProducts = [
-        ...apiProducts.map(apiProduct => ({
-            key: `api_${apiProduct.id}`,
-            id: String(apiProduct.id), // Convert number to string
-            name: apiProduct.name,
-            category: apiProduct.categoryName || 'API Product',
-            price: apiProduct.price,
-            stock: apiProduct.quantity || 100, // Lấy từ API hoặc dùng mock
-            sold: Math.floor(Math.random() * 50), // Mock sold
-            rating: 4.0 + Math.random(), // Mock rating
-            status: apiProduct.active ? 'active' as const : 'inactive' as const,
-            image: apiProduct.images && apiProduct.images.length > 0 ? apiProduct.images[0] : 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop',
-            images: apiProduct.images || []
-        })),
+        ...apiProducts.map(apiProduct => {
+            // Tính giá từ variants
+            const variants = apiProduct.productVariants || [];
+            const prices = variants.map(v => v.price).filter(p => p > 0);
+            const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+            const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+            const priceRange = prices.length === 0
+                ? 'Chưa có giá'
+                : minPrice === maxPrice
+                    ? `${minPrice.toLocaleString('vi-VN')}₫`
+                    : `${minPrice.toLocaleString('vi-VN')}₫ - ${maxPrice.toLocaleString('vi-VN')}₫`;
+
+            return {
+                key: `api_${apiProduct.id}`,
+                id: String(apiProduct.id), // Convert number to string
+                name: apiProduct.name,
+                category: apiProduct.categoryName || 'API Product',
+                minPrice,
+                maxPrice,
+                priceRange,
+                stock: apiProduct.quantity || 100, // Lấy từ API hoặc dùng mock
+                sold: Math.floor(Math.random() * 50), // Mock sold
+                rating: 4.0 + Math.random(), // Mock rating
+                status: apiProduct.active ? 'active' as const : 'inactive' as const,
+                image: apiProduct.images && apiProduct.images.length > 0 ? apiProduct.images[0] : 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop',
+                images: apiProduct.images || []
+            };
+        }),
         ...localProducts
     ];
 
     // Statistics từ dữ liệu thực tế
     const totalProducts = allProducts.length;
     const activeProducts = allProducts.filter(p => p.status === 'active').length;
-    const totalValue = allProducts.reduce((sum, p) => sum + p.price, 0);
+    const totalValue = allProducts.reduce((sum, p) => sum + (p.minPrice || 0), 0);
 
     const columns = [
         {
@@ -120,8 +166,8 @@ const Dashboard: React.FC = () => {
                                             width={idx === 0 ? 60 : 0}
                                             height={idx === 0 ? 60 : 0}
                                             src={img}
-                                            style={{ 
-                                                borderRadius: '8px', 
+                                            style={{
+                                                borderRadius: '8px',
                                                 objectFit: 'cover',
                                                 display: idx === 0 ? 'block' : 'none'
                                             }}
@@ -190,14 +236,11 @@ const Dashboard: React.FC = () => {
         },
         {
             title: 'Giá',
-            dataIndex: 'price',
-            key: 'price',
-            render: (price: number) => (
+            dataIndex: 'priceRange',
+            key: 'priceRange',
+            render: (priceRange: string) => (
                 <Text strong>
-                    {new Intl.NumberFormat('vi-VN', {
-                        style: 'currency',
-                        currency: 'VND'
-                    }).format(price)}
+                    {priceRange}
                 </Text>
             ),
         },
@@ -461,6 +504,73 @@ const Dashboard: React.FC = () => {
                     />
                 </Card>
             )
+        },
+        {
+            key: 'sales',
+            label: 'Doanh số',
+            children: (
+                <SalesAnalytics
+                    dailySales={dailySales}
+                    monthlySales={monthlySales}
+                    loading={salesLoading}
+                    error={salesError}
+                />
+            )
+        },
+        {
+            key: 'top-selling',
+            label: 'Sản phẩm bán chạy',
+            children: (
+                <TopSellingProducts
+                    products={topProducts}
+                    loading={topProductsLoading}
+                    error={topProductsError}
+                />
+            )
+        },
+        {
+            key: 'inventory',
+            label: 'Tồn kho',
+            children: (
+                <InventoryAnalytics
+                    inventoryData={inventoryData}
+                    categoryData={categoryData}
+                    loading={inventoryLoading}
+                    error={inventoryError}
+                />
+            )
+        },
+        {
+            key: 'variants',
+            label: 'Biến thể',
+            children: (
+                <VariantMatrix
+                    matrixData={variantMatrix}
+                    loading={variantLoading}
+                    error={variantError}
+                />
+            )
+        },
+        {
+            key: 'order-status',
+            label: 'Trạng thái đơn hàng',
+            children: (
+                <OrderStatusChart
+                    statusData={orderStatus}
+                    loading={orderStatusLoading}
+                    error={orderStatusError}
+                />
+            )
+        },
+        {
+            key: 'customers',
+            label: 'Khách hàng',
+            children: <CustomerAnalyticsTab />
+        },
+        {
+            key: 'promotions',
+            label: 'Khuyến mãi',
+            children: <PromotionAnalyticsTab />
         }
     ];
 
@@ -468,9 +578,9 @@ const Dashboard: React.FC = () => {
         <div>
             <Title level={2} className="text-primary" style={{ marginBottom: '24px' }}>
                 Dashboard ModaMint
-                <Button 
-                    type="default" 
-                    icon={<ReloadOutlined />} 
+                <Button
+                    type="default"
+                    icon={<ReloadOutlined />}
                     onClick={refetch}
                     loading={apiLoading}
                     style={{ marginLeft: '16px' }}
@@ -554,7 +664,7 @@ const Dashboard: React.FC = () => {
                                                 width={idx === 0 ? '100%' : 0}
                                                 src={img}
                                                 fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
-                                                style={{ 
+                                                style={{
                                                     borderRadius: '8px',
                                                     display: idx === 0 ? 'block' : 'none'
                                                 }}
@@ -585,7 +695,7 @@ const Dashboard: React.FC = () => {
                                 <Title level={3} style={{ marginBottom: '16px' }}>
                                     {selectedProduct.name}
                                 </Title>
-                                
+
                                 <Descriptions column={1} size="small">
                                     <Descriptions.Item label="ID">
                                         <Text code>{selectedProduct.id}</Text>
@@ -595,16 +705,13 @@ const Dashboard: React.FC = () => {
                                     </Descriptions.Item>
                                     <Descriptions.Item label="Giá">
                                         <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
-                                            {new Intl.NumberFormat('vi-VN', {
-                                                style: 'currency',
-                                                currency: 'VND'
-                                            }).format(selectedProduct.price)}
+                                            {selectedProduct.priceRange}
                                         </Text>
                                     </Descriptions.Item>
                                     <Descriptions.Item label="Tồn kho">
-                                        <Text style={{ 
-                                            color: selectedProduct.stock > 50 ? '#52c41a' : 
-                                                   selectedProduct.stock > 0 ? '#faad14' : '#ff4d4f',
+                                        <Text style={{
+                                            color: selectedProduct.stock > 50 ? '#52c41a' :
+                                                selectedProduct.stock > 0 ? '#faad14' : '#ff4d4f',
                                             fontWeight: 'bold'
                                         }}>
                                             {selectedProduct.stock}
