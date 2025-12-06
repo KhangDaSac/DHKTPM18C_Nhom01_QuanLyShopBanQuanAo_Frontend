@@ -213,7 +213,7 @@ const Cart = () => {
             </div>
             <ul className={styles['cart-list']}>
               {cart.items?.map((item) => (
-                <li key={item.id || item.itemId} className={styles['cart-item']}>
+                <li key={item.variantId || item.id || item.itemId || Math.random()} className={styles['cart-item']}>
                   <button 
                     aria-label="Xóa sản phẩm" 
                     className={styles['remove-icon']} 

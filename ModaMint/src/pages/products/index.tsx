@@ -7,6 +7,7 @@ import axios from 'axios';
 import { cartService } from '@/services/cart';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/authContext';
+import { useCart } from '@/hooks/useCart';
 import { productVariantService } from '@/services/productVariant';
 import BrandCarousel from '@/components/product-list/BrandCarousel';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -60,6 +61,7 @@ const ProductList: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
+  const { setCartFromBackend } = useCart();
 
   // Get categoryId directly from URL - don't need intermediate state
   const urlCategoryId = searchParams.get('categoryId');
@@ -163,7 +165,7 @@ const ProductList: React.FC = () => {
         return {
           id: p.id,
           name: p.name || '',
-          price: p.price || 0,
+          price: currentPriceNum,
           originalPrice: originalPriceNum,
           currentPrice: currentPriceNum,
           image: p.images && p.images.length > 0 ? p.images[0] : (p.imageUrl || ''),
@@ -236,6 +238,7 @@ const ProductList: React.FC = () => {
         }
       } else {
         // Guest user - use localStorage cart
+        console.log('🛒 [ProductList] Adding to guest cart - Price:', product.price);
         cartService.addItemToGuestCart({
           variantId: variantId,
           productId: product.id,
@@ -248,6 +251,12 @@ const ProductList: React.FC = () => {
           color: product.color,
           size: product.size
         });
+        
+        // Sync guest cart to CartContext
+        const updatedGuestCart = cartService.getGuestCart();
+        console.log('🔄 [ProductList] Syncing guest cart to context:', updatedGuestCart);
+        setCartFromBackend(updatedGuestCart);
+        
         toast.success('Đã thêm sản phẩm vào giỏ hàng!');
         const event = new CustomEvent('cartUpdated', {
           detail: { timestamp: Date.now() }

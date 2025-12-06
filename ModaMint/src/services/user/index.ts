@@ -230,41 +230,7 @@ class UserService {
         }
     }
 
-    // 4. Cập nhật user (PUT /users/{userId})
-    async updateUser(userId: string, userData: UpdateUserRequest): Promise<{ success: boolean; data?: User; message?: string }> {
-        try {
-            const response = await apiClient.put<ApiResponse<User>>(`/users/${userId}`, userData);
-
-            const apiResponse = response.data;
-
-            if (apiResponse.code !== 1000) {
-                return {
-                    success: false,
-                    message: apiResponse.message || 'Cập nhật người dùng thất bại',
-                };
-            }
-
-            return {
-                success: true,
-                data: apiResponse.result,
-                message: apiResponse.message || 'Cập nhật người dùng thành công',
-            };
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const errorResponse = error.response?.data as ApiResponse<any>;
-                return {
-                    success: false,
-                    message: errorResponse?.message || 'Cập nhật người dùng thất bại',
-                };
-            }
-            return {
-                success: false,
-                message: 'Lỗi kết nối đến server',
-            };
-        }
-    }
-
-    // 5. Xóa user (DELETE /users/{userId})
+    // 4. Xóa user (DELETE /users/{userId})
     async deleteUser(userId: string): Promise<{ success: boolean; message?: string }> {
         try {
             const response = await apiClient.delete<ApiResponse<string>>(`/users/${userId}`);
