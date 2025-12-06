@@ -226,10 +226,25 @@ const Customers: React.FC = () => {
     // States cho filtering
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [searchText, setSearchText] = useState<string>('');
 
     // Filtered customers
     const filteredCustomers = customers.filter(customer => {
+        // Filter by status
         if (filterStatus !== 'all' && customer.status !== filterStatus) return false;
+
+        // Filter by search text (search in name, email, phone, username)
+        if (searchText) {
+            const searchLower = searchText.toLowerCase();
+
+            const matchesName = customer.name?.toLowerCase().includes(searchLower);
+            const matchesEmail = customer.email?.toLowerCase().includes(searchLower);
+            const matchesPhone = customer.phone?.toLowerCase().includes(searchLower);
+            const matchesUsername = customer.username?.toLowerCase().includes(searchLower);
+
+            if (!matchesName && !matchesEmail && !matchesPhone && !matchesUsername) return false;
+        }
+
         return true;
     });
 
@@ -621,9 +636,12 @@ const Customers: React.FC = () => {
                     <Col>
                         <Space wrap>
                             <Input.Search
-                                placeholder="Tìm kiếm khách hàng..."
+                                placeholder="Tìm kiếm theo tên, email, SĐT..."
                                 style={{ width: 300 }}
                                 allowClear
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
+                                onSearch={(value) => setSearchText(value)}
                             />
                             <Select
                                 placeholder="Trạng thái"

@@ -18,7 +18,7 @@ export interface ProductVariantRequest {
     productId: number;
     size: string;
     color: string;
-    image?: string;
+    imageUrl?: string;  // ✅ Đổi image → imageUrl để khớp backend
     price: number;
     discount?: number;
     quantity: number;

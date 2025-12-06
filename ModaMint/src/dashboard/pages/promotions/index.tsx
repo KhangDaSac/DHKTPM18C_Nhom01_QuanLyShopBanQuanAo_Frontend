@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Tag, Modal, Form, Input, InputNumber, message, Card, Row, Col, Statistic, Typography, Popconfirm, Tabs, DatePicker, Select, Descriptions, Badge } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, PercentageOutlined, DollarOutlined, ReloadOutlined, CalendarOutlined, CheckCircleOutlined, CloseCircleOutlined, GiftOutlined, ExclamationCircleOutlined, DownloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, PercentageOutlined, DollarOutlined, ReloadOutlined, CalendarOutlined, CheckCircleOutlined, CloseCircleOutlined, GiftOutlined, ExclamationCircleOutlined, DownloadOutlined, StopOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { percentagePromotionService, amountPromotionService, type PercentagePromotion, type AmountPromotion } from '../../../services/promotion';
@@ -115,13 +115,25 @@ const PromotionsPage: React.FC = () => {
         setIsPercentageModalVisible(true);
     };
 
-    const handleDeletePercentage = async (id: number) => {
+    const handleToggleActivePercentage = async (id: number, currentStatus: boolean) => {
         try {
-            await percentagePromotionService.delete(id);
-            message.success('Xóa khuyến mãi thành công');
+            // Get current promotion data
+            const promotion = percentagePromotions.find(p => p.id === id);
+            if (!promotion) {
+                message.error('Không tìm thấy khuyến mãi');
+                return;
+            }
+
+            // Update with toggled isActive status
+            await percentagePromotionService.update(id, {
+                ...promotion,
+                isActive: !currentStatus
+            });
+
+            message.success(currentStatus ? 'Đã vô hiệu hóa khuyến mãi' : 'Đã kích hoạt khuyến mãi');
             loadPercentagePromotions();
         } catch (error: any) {
-            message.error('Không thể xóa khuyến mãi: ' + (error.response?.data?.message || error.message));
+            message.error('Không thể cập nhật trạng thái: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -180,13 +192,25 @@ const PromotionsPage: React.FC = () => {
         setIsAmountModalVisible(true);
     };
 
-    const handleDeleteAmount = async (id: number) => {
+    const handleToggleActiveAmount = async (id: number, currentStatus: boolean) => {
         try {
-            await amountPromotionService.delete(id);
-            message.success('Xóa khuyến mãi thành công');
+            // Get current promotion data
+            const promotion = amountPromotions.find(p => p.id === id);
+            if (!promotion) {
+                message.error('Không tìm thấy khuyến mãi');
+                return;
+            }
+
+            // Update with toggled isActive status
+            await amountPromotionService.update(id, {
+                ...promotion,
+                isActive: !currentStatus
+            });
+
+            message.success(currentStatus ? 'Đã vô hiệu hóa khuyến mãi' : 'Đã kích hoạt khuyến mãi');
             loadAmountPromotions();
         } catch (error: any) {
-            message.error('Không thể xóa khuyến mãi: ' + (error.response?.data?.message || error.message));
+            message.error('Không thể cập nhật trạng thái: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -334,14 +358,20 @@ const PromotionsPage: React.FC = () => {
                         size="small"
                     />
                     <Popconfirm
-                        title="Xác nhận xóa"
-                        description="Bạn có chắc chắn muốn xóa khuyến mãi này?"
-                        onConfirm={() => record.id && handleDeletePercentage(record.id)}
-                        okText="Xóa"
+                        title={record.isActive ? "Vô hiệu hóa khuyến mãi" : "Kích hoạt khuyến mãi"}
+                        description={record.isActive ? "Bạn có chắc chắn muốn vô hiệu hóa khuyến mãi này?" : "Bạn có chắc chắn muốn kích hoạt khuyến mãi này?"}
+                        onConfirm={() => record.id && handleToggleActivePercentage(record.id, record.isActive)}
+                        okText={record.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
                         cancelText="Hủy"
-                        icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
+                        icon={<ExclamationCircleOutlined style={{ color: record.isActive ? 'orange' : 'green' }} />}
                     >
-                        <Button type="text" danger icon={<DeleteOutlined />} title="Xóa" size="small" />
+                        <Button
+                            type="text"
+                            danger={record.isActive}
+                            icon={record.isActive ? <StopOutlined /> : <CheckCircleOutlined />}
+                            title={record.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
+                            size="small"
+                        />
                     </Popconfirm>
                 </Space>
             ),
@@ -439,14 +469,20 @@ const PromotionsPage: React.FC = () => {
                         size="small"
                     />
                     <Popconfirm
-                        title="Xác nhận xóa"
-                        description="Bạn có chắc chắn muốn xóa khuyến mãi này?"
-                        onConfirm={() => record.id && handleDeleteAmount(record.id)}
-                        okText="Xóa"
+                        title={record.isActive ? "Vô hiệu hóa khuyến mãi" : "Kích hoạt khuyến mãi"}
+                        description={record.isActive ? "Bạn có chắc chắn muốn vô hiệu hóa khuyến mãi này?" : "Bạn có chắc chắn muốn kích hoạt khuyến mãi này?"}
+                        onConfirm={() => record.id && handleToggleActiveAmount(record.id, record.isActive)}
+                        okText={record.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
                         cancelText="Hủy"
-                        icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
+                        icon={<ExclamationCircleOutlined style={{ color: record.isActive ? 'orange' : 'green' }} />}
                     >
-                        <Button type="text" danger icon={<DeleteOutlined />} title="Xóa" size="small" />
+                        <Button
+                            type="text"
+                            danger={record.isActive}
+                            icon={record.isActive ? <StopOutlined /> : <CheckCircleOutlined />}
+                            title={record.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
+                            size="small"
+                        />
                     </Popconfirm>
                 </Space>
             ),

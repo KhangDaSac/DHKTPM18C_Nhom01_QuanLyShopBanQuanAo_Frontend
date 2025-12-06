@@ -18,8 +18,10 @@ import {
     Popconfirm,
     Spin,
     Alert,
-    Checkbox
+    Checkbox,
+    Upload
 } from 'antd';
+import type { UploadFile } from 'antd/es/upload/interface';
 import {
     PlusOutlined,
     EditOutlined,
@@ -31,7 +33,8 @@ import {
     ReloadOutlined,
     RestOutlined,
     ExclamationCircleOutlined,
-    CrownOutlined
+    CrownOutlined,
+    UploadOutlined
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import '../categories/style.css';
@@ -46,6 +49,8 @@ interface Brand {
     id: number;
     name: string;
     isActive: boolean;
+    image?: string;
+    description?: string;
     createAt?: string;
     updateAt?: string;
     productCount?: number;
@@ -65,6 +70,7 @@ const Brands: React.FC = () => {
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [showDeleted, setShowDeleted] = useState(false);
     const [searchText, setSearchText] = useState<string>('');
+    const [imageFile, setImageFile] = useState<UploadFile | null>(null);
 
     const [pagination, setPagination] = useState({
         current: 1,
@@ -79,10 +85,10 @@ const Brands: React.FC = () => {
             const result = await brandService.getAllBrands();
 
             if (result.code === 1000 && result.result) {
-                // Normalize isActive to boolean (in case API returns 0/1)
+                // Normalize active to isActive (backend returns 'active', frontend uses 'isActive')
                 const normalizedBrands = result.result.map(brand => ({
                     ...brand,
-                    isActive: Boolean(brand.isActive)
+                    isActive: Boolean(brand.active ?? brand.isActive)
                 }));
                 setBrands(normalizedBrands);
 
@@ -163,7 +169,37 @@ const Brands: React.FC = () => {
                     padding: '8px 0',
                     minHeight: '60px'
                 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: '#fff7ed', border: '1px solid #fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {(record as any).image ? (
+                        <img
+                            src={(record as any).image}
+                            alt={record.name}
+                            style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 8,
+                                objectFit: 'cover',
+                                border: '1px solid #fed7aa',
+                                flexShrink: 0
+                            }}
+                            onError={(e) => {
+                                // Fallback to icon if image fails to load
+                                e.currentTarget.style.display = 'none';
+                                const iconDiv = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (iconDiv) iconDiv.style.display = 'flex';
+                            }}
+                        />
+                    ) : null}
+                    <div style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 8,
+                        backgroundColor: '#fff7ed',
+                        border: '1px solid #fed7aa',
+                        display: (record as any).image ? 'none' : 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                    }}>
                         <CrownOutlined style={{ fontSize: 20, color: '#f97316' }} />
                     </div>
                     <div style={{ flex: 1 }}>
@@ -274,6 +310,7 @@ const Brands: React.FC = () => {
     const handleAdd = () => {
         setEditingBrand(null);
         form.resetFields();
+        setImageFile(null);
         setIsModalVisible(true);
     };
 
@@ -281,8 +318,22 @@ const Brands: React.FC = () => {
         setEditingBrand(brand);
         form.setFieldsValue({
             name: brand.name,
+            description: brand.description || '',
             isActive: brand.isActive
         });
+
+        // Set existing image if available
+        if (brand.image) {
+            setImageFile({
+                uid: '-1',
+                name: 'image.png',
+                status: 'done',
+                url: brand.image,
+            });
+        } else {
+            setImageFile(null);
+        }
+
         setIsModalVisible(true);
     };
 
@@ -351,6 +402,64 @@ const Brands: React.FC = () => {
         }
     };
 
+    // Helper function to upload image to Cloudinary
+    const uploadImageToCloudinary = async (file: File): Promise<string | null> => {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Get token from localStorage
+            const authDataStr = localStorage.getItem('authData');
+            let token = '';
+            if (authDataStr) {
+                try {
+                    const authData = JSON.parse(authDataStr);
+                    token = authData?.accessToken || '';
+                } catch (error) {
+                    console.error('Error parsing authData:', error);
+                }
+            }
+
+            console.log('Uploading image to Cloudinary...');
+            const response = await fetch('http://localhost:8080/api/v1/images/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData,
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Upload failed with status:', response.status, errorText);
+                return null;
+            }
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Response is not JSON:', text);
+                return null;
+            }
+
+            const data = await response.json();
+            console.log('Upload response:', data);
+
+            if (data.code === 1000 && data.result?.imageUrl) {
+                return data.result.imageUrl;
+            } else {
+                console.error('Upload failed:', data);
+                return null;
+            }
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            return null;
+        }
+    };
+
     const handleSave = async (values: any) => {
         setLoading(true);
         try {
@@ -360,9 +469,24 @@ const Brands: React.FC = () => {
                 return;
             }
 
+            // Upload image if present
+            let imageUrl = '';
+            if (imageFile && imageFile.originFileObj) {
+                const uploadedUrl = await uploadImageToCloudinary(imageFile.originFileObj);
+                if (uploadedUrl) {
+                    imageUrl = uploadedUrl;
+                } else {
+                    message.error('Không thể upload ảnh, vui lòng thử lại');
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const brandData: BrandRequest = {
                 name: values.name.trim(),
-                isActive: values.isActive !== undefined ? values.isActive : true
+                description: values.description?.trim() || '',
+                image: imageUrl,
+                active: values.isActive !== undefined ? values.isActive : true
             };
 
             let result;
@@ -385,6 +509,7 @@ const Brands: React.FC = () => {
             if (result.code === 1000) {
                 setIsModalVisible(false);
                 form.resetFields();
+                setImageFile(null);
                 loadBrands(1, true);
             }
         } catch (error) {
@@ -494,6 +619,7 @@ const Brands: React.FC = () => {
                                         allowClear
                                         value={searchText}
                                         onChange={(e) => setSearchText(e.target.value)}
+                                        onSearch={(value) => setSearchText(value)}
                                     />
                                     <div>
                                         <Checkbox
@@ -582,7 +708,10 @@ const Brands: React.FC = () => {
                         title={editingBrand ? 'Chỉnh sửa thương hiệu' : 'Thêm thương hiệu mới'}
                         open={isModalVisible}
                         onOk={() => form.submit()}
-                        onCancel={() => setIsModalVisible(false)}
+                        onCancel={() => {
+                            setIsModalVisible(false);
+                            setImageFile(null);
+                        }}
                         confirmLoading={loading}
                         width={600}
                         okText={editingBrand ? 'Cập nhật' : 'Thêm mới'}
@@ -602,6 +731,55 @@ const Brands: React.FC = () => {
                                 ]}
                             >
                                 <Input placeholder="Nhập tên thương hiệu" />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="description"
+                                label="Mô tả"
+                            >
+                                <Input.TextArea
+                                    placeholder="Nhập mô tả thương hiệu"
+                                    rows={3}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                label="Ảnh thương hiệu"
+                            >
+                                <Upload
+                                    listType="picture-card"
+                                    maxCount={1}
+                                    fileList={imageFile ? [imageFile] : []}
+                                    beforeUpload={(file) => {
+                                        const isImage = file.type.startsWith('image/');
+                                        if (!isImage) {
+                                            message.error('Chỉ được upload file ảnh!');
+                                            return Upload.LIST_IGNORE;
+                                        }
+                                        const isLt10M = file.size / 1024 / 1024 < 10;
+                                        if (!isLt10M) {
+                                            message.error('Ảnh phải nhỏ hơn 10MB!');
+                                            return Upload.LIST_IGNORE;
+                                        }
+                                        setImageFile({
+                                            uid: file.uid,
+                                            name: file.name,
+                                            status: 'done',
+                                            originFileObj: file as any,
+                                        });
+                                        return false;
+                                    }}
+                                    onRemove={() => {
+                                        setImageFile(null);
+                                    }}
+                                >
+                                    {!imageFile && (
+                                        <div>
+                                            <UploadOutlined />
+                                            <div style={{ marginTop: 8 }}>Upload</div>
+                                        </div>
+                                    )}
+                                </Upload>
                             </Form.Item>
 
                             <Form.Item

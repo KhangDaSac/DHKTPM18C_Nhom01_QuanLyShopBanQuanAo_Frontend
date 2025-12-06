@@ -3,13 +3,18 @@ import type { ApiResponse } from '../authentication';
 
 export interface BrandRequest {
     name: string;
-    isActive?: boolean;
+    description?: string;
+    image?: string;  // URL ảnh từ Cloudinary
+    active?: boolean;  // Backend expects 'active', not 'isActive'
 }
 
 export interface BrandResponse {
     id: number;
     name: string;
-    isActive: boolean;
+    description?: string;
+    image?: string;  // URL ảnh từ Cloudinary
+    active?: boolean;
+    isActive?: boolean;
     createAt?: string;
     updateAt?: string;
 }

@@ -22,7 +22,7 @@ export interface ProductVariant {
 export interface CreateProductVariantRequest {
     size?: string;
     color?: string;
-    image?: string;
+    imageUrl?: string;  // ✅ Đổi image → imageUrl để khớp backend
     price: number;
     discount?: number;
     quantity: number;
@@ -76,7 +76,7 @@ export interface ProductRequest {
     brandId: number;
     categoryId: number;
     description: string;
-    images?: string[];
+    imageUrls?: string[];  // ✅ Đổi images → imageUrls để khớp backend
     active?: boolean;
 }
 
@@ -111,7 +111,7 @@ export interface PageResponse<T> {
 
 // Tạo axios instance riêng cho product service
 const productApiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1',  // ✅ Fix: thêm /v1
     headers: {
         'Content-Type': 'application/json',
     }
@@ -934,11 +934,13 @@ class ProductService {
         data?: ProductResponse;
         message?: string;
     }> {
+        console.log('[SERVICE] createProductWithVariants called with:', JSON.stringify(request, null, 2));
         try {
             const response = await productApiClient.post<ApiResponse<ProductResponse>>(
                 '/products/with-variants',
                 request
             );
+            console.log('[SERVICE] Response received:', response.data);
 
             const apiResponse = response.data;
             if (apiResponse.code !== 1000) {
@@ -954,7 +956,9 @@ class ProductService {
                 message: apiResponse.message || 'Tạo sản phẩm với biến thể thành công',
             };
         } catch (error) {
+            console.error('[SERVICE] Error in createProductWithVariants:', error);
             if (axios.isAxiosError(error)) {
+                console.error('[SERVICE] Axios error response:', error.response?.data);
                 const errorResponse = error.response?.data as ApiResponse<any>;
                 return {
                     success: false,
