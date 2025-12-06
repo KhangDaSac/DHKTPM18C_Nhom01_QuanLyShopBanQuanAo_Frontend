@@ -122,7 +122,7 @@ export default function Chatbox() {
         <div className="modamint-chatbox-window" role="dialog" aria-label="Chat support">
           <div className="modamint-chatbox-header">
             <div className="modamint-chatbox-title">
-              <div>🤖 Chat với AI Assistant</div>
+              <div>🤖 Chat với trợ lý AI</div>
             </div>
             <div className="modamint-chatbox-controls">
               <button className="modamint-chatbox-control" title={maximized ? 'Thu nhỏ' : 'Mở rộng'} onClick={() => setMaximized((m) => !m)}>{maximized ? '🗗' : '🗖'}</button>
