@@ -140,7 +140,7 @@ export default function Chatbox() {
                 <p className="hint">Hãy hỏi tôi bất cứ điều gì về sản phẩm, đơn hàng hoặc chính sách của shop!</p>
               </div>
             ) : (
-              messages.map((msg, i) => {
+              messages.map((msg) => {
                 const isCustomer = msg.type === 'USER';
                 const isAI = msg.type === 'ASSISTANT';
                 const senderName = isAI ? 'AI' : 'Bạn';
