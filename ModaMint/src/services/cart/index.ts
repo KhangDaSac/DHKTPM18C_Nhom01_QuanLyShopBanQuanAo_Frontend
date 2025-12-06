@@ -280,7 +280,22 @@ class CartService {
     try {
       const guestCartData = localStorage.getItem('guestCart');
       if (guestCartData) {
-        return JSON.parse(guestCartData);
+        const cartWithExpiry = JSON.parse(guestCartData);
+        
+        // Kiểm tra expiry date (30 ngày)
+        if (cartWithExpiry.expiryDate) {
+          const expiryDate = new Date(cartWithExpiry.expiryDate);
+          const now = new Date();
+          
+          if (now > expiryDate) {
+            // Giỏ hàng đã hết hạn - xóa khỏi localStorage
+            console.log('Guest cart expired, removing...');
+            localStorage.removeItem('guestCart');
+            return null;
+          }
+        }
+        
+        return cartWithExpiry;
       }
       return null;
     } catch (error) {
@@ -291,7 +306,11 @@ class CartService {
 
   saveGuestCart(cart: CartDto): void {
     try {
-      localStorage.setItem('guestCart', JSON.stringify(cart));
+      const cartWithExpiry = {
+        ...cart,
+        expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 ngày
+      };
+      localStorage.setItem('guestCart', JSON.stringify(cartWithExpiry));
     } catch (error) {
       console.error('Error saving guest cart:', error);
     }

@@ -15,6 +15,7 @@ import { toast } from 'react-toastify';
 import { vietnamAddressService } from '@/services/address/vietnamAddress';
 import type { Province, District, Ward } from '@/services/address/vietnamAddress';
 import styles from './style.module.css';
+import './validation.css';
 import axios from 'axios';
 
 const API_URL = 'http://localhost:8080/api/v1';
@@ -39,6 +40,13 @@ const CheckoutPage: React.FC = () => {
     const [isGuest, setIsGuest] = useState(!user);
     const [guestName, setGuestName] = useState('');
     const [guestEmail, setGuestEmail] = useState('');
+    
+    // Validation errors
+    const [errors, setErrors] = useState<{
+        guestName?: string;
+        guestEmail?: string;
+        phone?: string;
+    }>({});
 
     const [provinces, setProvinces] = useState<Province[]>([]);
     const [districts, setDistricts] = useState<District[]>([]);
@@ -50,6 +58,44 @@ const CheckoutPage: React.FC = () => {
 
     const [promoCodeInput, setPromoCodeInput] = useState('');
     const [applyingPromo, setApplyingPromo] = useState(false);
+
+    // Validation functions
+    const validateEmail = (email: string): string => {
+        if (!email.trim()) return 'Email không được để trống';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) return 'Email không hợp lệ';
+        return '';
+    };
+
+    const validatePhone = (phone: string): string => {
+        if (!phone.trim()) return 'Số điện thoại không được để trống';
+        const phoneRegex = /^[0-9]{10,11}$/;
+        if (!phoneRegex.test(phone)) return 'Số điện thoại phải có 10-11 chữ số';
+        return '';
+    };
+
+    const validateName = (name: string): string => {
+        if (!name.trim()) return 'Họ tên không được để trống';
+        if (name.trim().length < 2) return 'Họ tên phải có ít nhất 2 ký tự';
+        if (name.trim().length > 100) return 'Họ tên không được vượt quá 100 ký tự';
+        return '';
+    };
+
+    // Blur handlers for validation
+    const handleBlurGuestName = () => {
+        const error = validateName(guestName);
+        setErrors(prev => ({ ...prev, guestName: error }));
+    };
+
+    const handleBlurGuestEmail = () => {
+        const error = validateEmail(guestEmail);
+        setErrors(prev => ({ ...prev, guestEmail: error }));
+    };
+
+    const handleBlurPhone = () => {
+        const error = validatePhone(phone);
+        setErrors(prev => ({ ...prev, phone: error }));
+    };
 
     const cartItems = cart?.items || [];
     
@@ -450,22 +496,40 @@ const CheckoutPage: React.FC = () => {
                                             <input
                                                 type="text"
                                                 value={guestName}
-                                                onChange={(e) => setGuestName(e.target.value)}
-                                                className={styles.input}
+                                                onChange={(e) => {
+                                                    setGuestName(e.target.value);
+                                                    if (errors.guestName) {
+                                                        setErrors(prev => ({ ...prev, guestName: undefined }));
+                                                    }
+                                                }}
+                                                onBlur={handleBlurGuestName}
+                                                className={`${styles.input} ${errors.guestName ? 'input_error' : ''}`}
                                                 placeholder="Nhập họ và tên"
                                                 required
                                             />
+                                            {errors.guestName && (
+                                                <div className="error_message">{errors.guestName}</div>
+                                            )}
                                         </div>
                                         <div>
                                             <label className={styles.label}>Email *</label>
                                             <input
                                                 type="email"
                                                 value={guestEmail}
-                                                onChange={(e) => setGuestEmail(e.target.value)}
-                                                className={styles.input}
+                                                onChange={(e) => {
+                                                    setGuestEmail(e.target.value);
+                                                    if (errors.guestEmail) {
+                                                        setErrors(prev => ({ ...prev, guestEmail: undefined }));
+                                                    }
+                                                }}
+                                                onBlur={handleBlurGuestEmail}
+                                                className={`${styles.input} ${errors.guestEmail ? 'input_error' : ''}`}
                                                 placeholder="Nhập email để nhận thông báo đơn hàng"
                                                 required
                                             />
+                                            {errors.guestEmail && (
+                                                <div className="error_message">{errors.guestEmail}</div>
+                                            )}
                                         </div>
                                     </>
                                 ) : (
@@ -485,11 +549,20 @@ const CheckoutPage: React.FC = () => {
                                     <input
                                         type="tel"
                                         value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        className={styles.input}
+                                        onChange={(e) => {
+                                            setPhone(e.target.value);
+                                            if (errors.phone) {
+                                                setErrors(prev => ({ ...prev, phone: undefined }));
+                                            }
+                                        }}
+                                        onBlur={handleBlurPhone}
+                                        className={`${styles.input} ${errors.phone ? 'input_error' : ''}`}
                                         placeholder="Nhập số điện thoại"
                                         required
                                     />
+                                    {errors.phone && (
+                                        <div className="error_message">{errors.phone}</div>
+                                    )}
                                 </div>
                                 <div>
                                     <label className={styles.label}>Ghi chú</label>

@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FiCheckCircle, FiPackage, FiPhone, FiMapPin, FiCreditCard, FiDollarSign, FiShoppingBag, FiHome, FiList, FiInfo } from 'react-icons/fi';
 import styles from './style-simple.module.css';
 import apiClient from '../../api/client';
+import { cartService } from '@/services/cart';
 
 const OrderSuccessPage: React.FC = () => {
     const location = useLocation();
@@ -74,6 +75,19 @@ const OrderSuccessPage: React.FC = () => {
             fetchOrder();
         }
     }, [orderId, orderData]);
+
+    // Xóa giỏ hàng guest sau khi thanh toán thành công
+    useEffect(() => {
+        // Chỉ xóa nếu là khách vãng lai (không có user đăng nhập)
+        const guestCartKey = 'guestCart';
+        const hasGuestCart = localStorage.getItem(guestCartKey);
+        
+        if (hasGuestCart && orderId) {
+            console.log('🗑️ Clearing guest cart after successful payment...');
+            localStorage.removeItem(guestCartKey);
+            console.log('✅ Guest cart cleared');
+        }
+    }, [orderId]);
 
     // Debug: Log order data
     React.useEffect(() => {
