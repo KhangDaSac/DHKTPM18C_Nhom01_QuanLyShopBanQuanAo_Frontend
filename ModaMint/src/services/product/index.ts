@@ -9,33 +9,65 @@ export interface ProductVariant {
     productId: number;
     size?: string;
     color?: string;
+    image?: string;          // String image trên backend
+    price: number;           // BigDecimal price
+    discount?: number;       // BigDecimal discount
+    quantity?: number;       // Integer quantity
+    additionalPrice?: number; // BigDecimal additionalPrice
+    active?: boolean;        // Boolean active
+    createAt?: string;       // LocalDateTime -> string
+}
+
+// Request để tạo ProductVariant không cần productId (dùng khi tạo Product + Variants cùng lúc)
+export interface CreateProductVariantRequest {
+    size?: string;
+    color?: string;
+    imageUrl?: string;  // ✅ Đổi image → imageUrl để khớp backend
+    price: number;
+    discount?: number;
+    quantity: number;
     additionalPrice?: number;
-    createAt?: string;
 }
 
-// Product Image
-export interface ProductImage {
-    id: number;
-    productId: number;
-    imageUrl: string;
-    isPrimary?: boolean;
+// Request gộp để tạo Product + Variants trong 1 API call
+export interface CreateProductWithVariantsRequest {
+    product: ProductRequest;
+    variants: CreateProductVariantRequest[];
 }
 
-// Product chính (từ backend Entity)
+// Request gộp để cập nhật Product + Variants trong 1 API call
+export interface UpdateProductWithVariantsRequest {
+    product: ProductRequest;
+    variants: CreateProductVariantRequest[];
+}
+
+// Sản phẩm chính (khớp với entity Product trên backend)
 export interface Product {
     id: number;
     name: string;
+
     brandId: number;
-    brandName?: string;
     categoryId: number;
-    categoryName?: string;
+
     description: string;
-    price: number;
+
+    // Backend đang dùng Set<String> images -> FE dùng mảng string
+    images?: string[];
+
     active: boolean;
+
     createAt?: string;
     updateAt?: string;
+
+    // Dữ liệu join thêm từ backend (DTO) nếu có
+    brandName?: string;
+    categoryName?: string;
+
+    // Quan hệ 1-n với ProductVariant
     productVariants?: ProductVariant[];
-    productImages?: ProductImage[];
+
+    // Nếu sau này backend trả kèm reviews thì có thể thêm:
+    // reviews?: Review[];
 }
 
 // Request tạo/cập nhật sản phẩm (từ ProductRequest DTO)
@@ -44,8 +76,7 @@ export interface ProductRequest {
     brandId: number;
     categoryId: number;
     description: string;
-    price: number;
-    images?: string[];
+    imageUrls?: string[];  // ✅ Đổi images → imageUrls để khớp backend
     active?: boolean;
 }
 
@@ -53,13 +84,13 @@ export interface ProductRequest {
 export interface ProductResponse {
     id: number;
     name: string;
-    price: number;
     active: boolean;
     description: string;
     images?: string[]; // Mảng ảnh của sản phẩm
     brandName: string;
     categoryName: string;
     quantity?: number; // Tổng số lượng từ variants
+    productVariants?: ProductVariant[]; // Danh sách biến thể
     createAt?: string;
     updateAt?: string;
 }
@@ -80,7 +111,7 @@ export interface PageResponse<T> {
 
 // Tạo axios instance riêng cho product service
 const productApiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1',  // ✅ Fix: thêm /v1
     headers: {
         'Content-Type': 'application/json',
     }
@@ -108,7 +139,7 @@ productApiClient.interceptors.request.use(
 // ==================== PRODUCT SERVICE ====================
 
 class ProductService {
-    
+
     /**
      * GET /products - Lấy tất cả sản phẩm
      */
@@ -442,47 +473,6 @@ class ProductService {
                 return {
                     success: false,
                     message: errorResponse?.message || 'Kích hoạt lại sản phẩm thất bại',
-                };
-            }
-            return {
-                success: false,
-                message: 'Lỗi kết nối đến server',
-            };
-        }
-    }
-
-    /**
-     * DELETE /products/{id}/permanent - Xóa vĩnh viễn sản phẩm
-     */
-    async permanentDeleteProduct(id: number): Promise<{
-        success: boolean;
-        data?: string;
-        message?: string;
-    }> {
-        try {
-            const response = await productApiClient.delete<ApiResponse<string>>(
-                `/products/${id}/permanent`
-            );
-
-            const apiResponse = response.data;
-            if (apiResponse.code !== 1000) {
-                return {
-                    success: false,
-                    message: apiResponse.message || 'Xóa vĩnh viễn sản phẩm thất bại',
-                };
-            }
-
-            return {
-                success: true,
-                data: apiResponse.result,
-                message: apiResponse.message,
-            };
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const errorResponse = error.response?.data as ApiResponse<any>;
-                return {
-                    success: false,
-                    message: errorResponse?.message || 'Xóa vĩnh viễn sản phẩm thất bại',
                 };
             }
             return {
@@ -926,6 +916,96 @@ class ProductService {
                 return {
                     success: false,
                     message: errorResponse?.message || 'Không thể lấy sản phẩm từ top 5 thương hiệu',
+                };
+            }
+            return {
+                success: false,
+                message: 'Lỗi kết nối đến server',
+            };
+        }
+    }
+
+    /**
+     * POST /products/with-variants - Tạo Product + Variants cùng lúc trong 1 transaction
+     * API mới đảm bảo Product luôn có ít nhất 1 Variant
+     */
+    async createProductWithVariants(request: CreateProductWithVariantsRequest): Promise<{
+        success: boolean;
+        data?: ProductResponse;
+        message?: string;
+    }> {
+        console.log('[SERVICE] createProductWithVariants called with:', JSON.stringify(request, null, 2));
+        try {
+            const response = await productApiClient.post<ApiResponse<ProductResponse>>(
+                '/products/with-variants',
+                request
+            );
+            console.log('[SERVICE] Response received:', response.data);
+
+            const apiResponse = response.data;
+            if (apiResponse.code !== 1000) {
+                return {
+                    success: false,
+                    message: apiResponse.message || 'Tạo sản phẩm với biến thể thất bại',
+                };
+            }
+
+            return {
+                success: true,
+                data: apiResponse.result,
+                message: apiResponse.message || 'Tạo sản phẩm với biến thể thành công',
+            };
+        } catch (error) {
+            console.error('[SERVICE] Error in createProductWithVariants:', error);
+            if (axios.isAxiosError(error)) {
+                console.error('[SERVICE] Axios error response:', error.response?.data);
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return {
+                    success: false,
+                    message: errorResponse?.message || 'Tạo sản phẩm với biến thể thất bại',
+                };
+            }
+            return {
+                success: false,
+                message: 'Lỗi kết nối đến server',
+            };
+        }
+    }
+
+    /**
+     * PUT /products/{id}/with-variants - Cập nhật Product + Variants cùng lúc trong 1 transaction
+     * API xóa toàn bộ variants cũ và tạo lại variants mới
+     */
+    async updateProductWithVariants(id: number, request: UpdateProductWithVariantsRequest): Promise<{
+        success: boolean;
+        data?: ProductResponse;
+        message?: string;
+    }> {
+        try {
+            const response = await productApiClient.put<ApiResponse<ProductResponse>>(
+                `/products/${id}/with-variants`,
+                request
+            );
+
+            const apiResponse = response.data;
+            if (apiResponse.code !== 1000) {
+                return {
+                    success: false,
+                    message: apiResponse.message || 'Cập nhật sản phẩm với biến thể thất bại',
+                };
+            }
+
+            return {
+                success: true,
+                data: apiResponse.result,
+                message: apiResponse.message || 'Cập nhật sản phẩm với biến thể thành công',
+            };
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return {
+                    success: false,
+                    message: errorResponse?.message || 'Cập nhật sản phẩm với biến thể thất bại',
                 };
             }
             return {
