@@ -31,7 +31,7 @@ const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrand }) => {
             data.result.map((b: any) => ({
               id: b.id,
               name: b.name,
-              logo: b.logo || 'https://via.placeholder.com/130',
+               logo: b.image || b.logo || 'https://via.placeholder.com/130',
             }))
           );
         } else {
