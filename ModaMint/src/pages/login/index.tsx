@@ -157,6 +157,9 @@ export default function Login() {
     const handleGoogleLogin = () => {
         setLoginMethod('google');
         
+        // Lưu mode vào sessionStorage để callback page biết đây là đăng nhập
+        sessionStorage.setItem('oauth_mode', 'login');
+        
         // Lấy thông tin từ client_secret file
         const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
         const redirectUri = encodeURIComponent('http://localhost:5173/auth/google');

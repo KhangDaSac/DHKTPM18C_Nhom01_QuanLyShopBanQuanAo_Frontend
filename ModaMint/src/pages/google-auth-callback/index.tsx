@@ -31,13 +31,20 @@ export default function GoogleAuthCallback() {
       const code = searchParams.get("code");
       const error = searchParams.get("error");
 
+      // Lấy mode từ sessionStorage để biết đây là đăng nhập hay đăng ký
+      const oauthMode = sessionStorage.getItem("oauth_mode") || "login";
+      sessionStorage.removeItem("oauth_mode"); // Xóa sau khi đọc
+
       // Kiểm tra nếu Google trả về lỗi
       if (error) {
         setStatus("error");
-        setErrorMessage("Đăng nhập Google thất bại. Vui lòng thử lại.");
-        toast.error("Đăng nhập Google thất bại");
+        const errorMsg = oauthMode === "register" 
+          ? "Đăng ký Google thất bại. Vui lòng thử lại."
+          : "Đăng nhập Google thất bại. Vui lòng thử lại.";
+        setErrorMessage(errorMsg);
+        toast.error(errorMsg);
         setTimeout(() => {
-          navigate("/login", { replace: true });
+          navigate(oauthMode === "register" ? "/register" : "/login", { replace: true });
         }, 3000);
         return;
       }
@@ -45,10 +52,11 @@ export default function GoogleAuthCallback() {
       // Kiểm tra nếu không có code
       if (!code) {
         setStatus("error");
-        setErrorMessage("Không nhận được mã xác thực từ Google.");
-        toast.error("Không nhận được mã xác thực từ Google");
+        const errorMsg = "Không nhận được mã xác thực từ Google.";
+        setErrorMessage(errorMsg);
+        toast.error(errorMsg);
         setTimeout(() => {
-          navigate("/login", { replace: true });
+          navigate(oauthMode === "register" ? "/register" : "/login", { replace: true });
         }, 3000);
         return;
       }
@@ -59,7 +67,10 @@ export default function GoogleAuthCallback() {
 
         if (result.success && result.data) {
           setStatus("success");
-          toast.success("Đăng nhập Google thành công!");
+          const successMsg = oauthMode === "register" 
+            ? "Đăng ký Google thành công!"
+            : "Đăng nhập Google thành công!";
+          toast.success(successMsg);
 
           // Lấy thông tin user
           let userData = null;
@@ -130,19 +141,25 @@ export default function GoogleAuthCallback() {
           }, 1500);
         } else {
           setStatus("error");
-          setErrorMessage(result.message || "Đăng nhập Google thất bại");
-          toast.error(result.message || "Đăng nhập Google thất bại");
+          const errorMsg = result.message || (oauthMode === "register" 
+            ? "Đăng ký Google thất bại"
+            : "Đăng nhập Google thất bại");
+          setErrorMessage(errorMsg);
+          toast.error(errorMsg);
           setTimeout(() => {
-            navigate("/login", { replace: true });
+            navigate(oauthMode === "register" ? "/register" : "/login", { replace: true });
           }, 3000);
         }
       } catch (error) {
         console.error("Google auth callback error:", error);
         setStatus("error");
-        setErrorMessage("Có lỗi xảy ra trong quá trình đăng nhập");
-        toast.error("Có lỗi xảy ra trong quá trình đăng nhập");
+        const errorMsg = oauthMode === "register"
+          ? "Có lỗi xảy ra trong quá trình đăng ký"
+          : "Có lỗi xảy ra trong quá trình đăng nhập";
+        setErrorMessage(errorMsg);
+        toast.error(errorMsg);
         setTimeout(() => {
-          navigate("/login", { replace: true });
+          navigate(oauthMode === "register" ? "/register" : "/login", { replace: true });
         }, 3000);
       }
     };
@@ -156,7 +173,7 @@ export default function GoogleAuthCallback() {
         {status === "processing" && (
           <>
             <div className={styles.callback__spinner}></div>
-            <h2 className={styles.callback__title}>Đang xử lý đăng nhập...</h2>
+            <h2 className={styles.callback__title}>Đang xử lý...</h2>
             <p className={styles.callback__message}>
               Vui lòng đợi trong giây lát
             </p>
@@ -165,17 +182,17 @@ export default function GoogleAuthCallback() {
         {status === "success" && (
           <>
             <div className={styles.callback__success}>✓</div>
-            <h2 className={styles.callback__title}>Đăng nhập thành công!</h2>
+            <h2 className={styles.callback__title}>Thành công!</h2>
             <p className={styles.callback__message}>Đang chuyển hướng...</p>
           </>
         )}
         {status === "error" && (
           <>
             <div className={styles.callback__error}>✗</div>
-            <h2 className={styles.callback__title}>Đăng nhập thất bại</h2>
+            <h2 className={styles.callback__title}>Thất bại</h2>
             <p className={styles.callback__message}>{errorMessage}</p>
             <p className={styles.callback__redirect}>
-              Đang chuyển về trang đăng nhập...
+              Đang chuyển hướng...
             </p>
           </>
         )}

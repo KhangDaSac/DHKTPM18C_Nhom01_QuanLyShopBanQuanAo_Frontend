@@ -123,9 +123,25 @@ export default function Register() {
 
     const handleGoogleRegister = () => {
         setRegisterMethod('google');
-        console.log('Google registration initiated');
-        // Here you would implement Google OAuth registration
-        // window.location.href = 'https://accounts.google.com/oauth/authorize?...'
+        
+        // Lưu mode vào sessionStorage để callback page biết đây là đăng ký
+        sessionStorage.setItem('oauth_mode', 'register');
+        
+        // Lấy thông tin từ client_secret file
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        const redirectUri = encodeURIComponent('http://localhost:5173/auth/google');
+        
+        // Tạo URL OAuth2 để gọi Google authorization
+        const googleAuthUrl = `https://accounts.google.com/o/oauth2/auth?` +
+            `client_id=${clientId}&` +
+            `redirect_uri=${redirectUri}&` +
+            `response_type=code&` +
+            `scope=email profile openid&` +
+            `access_type=offline&` +
+            `prompt=select_account`;
+        
+        // Redirect đến Google để hiển thị màn hình chọn account
+        window.location.href = googleAuthUrl;
     };
 
 
