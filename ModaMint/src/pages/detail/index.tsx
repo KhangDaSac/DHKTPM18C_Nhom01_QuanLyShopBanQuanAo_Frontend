@@ -13,7 +13,6 @@ import { productService } from '@/services/product';
 import { productVariantService } from '@/services/productVariant';
 import { cartService } from '@/services/cart';
 import { useFavorites } from '@/contexts/favoritesContext';
-import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/authContext';
 import { toast } from 'react-toastify';
 
@@ -166,9 +165,9 @@ const ProductDetailPage: React.FC = () => {
 
   const currentPrice = currentVariant
     ? currentVariant.price - currentVariant.discount
-    : product?.price || 0;
+    : 0;
 
-  const originalPrice = currentVariant?.price || product?.price || 0;
+  const originalPrice = currentVariant?.price || 0;
   const currentSKU = currentVariant?.id.toString() || 'N/A';
 
   // Lọc ảnh theo màu
@@ -259,13 +258,6 @@ const ProductDetailPage: React.FC = () => {
     if (!currentVariant) return;
     setAddingToCart(true);
     try {
-      const res = await cartService.addItem({ variantId: currentVariant.id, quantity });
-      if (res && res.success) {
-        // Reload cart from backend to update context
-        const cartRes = await cartService.getCart();
-        if (cartRes.success && cartRes.data) {
-          // Update cart context will be called via provider
-        }
       if (user) {
         // Authenticated user
         const res = await cartService.addItem({ variantId: currentVariant.id, quantity });
@@ -283,8 +275,8 @@ const ProductDetailPage: React.FC = () => {
           variantId: currentVariant.id,
           productId: product?.id,
           productName: product?.name,
-          image: currentVariant.imageUrl || product?.imageUrl,
-          imageUrl: currentVariant.imageUrl || product?.imageUrl,
+          image: currentVariant.image || product?.images?.[0],
+          imageUrl: currentVariant.image || product?.images?.[0],
           unitPrice: currentVariant.price,
           price: currentVariant.price,
           quantity: quantity,
@@ -324,8 +316,8 @@ const ProductDetailPage: React.FC = () => {
           variantId: currentVariant.id,
           productId: product?.id,
           productName: product?.name,
-          image: currentVariant.imageUrl || product?.imageUrl,
-          imageUrl: currentVariant.imageUrl || product?.imageUrl,
+          image: currentVariant.image || product?.images?.[0],
+          imageUrl: currentVariant.image || product?.images?.[0],
           unitPrice: currentVariant.price,
           price: currentVariant.price,
           quantity: quantity,
@@ -363,7 +355,7 @@ const ProductDetailPage: React.FC = () => {
           toast.error('Không thể xóa khỏi yêu thích');
         }
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('Favorite error', e);
       toast.error('Có lỗi xảy ra. Vui lòng thử lại');
     }
@@ -374,7 +366,7 @@ const ProductDetailPage: React.FC = () => {
     if (!product) return;
     try {
       setIsFavorite(favorites.isFavorite(product.id));
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, [product, favorites]);

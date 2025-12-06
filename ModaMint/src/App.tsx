@@ -25,7 +25,6 @@ import ProfileOrders from "./pages/profile/ProfileOrders";
 import ProfileChangePassword from "./pages/profile/ProfileChangePassword";
 import AuthTestPage from "./pages/auth-test";
 import SearchPage from './pages/search';
-import OrderSuccessPage from './pages/order-success';
 
 import Detail from "./pages/detail";
 import ProductList from "./pages/products";
