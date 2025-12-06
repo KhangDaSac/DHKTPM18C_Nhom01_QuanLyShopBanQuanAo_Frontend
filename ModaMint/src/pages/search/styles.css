@@ -1,0 +1,141 @@
+.search-page {
+  padding: 40px 0;
+  min-height: 60vh;
+  background-color: #f9f9f9;
+}
+
+.search-page__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.search-page__header {
+  margin-bottom: 40px;
+}
+
+.search-page__title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 10px;
+}
+
+.search-page__count {
+  font-size: 14px;
+  color: #666;
+}
+
+.search-page__loading,
+.search-page__error,
+.search-page__empty {
+  text-align: center;
+  padding: 60px 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  margin-bottom: 40px;
+}
+
+.search-page__loading p,
+.search-page__error p,
+.search-page__empty p {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+.search-page__error {
+  background-color: #ffe6e6;
+  border: 1px solid #ffb3b3;
+}
+
+.search-page__error p {
+  color: #d32f2f;
+}
+
+.search-page__grid {
+  display: grid;
+  /* Desktop: 4 columns x 3 rows => 12 items per page arranged evenly */
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 1024px) {
+  .search-page__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .search-page__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+
+  .search-page__title {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-page {
+    padding: 20px 0;
+  }
+
+  .search-page__container {
+    padding: 0 10px;
+  }
+
+  .search-page__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-page__title {
+    font-size: 18px;
+  }
+}
+
+/* Pagination styles */
+.search-page .pagination {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.search-page .pagination__button {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #111827;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-page .pagination__button[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.search-page .pagination__button--active {
+  background: #ff6b47;
+  color: #fff;
+  border-color: #ff6b47;
+}
+
+.search-page .pagination__button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255,107,71,0.15);
+}
+
+.search-page__count{
+  font-size: 25px;
+}

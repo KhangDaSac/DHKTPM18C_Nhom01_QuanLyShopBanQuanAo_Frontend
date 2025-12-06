@@ -7,15 +7,39 @@ type Props = {
 };
 
 const Pagination: React.FC<Props> = ({ page, totalPages, onPage }) => {
-  const pages = [];
+  const pages: number[] = [];
   for (let i = 1; i <= totalPages; i++) pages.push(i);
+
   return (
-    <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-      <button  disabled={page === 1} onClick={() => onPage(page - 1)}>«</button>
+    <div className="pagination" role="navigation" aria-label="Pagination">
+      <button
+        className="pagination__button"
+        aria-label="Previous page"
+        disabled={page === 1}
+        onClick={() => onPage(Math.max(1, page - 1))}
+      >
+        «
+      </button>
+
       {pages.map((p) => (
-        <button key={p} onClick={() => onPage(p)} style={{ fontWeight: p === page ? 700 : 400,padding:'5px 10px',border:'1px solid #c3c3c3',borderRadius:4,backgroundColor: p === page ? '#ff6347' : '#fff',color: p === page ? '#fff' : '#000' }}>{p}</button>
+        <button
+          key={p}
+          className={`pagination__button ${p === page ? 'pagination__button--active' : ''}`}
+          aria-current={p === page ? 'page' : undefined}
+          onClick={() => onPage(p)}
+        >
+          {p}
+        </button>
       ))}
-      <button disabled={page === totalPages} onClick={() => onPage(page + 1)}>»</button>
+
+      <button
+        className="pagination__button"
+        aria-label="Next page"
+        disabled={page === totalPages}
+        onClick={() => onPage(Math.min(totalPages, page + 1))}
+      >
+        »
+      </button>
     </div>
   );
 };
