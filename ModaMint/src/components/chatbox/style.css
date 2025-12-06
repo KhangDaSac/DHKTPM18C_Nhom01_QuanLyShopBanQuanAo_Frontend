@@ -2,7 +2,7 @@
   position: fixed;
   bottom: 2.4rem;
   right: 2.4rem;
-  z-index: 50;
+  z-index: 100;
 }
 .modamint-chatbox-toggle {
   background: linear-gradient(135deg, #ff6347 60%, #ff9582 100%);
@@ -21,7 +21,7 @@
   transform: translateY(-2px);
 }
 .modamint-chatbox-window {
-  width: 380px;
+  width: 400px;
   max-width: 94vw;
   background: #fff8f6;
   border-radius: 0.9rem;
@@ -226,6 +226,8 @@
   font-size: 0.95rem;
   line-height: 1.45;
   box-shadow: 0 3px 10px rgba(255,99,71,0.04);
+  white-space: pre-wrap;
+
 }
 
 .modamint-chatbox-row.bot .modamint-chatbox-bubble,

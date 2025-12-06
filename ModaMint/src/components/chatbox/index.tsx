@@ -45,7 +45,7 @@ export default function Chatbox() {
         const conv = await chatService.getHistory();
         console.log('[Chatbox] Conversation response:', conv);
         if (!mounted) return;
-      
+
         try {
           const history = await chatService.getHistory();
           console.log('[Chatbox] History loaded:', history.length, 'messages');
@@ -58,7 +58,7 @@ export default function Chatbox() {
           console.error('[Chatbox] Failed to load history:', historyErr);
           // Continue anyway - user can still chat
         }
-        
+
         console.log('[Chatbox] Init complete, messages set');
       } catch (err) {
         console.error('[Chatbox] Init conversation failed:', err);
@@ -72,16 +72,16 @@ export default function Chatbox() {
       }
     };
     init();
-    return () => { 
+    return () => {
       console.log('[Chatbox] Cleanup');
-      mounted = false; 
+      mounted = false;
     };
   }, [open, userId]);
 
   // Send message to AI via REST API
   const send = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    
+
     if (!input.trim()) {
       return;
     }
@@ -114,9 +114,12 @@ export default function Chatbox() {
 
   return (
     <div className={`modamint-chatbox ${open ? 'open' : ''} ${maximized ? 'maximized' : ''}`}>
-      <button className="modamint-chatbox-toggle" onClick={() => { setOpen((o) => !o); if (maximized) setMaximized(false); }}>
-        <span role="img" aria-label="Chat">💬</span>
-      </button>
+      {
+        !open &&
+        <button className="modamint-chatbox-toggle" onClick={() => { setOpen((o) => !o); if (maximized) setMaximized(false); }}>
+          <span role="img" aria-label="Chat">💬</span>
+        </button>
+      }
 
       {open && (
         <div className="modamint-chatbox-window" role="dialog" aria-label="Chat support">
@@ -142,16 +145,16 @@ export default function Chatbox() {
                 const isAI = msg.type === 'ASSISTANT';
                 const senderName = isAI ? 'AI' : 'Bạn';
                 const rowClass = isCustomer ? 'user' : 'ai';
-                
+
                 return (
                   <div className={`modamint-chatbox-row ${rowClass}`}>
                     {!isCustomer && (<div className="modamint-chatbox-avatar"><span>{isAI ? '🤖' : '👨‍💼'}</span></div>)}
                     <div className={`modamint-chatbox-msg ${rowClass}`}>
                       <div className="message-header">
                         <span className="sender-name">{senderName}</span>
-                        
+
                       </div>
-                      <div className="modamint-chatbox-bubble">{msg.message}</div>
+                      <div className="modamint-chatbox-bubble ">{msg.message}</div>
                     </div>
                     {isCustomer && (<div className="modamint-chatbox-avatar user"><span>🙋‍♀️</span></div>)}
                   </div>
@@ -162,15 +165,15 @@ export default function Chatbox() {
           </div>
 
           <form className="modamint-chatbox-input" onSubmit={send}>
-            <input 
-              type="text" 
-              value={input} 
+            <input
+              type="text"
+              value={input}
               onChange={(e) => {
                 setInput(e.target.value);
-              }} 
-              placeholder="Hỏi AI bất cứ điều gì..." 
-              disabled={isLoading} 
-              autoFocus 
+              }}
+              placeholder="Hỏi AI bất cứ điều gì..."
+              disabled={isLoading}
+              autoFocus
             />
             <button type="submit" disabled={isLoading || !input.trim()}>
               {isLoading ? '⏳' : '📤'}
