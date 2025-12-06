@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './style.css';
 import { chatService } from '../../services/chat';
-import { SenderType, type MessageResponse } from '../../types/chat.types';
 import { useAuth } from '../../contexts/authContext';
 import { getUserInfoFromToken } from '../../utils/apiAuthUtils';
 import { toast } from 'react-toastify';
+import type { ChatAiResponse } from '@/types';
 
 export default function Chatbox() {
   const { accessToken } = useAuth();
@@ -22,43 +22,32 @@ export default function Chatbox() {
   // UI state
   const [open, setOpen] = useState(false);
   const [maximized, setMaximized] = useState(false);
-  const [messages, setMessages] = useState<MessageResponse[]>([]);
+  const [messages, setMessages] = useState<ChatAiResponse[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [conversationId, setConversationId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-scroll
   useEffect(() => {
     if (open && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, open]);
 
-  // Debug conversationId
-  useEffect(() => {
-    console.log('[Chatbox] conversationId state:', conversationId);
-    console.log('[Chatbox] isLoading:', isLoading);
-    console.log('[Chatbox] Input will be disabled:', isLoading || !conversationId);
-  }, [conversationId, isLoading]);
 
   // Initialize conversation and load history when opened
   useEffect(() => {
     let mounted = true;
     const init = async () => {
-      if (!open || conversationId || !userId) return;
+      if (!open || !userId) return;
       try {
         setIsLoading(true);
         console.log('[Chatbox] Getting conversation for userId:', userId);
-        const conv = await chatService.getConversation(userId);
+        const conv = await chatService.getHistory();
         console.log('[Chatbox] Conversation response:', conv);
         if (!mounted) return;
-        setConversationId(conv.id);
-        console.log('[Chatbox] Set conversationId to:', conv.id);
-        
-        // Load history (optional - comment out if causing issues)
+      
         try {
-          const history = await chatService.getChatHistory(conv.id);
+          const history = await chatService.getHistory();
           console.log('[Chatbox] History loaded:', history.length, 'messages');
           console.log('[Chatbox] History data:', history);
           if (mounted) {
@@ -87,17 +76,13 @@ export default function Chatbox() {
       console.log('[Chatbox] Cleanup');
       mounted = false; 
     };
-  }, [open, conversationId, userId]);
+  }, [open, userId]);
 
   // Send message to AI via REST API
   const send = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
-    console.log('[Chatbox] Send - conversationId:', conversationId);
-    console.log('[Chatbox] Send - input:', input);
-    
-    if (!input.trim() || !conversationId) {
-      console.log('[Chatbox] Cannot send - missing conversationId or input');
+    if (!input.trim()) {
       return;
     }
 
@@ -105,18 +90,16 @@ export default function Chatbox() {
     setInput('');
     setIsLoading(true);
 
-    // Add user message immediately
-    const userMsg: MessageResponse = {
-      id: Date.now(),
-      content: content,
-      timestamp: new Date().toISOString(),
-      senderType: SenderType.CUSTOMER
+    const userMsg: ChatAiResponse = {
+      message: content,
+      type: 'USER'
     };
+
     setMessages((prev) => [...prev, userMsg]);
 
     try {
       // Send to AI and get response
-      const aiResponse = await chatService.sendMessageToAI(conversationId, content);
+      const aiResponse = await chatService.sendMessageToAI(content);
       setMessages((prev) => [...prev, aiResponse]);
     } catch (err) {
       console.error('[Chatbox] Send message failed:', err);
@@ -155,21 +138,20 @@ export default function Chatbox() {
               </div>
             ) : (
               messages.map((msg, i) => {
-                const isCustomer = msg.senderType === SenderType.CUSTOMER;
-                const isAI = msg.senderType === SenderType.AI;
-                const isStaff = msg.senderType === SenderType.STAFF;
-                const senderName = isAI ? 'AI Assistant' : isStaff ? 'Nhân viên' : 'Bạn';
-                const rowClass = isCustomer ? 'user' : isAI ? 'ai' : 'staff';
+                const isCustomer = msg.type === 'USER';
+                const isAI = msg.type === 'ASSISTANT';
+                const senderName = isAI ? 'AI' : 'Bạn';
+                const rowClass = isCustomer ? 'user' : 'ai';
                 
                 return (
-                  <div key={msg.id ?? i} className={`modamint-chatbox-row ${rowClass}`}>
+                  <div className={`modamint-chatbox-row ${rowClass}`}>
                     {!isCustomer && (<div className="modamint-chatbox-avatar"><span>{isAI ? '🤖' : '👨‍💼'}</span></div>)}
                     <div className={`modamint-chatbox-msg ${rowClass}`}>
                       <div className="message-header">
                         <span className="sender-name">{senderName}</span>
-                        {msg.timestamp && <span className="timestamp">{new Date(msg.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>}
+                        
                       </div>
-                      <div className="modamint-chatbox-bubble">{msg.content}</div>
+                      <div className="modamint-chatbox-bubble">{msg.message}</div>
                     </div>
                     {isCustomer && (<div className="modamint-chatbox-avatar user"><span>🙋‍♀️</span></div>)}
                   </div>
@@ -184,14 +166,13 @@ export default function Chatbox() {
               type="text" 
               value={input} 
               onChange={(e) => {
-                console.log('[Chatbox] Input changed:', e.target.value);
                 setInput(e.target.value);
               }} 
               placeholder="Hỏi AI bất cứ điều gì..." 
-              disabled={isLoading || !conversationId} 
+              disabled={isLoading} 
               autoFocus 
             />
-            <button type="submit" disabled={isLoading || !input.trim() || !conversationId}>
+            <button type="submit" disabled={isLoading || !input.trim()}>
               {isLoading ? '⏳' : '📤'}
             </button>
           </form>
