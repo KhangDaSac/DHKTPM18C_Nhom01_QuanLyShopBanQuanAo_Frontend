@@ -51,6 +51,8 @@ import {
 import * as XLSX from 'xlsx';
 import './style.css';
 import '../../components/common-styles.css';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import { orderService, type OrderResponse } from '../../../services/order';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -104,7 +106,7 @@ interface Order {
     trackingNumber?: string;
 }
 
-            
+
 
 const Orders: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -120,6 +122,79 @@ const Orders: React.FC = () => {
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterPaymentStatus, setFilterPaymentStatus] = useState<string>('all');
     const [filterPaymentMethod] = useState<string>('all');
+
+    // Fetch orders from backend
+    useEffect(() => {
+        fetchOrders();
+    }, []);
+
+    const fetchOrders = async () => {
+        setLoading(true);
+        try {
+            const result = await orderService.getAllOrders();
+            if (result.success && result.data) {
+                // Map backend data to frontend Order interface
+                const mappedOrders: Order[] = result.data.map((order: OrderResponse) => ({
+                    id: order.id,
+                    orderNumber: order.orderCode,
+                    customerId: parseInt(order.customerId) || 0,
+                    customerName: 'N/A', // Backend không có field này
+                    customerEmail: 'N/A',
+                    customerPhone: order.phone,
+                    status: mapBackendStatus(order.orderStatus),
+                    paymentStatus: 'pending', // Backend không có field này, tạm set pending
+                    paymentMethod: mapPaymentMethod(order.paymentMethod),
+                    shippingAddress: {
+                        fullName: 'N/A',
+                        phone: order.phone,
+                        address: 'N/A',
+                        ward: 'N/A',
+                        district: 'N/A',
+                        province: 'N/A'
+                    },
+                    items: [], // Backend không trả về items trong list
+                    subtotal: order.totalAmount,
+                    shippingFee: 0,
+                    discount: order.promotionValue || 0,
+                    total: order.subTotal,
+                    createdAt: new Date(order.createAt).toLocaleString('vi-VN'),
+                    updatedAt: new Date(order.updateAt).toLocaleString('vi-VN')
+                }));
+                setOrders(mappedOrders);
+            } else {
+                message.error(result.message || 'Không thể tải danh sách đơn hàng');
+            }
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+            message.error('Lỗi khi tải danh sách đơn hàng');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Map backend order status to frontend status
+    const mapBackendStatus = (status: string): Order['status'] => {
+        const statusMap: Record<string, Order['status']> = {
+            'PENDING': 'pending',
+            'PREPARING': 'processing',
+            'ARRIVED_AT_LOCATION': 'processing',
+            'SHIPPED': 'shipping',
+            'DELIVERED': 'delivered',
+            'CANCELLED': 'cancelled',
+            'RETURNED': 'returned'
+        };
+        return statusMap[status] || 'pending';
+    };
+
+    // Map backend payment method to frontend
+    const mapPaymentMethod = (method: string): Order['paymentMethod'] => {
+        const methodMap: Record<string, Order['paymentMethod']> = {
+            'COD': 'cash',
+            'BANK_TRANSFER': 'bank_transfer',
+            'E_WALLET': 'e_wallet'
+        };
+        return methodMap[method] || 'cash';
+    };
 
     // Inject CSS để fix table spacing
     useEffect(() => {
@@ -334,40 +409,40 @@ const Orders: React.FC = () => {
             align: 'center' as const,
             render: (record: Order) => (
                 <Space size="small">
-                        <Button
-                            type="text"
-                            icon={<EyeOutlined />}
-                            onClick={() => handleView(record)}
-                            title="Xem chi tiết"
-                        />
-                        <Button
-                            type="text"
-                            icon={<EditOutlined />}
-                            onClick={() => handleEdit(record)}
-                            title="Chỉnh sửa"
-                        />
-                        <Button
-                            type="text"
-                            icon={<PrinterOutlined />}
-                            onClick={() => handlePrintInvoice(record)}
-                            title="In hóa đơn"
-                        />
-                        {record.status !== 'cancelled' && record.status !== 'delivered' && (
-                            <Popconfirm
-                                title="Bạn có chắc muốn hủy đơn hàng này?"
-                                onConfirm={() => handleCancelOrder(record.id)}
-                                okText="Hủy đơn"
-                                cancelText="Không"
-                            >
-                                <Button
-                                    type="text"
-                                    danger
-                                    icon={<CloseCircleOutlined />}
-                                    title="Hủy đơn"
-                                />
-                            </Popconfirm>
-                        )}
-                    </Space>
+                    <Button
+                        type="text"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleView(record)}
+                        title="Xem chi tiết"
+                    />
+                    <Button
+                        type="text"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                        title="Chỉnh sửa"
+                    />
+                    <Button
+                        type="text"
+                        icon={<PrinterOutlined />}
+                        onClick={() => handlePrintInvoice(record)}
+                        title="In hóa đơn"
+                    />
+                    {record.status !== 'cancelled' && record.status !== 'delivered' && (
+                        <Popconfirm
+                            title="Bạn có chắc muốn hủy đơn hàng này?"
+                            onConfirm={() => handleCancelOrder(record.id)}
+                            okText="Hủy đơn"
+                            cancelText="Không"
+                        >
+                            <Button
+                                type="text"
+                                danger
+                                icon={<CloseCircleOutlined />}
+                                title="Hủy đơn"
+                            />
+                        </Popconfirm>
+                    )}
+                </Space>
             ),
         },
     ];
@@ -612,13 +687,20 @@ const Orders: React.FC = () => {
                         <Space>
                             <Button
                                 icon={<ReloadOutlined />}
+                                onClick={fetchOrders}
+                                loading={loading}
+                            >
+                                Làm mới
+                            </Button>
+                            <Button
+                                icon={<ReloadOutlined />}
                                 onClick={() => {
                                     setFilterStatus('all');
                                     setFilterPaymentStatus('all');
                                     message.success('Đã reset bộ lọc!');
                                 }}
                             >
-                                Reset
+                                Reset Bộ Lọc
                             </Button>
                             <Button
                                 type="primary"
@@ -634,7 +716,7 @@ const Orders: React.FC = () => {
 
             {/* Bulk Actions */}
             {selectedRowKeys.length > 0 && (
-                <Card style={{ 
+                <Card style={{
                     marginBottom: '16px',
                     marginTop: 0,
                     background: 'linear-gradient(135deg, #e6f7ff 0%, #f0f9ff 100%)',

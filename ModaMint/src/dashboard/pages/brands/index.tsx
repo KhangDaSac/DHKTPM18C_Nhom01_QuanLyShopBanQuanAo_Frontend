@@ -41,6 +41,7 @@ import '../categories/style.css';
 import '../../components/common-styles.css';
 import { brandService, type BrandRequest } from '../../../services/brand';
 import { useProducts } from '../../../hooks/useProducts';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -558,10 +559,7 @@ const Brands: React.FC = () => {
             )}
 
             {loading && (
-                <div style={{ textAlign: 'center', padding: '50px' }}>
-                    <Spin size="large" />
-                    <p style={{ marginTop: '16px' }}>Đang tải dữ liệu thương hiệu từ API...</p>
-                </div>
+                <LoadingSpinner size="large" tip="Đang tải dữ liệu thương hiệu từ API..." />
             )}
 
             {!loading && (

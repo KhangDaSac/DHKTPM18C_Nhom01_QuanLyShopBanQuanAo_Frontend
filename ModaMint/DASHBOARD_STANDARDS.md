@@ -756,9 +756,275 @@ const handleBulkAction = async (action: 'restore' | 'delete') => {
 - Consistent naming conventions
 - Comments cho logic phức tạp
 
+## 14. Loading States & User Feedback
+
+### 14.1 Page Navigation Loading (Sidebar Routes)
+**Mục đích**: Tạo cảm giác mượt mà khi chuyển giữa các trang khác nhau trong dashboard.
+
+**Implementation trong `DashboardLayout`**:
+```tsx
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import LoadingSpinner from '../components/LoadingSpinner';
+
+const DashboardLayout: React.FC = () => {
+    const [pageLoading, setPageLoading] = useState(false);
+    const location = useLocation();
+
+    // Trigger loading khi route thay đổi
+    useEffect(() => {
+        setPageLoading(true);
+        
+        const timer = setTimeout(() => {
+            setPageLoading(false);
+        }, 1000); // 1 giây loading
+
+        return () => clearTimeout(timer);
+    }, [location.pathname]);
+
+    return (
+        <Content>
+            {pageLoading ? (
+                <div style={{
+                    minHeight: '500px',
+                    background: '#fff',
+                    borderRadius: '8px',
+                    padding: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <LoadingSpinner tip="Đang tải dữ liệu..." size="large" />
+                </div>
+            ) : (
+                <Outlet />
+            )}
+        </Content>
+    );
+};
+```
+
+**Áp dụng cho**:
+- Tất cả page routes từ sidebar: Tổng Quan, Sản Phẩm, Khách Hàng, Đơn Hàng, v.v.
+- Trigger: Khi `location.pathname` thay đổi
+- Duration: **1 giây** (1000ms)
+
+### 14.2 Tab Switching Loading (Internal Navigation)
+**Mục đích**: Loading khi chuyển giữa các tabs bên trong một page (VD: Dashboard tabs).
+
+**Implementation trong page có tabs**:
+```tsx
+const Dashboard: React.FC = () => {
+    const [activeTab, setActiveTab] = useState('overview');
+    const [tabLoading, setTabLoading] = useState(false);
+
+    const handleTabChange = (key: string) => {
+        // Chuyển tab ngay lập tức
+        setActiveTab(key);
+        
+        // Hiển thị loading overlay
+        setTabLoading(true);
+        
+        // Tắt loading sau 1 giây
+        setTimeout(() => {
+            setTabLoading(false);
+        }, 1000);
+    };
+
+    // Tách riêng tab items (chỉ key + label)
+    const tabItems = [
+        { key: 'overview', label: 'Tổng quan' },
+        { key: 'all-products', label: 'Tất cả sản phẩm' },
+        { key: 'sales', label: 'Doanh số' },
+        // ...
+    ];
+
+    // Render content riêng
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'overview':
+                return <OverviewContent />;
+            case 'all-products':
+                return <AllProductsContent />;
+            case 'sales':
+                return <SalesAnalytics />;
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div>
+            <Tabs
+                activeKey={activeTab}
+                onChange={handleTabChange}
+                items={tabItems}
+            />
+            
+            {tabLoading ? (
+                <div style={{
+                    minHeight: '500px',
+                    background: '#fff',
+                    borderRadius: '8px',
+                    padding: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <LoadingSpinner tip="Đang tải dữ liệu..." size="large" />
+                </div>
+            ) : (
+                <div>{renderTabContent()}</div>
+            )}
+        </div>
+    );
+};
+```
+
+**Key Points**:
+- **Tách riêng tabItems**: Không có `children` property trong items
+- **renderTabContent()**: Function switch/case render content theo activeTab
+- **Chuyển tab ngay**: `setActiveTab(key)` chạy đầu tiên
+- **Loading overlay**: Ẩn toàn bộ content, chỉ hiện spinner
+- **Duration**: **1 giây** (1000ms)
+
+### 14.3 LoadingSpinner Component
+**File**: `src/dashboard/components/LoadingSpinner.tsx`
+
+```tsx
+import React from 'react';
+import { Spin } from 'antd';
+
+interface LoadingSpinnerProps {
+    size?: 'small' | 'default' | 'large';
+    tip?: string;
+    fullScreen?: boolean;
+    spinning?: boolean;
+    children?: React.ReactNode;
+}
+
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+    size = 'default',
+    tip = 'Đang tải...',
+    fullScreen = false,
+    spinning = true,
+    children
+}) => {
+    if (fullScreen) {
+        return (
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                zIndex: 9999
+            }}>
+                <Spin size={size} tip={tip} />
+            </div>
+        );
+    }
+
+    if (children) {
+        return (
+            <Spin size={size} tip={tip} spinning={spinning}>
+                {children}
+            </Spin>
+        );
+    }
+
+    return (
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '200px',
+            width: '100%'
+        }}>
+            <Spin size={size} tip={tip} />
+        </div>
+    );
+};
+
+export default LoadingSpinner;
+```
+
+**Usage Examples**:
+```tsx
+// Basic loading
+<LoadingSpinner tip="Đang tải dữ liệu..." size="large" />
+
+// Full screen loading
+<LoadingSpinner tip="Đang xử lý..." fullScreen />
+
+// Wrap content (loading overlay)
+<LoadingSpinner spinning={isLoading}>
+    <YourContent />
+</LoadingSpinner>
+```
+
+### 14.4 API Data Loading
+**Cho API calls và async operations**:
+
+```tsx
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState<string | null>(null);
+
+const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+        const data = await apiService.getData();
+        setData(data);
+    } catch (err) {
+        setError(err.message);
+    } finally {
+        setLoading(false);
+    }
+};
+
+// Conditional rendering
+if (loading) {
+    return <LoadingSpinner tip="Đang tải dữ liệu..." />;
+}
+
+if (error) {
+    return <Alert message="Lỗi" description={error} type="error" />;
+}
+
+return <DataTable data={data} />;
+```
+
+### 14.5 Loading Standards
+**Timing Guidelines**:
+- **Page navigation**: 1 giây (1000ms)
+- **Tab switching**: 1 giây (1000ms)
+- **Quick actions**: 0.5 giây (500ms)
+- **API calls**: Thực tế (không fake delay)
+
+**Visual Standards**:
+- **Background**: `#fff` (trắng)
+- **Border radius**: `8px`
+- **Padding**: `24px`
+- **Min height**: `500px` cho full page, `200px` cho components
+- **Alignment**: Center (flexbox)
+
+**Best Practices**:
+- ✅ LUÔN có loading state cho async operations
+- ✅ LUÔN cleanup timers trong useEffect return
+- ✅ LUÔN disable actions khi đang loading (nếu cần)
+- ✅ Hiển thị error state rõ ràng
+- ❌ KHÔNG fake delay cho API calls thật
+- ❌ KHÔNG nest nhiều loading states
+- ❌ KHÔNG block UI quá lâu (> 2 giây cần progress bar)
+
 ---
 
-**Cập nhật lần cuối**: 2024
+**Cập nhật lần cuối**: 2025-12-07
 **Người tạo**: Development Team
-**Phiên bản**: 1.0
+**Phiên bản**: 1.1
 

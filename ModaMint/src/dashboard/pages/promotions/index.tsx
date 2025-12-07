@@ -7,6 +7,7 @@ import { percentagePromotionService, amountPromotionService, type PercentageProm
 import * as XLSX from 'xlsx';
 import './style.css';
 import '../../components/common-styles.css';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;

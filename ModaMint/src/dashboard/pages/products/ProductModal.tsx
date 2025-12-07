@@ -33,6 +33,7 @@ import { productService, type ProductRequest } from '../../../services/product';
 import { productVariantService, type ProductVariant, type ProductVariantRequest } from '../../../services/productVariant';
 import type { BrandResponse } from '../../../services/brand';
 import apiClient from '../../../api/client';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -115,6 +116,38 @@ const ProductModal: React.FC<ProductModalProps> = ({
     const [productImageFileList, setProductImageFileList] = useState<UploadFile[]>([]);
     const [productImageUploading, setProductImageUploading] = useState(false);
 
+    // Load variants with images from API
+    const loadVariantsWithImages = async (productId: number) => {
+        try {
+            const result = await productVariantService.getProductVariantsByProductId(productId);
+
+            if (result.success && result.data) {
+                console.log('🔍 Variants from dedicated API:', result.data);
+                const variants: FormVariant[] = result.data.map((v) => ({
+                    key: `existing-${v.id}`,
+                    id: v.id,
+                    size: v.size || '',
+                    color: v.color || '',
+                    price: v.price,
+                    quantity: v.quantity || 0,
+                    discount: v.discount || 0,
+                    additionalPrice: v.additionalPrice || 0,
+                    image: v.image || '',
+                    active: v.active !== undefined ? v.active : true,
+                    isEditing: false,
+                    isNew: false
+                }));
+                console.log('✅ Mapped variants with images:', variants);
+                setEditVariants(variants);
+            } else {
+                setEditVariants([]);
+            }
+        } catch (error) {
+            console.error('❌ Error loading variants:', error);
+            setEditVariants([]);
+        }
+    };
+
     // Reset form when modal opens/closes - CHỈ LOAD 1 LẦN KHI MỞ MODAL
     useEffect(() => {
         if (visible) {
@@ -142,23 +175,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
                     setProductImageFileList(existingImages);
                 }
 
-                // Load variants
-                if (editingProduct.productVariants) {
-                    const variants: FormVariant[] = editingProduct.productVariants.map((v) => ({
-                        key: `existing-${v.id}`,
-                        id: v.id,
-                        size: v.size || '',
-                        color: v.color || '',
-                        price: v.price,
-                        quantity: v.quantity || 0,
-                        discount: v.discount || 0,
-                        additionalPrice: v.additionalPrice || 0,
-                        image: v.image || '',
-                        active: v.active !== undefined ? v.active : true,
-                        isEditing: false,
-                        isNew: false
-                    }));
-                    setEditVariants(variants);
+                // Load variants with images from dedicated API
+                if (editingProduct.id) {
+                    loadVariantsWithImages(editingProduct.id);
                 } else {
                     setEditVariants([]);
                 }
@@ -255,6 +274,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
     const handleEditRow = (key: string) => {
         setEditingRowKey(key);
+        // Preserve all existing data including image when entering edit mode
         setEditVariants(editVariants.map(v =>
             v.key === key ? { ...v, isEditing: true } : v
         ));
@@ -691,7 +711,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             title: 'Kích thước',
             dataIndex: 'size',
             key: 'size',
-            width: 100,
+            width: 90,
             render: (text: string, record: FormVariant) => {
                 if (record.isEditing) {
                     return (
@@ -709,7 +729,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             title: 'Màu sắc',
             dataIndex: 'color',
             key: 'color',
-            width: 100,
+            width: 90,
             render: (text: string, record: FormVariant) => {
                 if (record.isEditing) {
                     return (
@@ -727,7 +747,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             title: 'Giá (₫)',
             dataIndex: 'price',
             key: 'price',
-            width: 120,
+            width: 110,
             render: (text: number, record: FormVariant) => {
                 if (record.isEditing) {
                     return (
@@ -747,7 +767,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             title: 'Số lượng',
             dataIndex: 'quantity',
             key: 'quantity',
-            width: 100,
+            width: 90,
             render: (text: number, record: FormVariant) => {
                 if (record.isEditing) {
                     return (
@@ -766,7 +786,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             title: 'Giảm giá (%)',
             dataIndex: 'discount',
             key: 'discount',
-            width: 100,
+            width: 90,
             render: (text: number, record: FormVariant) => {
                 if (record.isEditing) {
                     return (
@@ -786,7 +806,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             title: 'Phụ phí (₫)',
             dataIndex: 'additionalPrice',
             key: 'additionalPrice',
-            width: 120,
+            width: 110,
             render: (text: number, record: FormVariant) => {
                 if (record.isEditing) {
                     return (
@@ -806,51 +826,109 @@ const ProductModal: React.FC<ProductModalProps> = ({
             title: 'Ảnh',
             dataIndex: 'image',
             key: 'image',
-            width: 150,
+            width: 80,
+            align: 'center' as const,
             render: (text: string, record: FormVariant) => {
+                // Debug log
+                console.log('Rendering image column:', { text, image: record.image, isEditing: record.isEditing });
+
                 if (record.isEditing) {
+                    // Create fileList based on current image
+                    const fileList: UploadFile[] = record.image ? [{
+                        uid: record.key + '-img',
+                        name: 'image.png',
+                        status: 'done',
+                        url: record.image,
+                        thumbUrl: record.image
+                    }] : [];
+
                     return (
-                        <Upload
-                            listType="picture-card"
-                            fileList={record.image ? [{
-                                uid: record.key,
-                                name: 'image',
-                                status: 'done',
-                                url: record.image
-                            }] : []}
-                            beforeUpload={(file) => {
-                                const isImage = file.type.startsWith('image/');
-                                if (!isImage) {
-                                    message.error('Chỉ có thể tải lên file ảnh!');
-                                    return Upload.LIST_IGNORE;
-                                }
-                                const isLt10M = file.size / 1024 / 1024 < 10;
-                                if (!isLt10M) {
-                                    message.error('Kích thước ảnh phải nhỏ hơn 10MB!');
-                                    return Upload.LIST_IGNORE;
-                                }
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <Upload
+                                key={record.key + '-upload-' + (record.isEditing ? 'edit' : 'view')}
+                                listType="picture-card"
+                                fileList={fileList}
+                                beforeUpload={(file) => {
+                                    const isImage = file.type.startsWith('image/');
+                                    if (!isImage) {
+                                        message.error('Chỉ có thể tải lên file ảnh!');
+                                        return Upload.LIST_IGNORE;
+                                    }
+                                    const isLt10M = file.size / 1024 / 1024 < 10;
+                                    if (!isLt10M) {
+                                        message.error('Kích thước ảnh phải nhỏ hơn 10MB!');
+                                        return Upload.LIST_IGNORE;
+                                    }
 
-                                // Store file temporarily and create preview URL
-                                const previewUrl = URL.createObjectURL(file);
-                                handleUpdateEditVariant(record.key, 'image', previewUrl);
-                                handleUpdateEditVariant(record.key, 'imageFile', file);
+                                    // Store file temporarily and create preview URL
+                                    const previewUrl = URL.createObjectURL(file);
 
-                                return false;
-                            }}
-                            onRemove={() => {
-                                handleUpdateEditVariant(record.key, 'image', '');
-                                handleUpdateEditVariant(record.key, 'imageFile', null);
-                            }}
-                            maxCount={1}
-                            showUploadList={{ showPreviewIcon: true, showRemoveIcon: true }}
-                        >
-                            {!record.image && (
-                                <div>
-                                    <PlusOutlined />
-                                    <div style={{ marginTop: 8, fontSize: '12px' }}>Ảnh</div>
-                                </div>
-                            )}
-                        </Upload>
+                                    // Update the correct state based on mode (CREATE or EDIT)
+                                    if (editingProduct) {
+                                        // EDIT mode - update editVariants
+                                        setEditVariants(prev => prev.map(v =>
+                                            v.key === record.key
+                                                ? { ...v, image: previewUrl, imageFile: file }
+                                                : v
+                                        ));
+                                    } else {
+                                        // CREATE mode - update formVariants
+                                        setFormVariants(prev => prev.map(v =>
+                                            v.key === record.key
+                                                ? { ...v, image: previewUrl, imageFile: file }
+                                                : v
+                                        ));
+                                    }
+
+                                    return false;
+                                }}
+                                onChange={(info) => {
+                                    // Force update when file list changes
+                                    if (info.fileList.length > 0 && info.fileList[0].originFileObj) {
+                                        const file = info.fileList[0].originFileObj;
+                                        const previewUrl = URL.createObjectURL(file);
+
+                                        if (editingProduct) {
+                                            setEditVariants(prev => prev.map(v =>
+                                                v.key === record.key
+                                                    ? { ...v, image: previewUrl, imageFile: file }
+                                                    : v
+                                            ));
+                                        } else {
+                                            setFormVariants(prev => prev.map(v =>
+                                                v.key === record.key
+                                                    ? { ...v, image: previewUrl, imageFile: file }
+                                                    : v
+                                            ));
+                                        }
+                                    }
+                                }}
+                                onRemove={() => {
+                                    if (editingProduct) {
+                                        setEditVariants(prev => prev.map(v =>
+                                            v.key === record.key
+                                                ? { ...v, image: '', imageFile: null }
+                                                : v
+                                        ));
+                                    } else {
+                                        setFormVariants(prev => prev.map(v =>
+                                            v.key === record.key
+                                                ? { ...v, image: '', imageFile: null }
+                                                : v
+                                        ));
+                                    }
+                                }}
+                                maxCount={1}
+                                showUploadList={{ showPreviewIcon: true, showRemoveIcon: true }}
+                            >
+                                {fileList.length === 0 && (
+                                    <div>
+                                        <PlusOutlined />
+                                        <div style={{ marginTop: 8, fontSize: '12px' }}>Ảnh</div>
+                                    </div>
+                                )}
+                            </Upload>
+                        </div>
                     );
                 }
                 return text ? <Image src={text} width={40} height={40} style={{ objectFit: 'cover' }} /> : '-';
@@ -860,7 +938,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
             title: 'Trạng thái',
             dataIndex: 'active',
             key: 'active',
-            width: 120,
+            width: 100,
+            align: 'center' as const,
             render: (active: boolean) => (
                 <Tag color={active === true ? 'green' : 'red'}>
                     {active === true ? 'Đang bán' : 'Ngừng bán'}
@@ -870,27 +949,28 @@ const ProductModal: React.FC<ProductModalProps> = ({
         {
             title: 'Thao tác',
             key: 'actions',
-            width: 200,
-            fixed: 'right' as const,
+            width: 100,
+            align: 'center' as const,
             render: (_: any, record: FormVariant) => {
                 if (record.isEditing) {
                     return (
-                        <Space>
+                        <Space size="small">
                             <Button
-                                type="link"
+                                type="text"
                                 icon={<SaveOutlined />}
                                 onClick={() => editingProduct ? handleSaveRow(record.key) : {}}
                                 loading={loading}
-                            >
-                                Lưu
-                            </Button>
+                                size="small"
+                                title="Lưu"
+                                style={{ color: '#52c41a' }}
+                            />
                             <Button
-                                type="link"
+                                type="text"
                                 icon={<CloseOutlined />}
                                 onClick={() => editingProduct ? handleCancelEdit(record.key) : {}}
-                            >
-                                Hủy
-                            </Button>
+                                size="small"
+                                title="Hủy"
+                            />
                         </Space>
                     );
                 }
@@ -898,32 +978,30 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 // Show different actions based on active status
                 if (record.active === false) {
                     return (
-                        <Space>
-                            <Button
-                                type="link"
-                                icon={<ReloadOutlined />}
-                                onClick={() => handleRestoreRow(record.key)}
-                                disabled={!!editingRowKey}
-                                loading={loading}
-                            >
-                                Khôi phục
-                            </Button>
-                        </Space>
+                        <Button
+                            type="text"
+                            icon={<ReloadOutlined />}
+                            onClick={() => handleRestoreRow(record.key)}
+                            disabled={!!editingRowKey}
+                            loading={loading}
+                            size="small"
+                            title="Khôi phục"
+                        />
                     );
                 }
 
                 return (
-                    <Space>
+                    <Space size="small">
                         <Button
-                            type="link"
+                            type="text"
                             icon={<EditOutlined />}
                             onClick={() => handleEditRow(record.key)}
                             disabled={!!editingRowKey && editingRowKey !== record.key}
-                        >
-                            Sửa
-                        </Button>
+                            size="small"
+                            title="Sửa"
+                        />
                         <Popconfirm
-                            title="Bạn có chắc muốn vô hiệu hóa biến thể này?"
+                            title="Vô hiệu hóa biến thể?"
                             onConfirm={() => {
                                 console.log('Popconfirm onConfirm triggered for key:', record.key);
                                 handleDeleteRow(record.key);
@@ -933,14 +1011,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
                             icon={<ExclamationCircleOutlined style={{ color: 'orange' }} />}
                         >
                             <Button
-                                type="link"
+                                type="text"
                                 danger
                                 icon={<DeleteOutlined />}
                                 disabled={!!editingRowKey}
                                 onClick={() => console.log('Delete button clicked for:', record.key, record)}
-                            >
-                                Vô hiệu hóa
-                            </Button>
+                                size="small"
+                                title="Vô hiệu hóa"
+                            />
                         </Popconfirm>
                     </Space>
                 );
@@ -1040,64 +1118,90 @@ const ProductModal: React.FC<ProductModalProps> = ({
             dataIndex: 'image',
             key: 'image',
             width: 150,
-            render: (_text: string, record: FormVariant) => (
-                <Upload
-                    listType="picture-card"
-                    fileList={record.image ? [{
-                        uid: record.key,
-                        name: 'image',
-                        status: 'done',
-                        url: record.image
-                    }] : []}
-                    beforeUpload={(file) => {
-                        const isImage = file.type.startsWith('image/');
-                        if (!isImage) {
-                            message.error('Chỉ có thể tải lên file ảnh!');
-                            return Upload.LIST_IGNORE;
-                        }
-                        const isLt10M = file.size / 1024 / 1024 < 10;
-                        if (!isLt10M) {
-                            message.error('Kích thước ảnh phải nhỏ hơn 10MB!');
-                            return Upload.LIST_IGNORE;
-                        }
+            render: (_text: string, record: FormVariant) => {
+                // Create fileList based on current image with thumbUrl
+                const fileList: UploadFile[] = record.image ? [{
+                    uid: record.key + '-img',
+                    name: 'image.png',
+                    status: 'done',
+                    url: record.image,
+                    thumbUrl: record.image
+                }] : [];
 
-                        // Store file temporarily and create preview URL
-                        const previewUrl = URL.createObjectURL(file);
-                        handleUpdateFormVariant(record.key, 'image', previewUrl);
-                        handleUpdateFormVariant(record.key, 'imageFile', file);
+                return (
+                    <Upload
+                        listType="picture-card"
+                        fileList={fileList}
+                        beforeUpload={(file) => {
+                            const isImage = file.type.startsWith('image/');
+                            if (!isImage) {
+                                message.error('Chỉ có thể tải lên file ảnh!');
+                                return Upload.LIST_IGNORE;
+                            }
+                            const isLt10M = file.size / 1024 / 1024 < 10;
+                            if (!isLt10M) {
+                                message.error('Kích thước ảnh phải nhỏ hơn 10MB!');
+                                return Upload.LIST_IGNORE;
+                            }
 
-                        return false;
-                    }}
-                    onRemove={() => {
-                        handleUpdateFormVariant(record.key, 'image', '');
-                        handleUpdateFormVariant(record.key, 'imageFile', null);
-                    }}
-                    maxCount={1}
-                    showUploadList={{ showPreviewIcon: true, showRemoveIcon: true }}
-                >
-                    {!record.image && (
-                        <div>
-                            <PlusOutlined />
-                            <div style={{ marginTop: 8, fontSize: '12px' }}>Ảnh</div>
-                        </div>
-                    )}
-                </Upload>
-            )
+                            // Store file temporarily and create preview URL
+                            const previewUrl = URL.createObjectURL(file);
+
+                            // Update state directly for immediate re-render
+                            setFormVariants(prev => prev.map(v =>
+                                v.key === record.key
+                                    ? { ...v, image: previewUrl, imageFile: file }
+                                    : v
+                            ));
+
+                            return false;
+                        }}
+                        onChange={(info) => {
+                            // Force update when file list changes
+                            if (info.fileList.length > 0 && info.fileList[0].originFileObj) {
+                                const file = info.fileList[0].originFileObj;
+                                const previewUrl = URL.createObjectURL(file);
+                                setFormVariants(prev => prev.map(v =>
+                                    v.key === record.key
+                                        ? { ...v, image: previewUrl, imageFile: file }
+                                        : v
+                                ));
+                            }
+                        }}
+                        onRemove={() => {
+                            setFormVariants(prev => prev.map(v =>
+                                v.key === record.key
+                                    ? { ...v, image: '', imageFile: null }
+                                    : v
+                            ));
+                        }}
+                        maxCount={1}
+                        showUploadList={{ showPreviewIcon: true, showRemoveIcon: true }}
+                    >
+                        {fileList.length === 0 && (
+                            <div>
+                                <PlusOutlined />
+                                <div style={{ marginTop: 8, fontSize: '12px' }}>Ảnh</div>
+                            </div>
+                        )}
+                    </Upload>
+                );
+            }
         },
         {
             title: 'Thao tác',
             key: 'actions',
-            width: 100,
-            fixed: 'right' as const,
+            width: 80,
+            align: 'center' as const,
             render: (_: any, record: FormVariant) => (
                 <Button
-                    type="link"
+                    type="text"
                     danger
                     icon={<DeleteOutlined />}
                     onClick={() => handleRemoveFormVariant(record.key)}
-                >
-                    Xóa
-                </Button>
+                    size="small"
+                    title="Xóa"
+                />
             )
         }
     ];
@@ -1107,9 +1211,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
             title={editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
             open={visible}
             onCancel={onClose}
-            width={1000}
+            width={1400}
             footer={[
-                <Button key="cancel" onClick={onClose}>
+                <Button key="cancel" onClick={onClose} disabled={loading}>
                     Hủy
                 </Button>,
                 <Button
@@ -1117,200 +1221,200 @@ const ProductModal: React.FC<ProductModalProps> = ({
                     type="primary"
                     loading={loading}
                     onClick={handleSave}
-                    disabled={!!editingRowKey}
+                    disabled={!!editingRowKey || loading}
                 >
                     {editingProduct ? 'Cập nhật' : 'Thêm mới'}
                 </Button>
             ]}
             destroyOnClose
         >
-            <Tabs activeKey={activeTab} onChange={setActiveTab}>
-                <TabPane tab="Thông tin sản phẩm" key="1">
-                    <Form
-                        form={form}
-                        layout="vertical"
-                        initialValues={{ active: true }}
-                    >
-                        <Form.Item
-                            name="name"
-                            label="Tên sản phẩm"
-                            rules={[
-                                { required: true, message: 'Vui lòng nhập tên sản phẩm' },
-                                { min: 1, message: 'Tên sản phẩm không được để trống' }
-                            ]}
+            <LoadingSpinner spinning={loading} tip="Đang xử lý...">
+                <Tabs activeKey={activeTab} onChange={setActiveTab}>
+                    <TabPane tab="Thông tin sản phẩm" key="1">
+                        <Form
+                            form={form}
+                            layout="vertical"
+                            initialValues={{ active: true }}
                         >
-                            <Input placeholder="Nhập tên sản phẩm" />
-                        </Form.Item>
-
-                        <Form.Item
-                            name="description"
-                            label="Mô tả sản phẩm"
-                            rules={[
-                                { required: true, message: 'Vui lòng nhập mô tả sản phẩm' },
-                                { min: 1, message: 'Mô tả sản phẩm không được để trống' }
-                            ]}
-                        >
-                            <TextArea rows={4} placeholder="Nhập mô tả sản phẩm" />
-                        </Form.Item>
-
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item
-                                    name="brandId"
-                                    label="Thương hiệu"
-                                    rules={[
-                                        { required: true, message: 'Vui lòng chọn thương hiệu' },
-                                        { type: 'number', message: 'Vui lòng chọn thương hiệu hợp lệ' }
-                                    ]}
-                                >
-                                    <Select
-                                        placeholder="Chọn thương hiệu"
-                                        loading={brandsLoading}
-                                        showSearch
-                                        optionFilterProp="children"
-                                    >
-                                        {brands.map(brand => (
-                                            <Option key={brand.id} value={brand.id}>{brand.name}</Option>
-                                        ))}
-                                    </Select>
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item
-                                    name="categoryId"
-                                    label="Danh mục"
-                                    rules={[
-                                        { required: true, message: 'Vui lòng chọn danh mục' },
-                                        { type: 'number', message: 'Vui lòng chọn danh mục hợp lệ' }
-                                    ]}
-                                >
-                                    <Select
-                                        placeholder="Chọn danh mục"
-                                        loading={categoriesLoading}
-                                        showSearch
-                                        optionFilterProp="children"
-                                    >
-                                        {categories.map(cat => (
-                                            <Option key={cat.id} value={cat.id}>{cat.name}</Option>
-                                        ))}
-                                    </Select>
-                                </Form.Item>
-                            </Col>
-                        </Row>
-
-                        <Form.Item
-                            name="active"
-                            label="Trạng thái"
-                        >
-                            <Select placeholder="Chọn trạng thái">
-                                <Option value={true}>Đang bán</Option>
-                                <Option value={false}>Ngừng bán</Option>
-                            </Select>
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Hình ảnh sản phẩm"
-                        >
-                            <Upload
-                                listType="picture-card"
-                                fileList={productImageFileList}
-                                beforeUpload={(file) => {
-                                    // Validate file type
-                                    const isImage = file.type.startsWith('image/');
-                                    if (!isImage) {
-                                        message.error('Chỉ có thể tải lên file ảnh!');
-                                        return Upload.LIST_IGNORE;
-                                    }
-
-                                    // Validate file size (10MB)
-                                    const isLt10M = file.size / 1024 / 1024 < 10;
-                                    if (!isLt10M) {
-                                        message.error('Kích thước ảnh phải nhỏ hơn 10MB!');
-                                        return Upload.LIST_IGNORE;
-                                    }
-
-                                    // Add to file list with temporary preview
-                                    const newFile: UploadFile = {
-                                        uid: `product-${Date.now()}-${Math.random()}`,
-                                        name: file.name,
-                                        status: 'done',
-                                        originFileObj: file,
-                                        url: URL.createObjectURL(file)
-                                    };
-                                    setProductImageFileList([...productImageFileList, newFile]);
-
-                                    return false; // Prevent auto upload, we'll handle it manually
-                                }}
-                                onRemove={(file) => {
-                                    setProductImageFileList(productImageFileList.filter(f => f.uid !== file.uid));
-                                }}
-                                multiple
+                            <Form.Item
+                                name="name"
+                                label="Tên sản phẩm"
+                                rules={[
+                                    { required: true, message: 'Vui lòng nhập tên sản phẩm' },
+                                    { min: 1, message: 'Tên sản phẩm không được để trống' }
+                                ]}
                             >
-                                {productImageFileList.length >= 8 ? null : (
-                                    <div>
-                                        <PlusOutlined />
-                                        <div style={{ marginTop: 8 }}>Tải ảnh</div>
-                                    </div>
-                                )}
-                            </Upload>
-                            <div style={{ color: '#888', fontSize: '12px', marginTop: '8px' }}>
-                                Tải lên tối đa 8 ảnh. Định dạng: JPG, PNG, GIF, WebP. Kích thước tối đa: 10MB/ảnh
-                            </div>
-                        </Form.Item>
-                    </Form>
-                </TabPane>
+                                <Input placeholder="Nhập tên sản phẩm" />
+                            </Form.Item>
 
-                <TabPane tab={`Biến thể sản phẩm ${editingProduct ? '' : '(Bắt buộc ≥1)'}`} key="2">
-                    <div style={{ marginBottom: 16 }}>
-                        <Button
-                            type="dashed"
-                            onClick={editingProduct ? handleAddEditVariant : handleAddFormVariant}
-                            icon={<PlusOutlined />}
-                            block
-                            disabled={!!editingRowKey}
-                        >
-                            Thêm biến thể mới
-                        </Button>
-                    </div>
+                            <Form.Item
+                                name="description"
+                                label="Mô tả sản phẩm"
+                                rules={[
+                                    { required: true, message: 'Vui lòng nhập mô tả sản phẩm' },
+                                    { min: 1, message: 'Mô tả sản phẩm không được để trống' }
+                                ]}
+                            >
+                                <TextArea rows={4} placeholder="Nhập mô tả sản phẩm" />
+                            </Form.Item>
 
-                    {!editingProduct && (
-                        <Table
-                            columns={createVariantsColumns}
-                            dataSource={formVariants}
-                            rowKey="key"
-                            pagination={false}
-                            scroll={{ x: 900 }}
-                            locale={{
-                                emptyText: 'Chưa có biến thể nào. Nhấn "Thêm biến thể mới" để thêm.'
-                            }}
-                        />
-                    )}
+                            <Row gutter={16}>
+                                <Col span={12}>
+                                    <Form.Item
+                                        name="brandId"
+                                        label="Thương hiệu"
+                                        rules={[
+                                            { required: true, message: 'Vui lòng chọn thương hiệu' },
+                                            { type: 'number', message: 'Vui lòng chọn thương hiệu hợp lệ' }
+                                        ]}
+                                    >
+                                        <Select
+                                            placeholder="Chọn thương hiệu"
+                                            loading={brandsLoading}
+                                            showSearch
+                                            optionFilterProp="children"
+                                        >
+                                            {brands.map(brand => (
+                                                <Option key={brand.id} value={brand.id}>{brand.name}</Option>
+                                            ))}
+                                        </Select>
+                                    </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                    <Form.Item
+                                        name="categoryId"
+                                        label="Danh mục"
+                                        rules={[
+                                            { required: true, message: 'Vui lòng chọn danh mục' },
+                                            { type: 'number', message: 'Vui lòng chọn danh mục hợp lệ' }
+                                        ]}
+                                    >
+                                        <Select
+                                            placeholder="Chọn danh mục"
+                                            loading={categoriesLoading}
+                                            showSearch
+                                            optionFilterProp="children"
+                                        >
+                                            {categories.map(cat => (
+                                                <Option key={cat.id} value={cat.id}>{cat.name}</Option>
+                                            ))}
+                                        </Select>
+                                    </Form.Item>
+                                </Col>
+                            </Row>
 
-                    {editingProduct && (
-                        <Table
-                            columns={variantsColumns}
-                            dataSource={editVariants}
-                            rowKey="key"
-                            pagination={false}
-                            scroll={{ x: 1000 }}
-                            loading={loading}
-                            locale={{
-                                emptyText: 'Chưa có biến thể nào. Nhấn "Thêm biến thể mới" để thêm.'
-                            }}
-                        />
-                    )}
+                            <Form.Item
+                                name="active"
+                                label="Trạng thái"
+                            >
+                                <Select placeholder="Chọn trạng thái">
+                                    <Option value={true}>Đang bán</Option>
+                                    <Option value={false}>Ngừng bán</Option>
+                                </Select>
+                            </Form.Item>
 
-                    {!editingProduct && formVariants.length === 0 && (
-                        <Alert
-                            message="Bắt buộc"
-                            description="Sản phẩm phải có ít nhất 1 biến thể. Vui lòng thêm biến thể trước khi lưu."
-                            type="warning"
-                            showIcon
-                            style={{ marginTop: 16 }}
-                        />
-                    )}
-                </TabPane>
-            </Tabs>
+                            <Form.Item
+                                label="Hình ảnh sản phẩm"
+                            >
+                                <Upload
+                                    listType="picture-card"
+                                    fileList={productImageFileList}
+                                    beforeUpload={(file) => {
+                                        // Validate file type
+                                        const isImage = file.type.startsWith('image/');
+                                        if (!isImage) {
+                                            message.error('Chỉ có thể tải lên file ảnh!');
+                                            return Upload.LIST_IGNORE;
+                                        }
+
+                                        // Validate file size (10MB)
+                                        const isLt10M = file.size / 1024 / 1024 < 10;
+                                        if (!isLt10M) {
+                                            message.error('Kích thước ảnh phải nhỏ hơn 10MB!');
+                                            return Upload.LIST_IGNORE;
+                                        }
+
+                                        // Add to file list with temporary preview
+                                        const newFile: UploadFile = {
+                                            uid: `product-${Date.now()}-${Math.random()}`,
+                                            name: file.name,
+                                            status: 'done',
+                                            originFileObj: file,
+                                            url: URL.createObjectURL(file)
+                                        };
+                                        setProductImageFileList([...productImageFileList, newFile]);
+
+                                        return false; // Prevent auto upload, we'll handle it manually
+                                    }}
+                                    onRemove={(file) => {
+                                        setProductImageFileList(productImageFileList.filter(f => f.uid !== file.uid));
+                                    }}
+                                    multiple
+                                >
+                                    {productImageFileList.length >= 8 ? null : (
+                                        <div>
+                                            <PlusOutlined />
+                                            <div style={{ marginTop: 8 }}>Tải ảnh</div>
+                                        </div>
+                                    )}
+                                </Upload>
+                                <div style={{ color: '#888', fontSize: '12px', marginTop: '8px' }}>
+                                    Tải lên tối đa 8 ảnh. Định dạng: JPG, PNG, GIF, WebP. Kích thước tối đa: 10MB/ảnh
+                                </div>
+                            </Form.Item>
+                        </Form>
+                    </TabPane>
+
+                    <TabPane tab={`Biến thể sản phẩm ${editingProduct ? '' : '(Bắt buộc ≥1)'}`} key="2">
+                        <div style={{ marginBottom: 16 }}>
+                            <Button
+                                type="dashed"
+                                onClick={editingProduct ? handleAddEditVariant : handleAddFormVariant}
+                                icon={<PlusOutlined />}
+                                block
+                                disabled={!!editingRowKey}
+                            >
+                                Thêm biến thể mới
+                            </Button>
+                        </div>
+
+                        {!editingProduct && (
+                            <Table
+                                columns={createVariantsColumns}
+                                dataSource={formVariants}
+                                rowKey="key"
+                                pagination={false}
+                                locale={{
+                                    emptyText: 'Chưa có biến thể nào. Nhấn "Thêm biến thể mới" để thêm.'
+                                }}
+                            />
+                        )}
+
+                        {editingProduct && (
+                            <Table
+                                columns={variantsColumns}
+                                dataSource={editVariants}
+                                rowKey="key"
+                                pagination={false}
+                                loading={loading}
+                                locale={{
+                                    emptyText: 'Chưa có biến thể nào. Nhấn "Thêm biến thể mới" để thêm.'
+                                }}
+                            />
+                        )}
+
+                        {!editingProduct && formVariants.length === 0 && (
+                            <Alert
+                                message="Bắt buộc"
+                                description="Sản phẩm phải có ít nhất 1 biến thể. Vui lòng thêm biến thể trước khi lưu."
+                                type="warning"
+                                showIcon
+                                style={{ marginTop: 16 }}
+                            />
+                        )}
+                    </TabPane>
+                </Tabs>
+            </LoadingSpinner>
         </Modal>
     );
 };

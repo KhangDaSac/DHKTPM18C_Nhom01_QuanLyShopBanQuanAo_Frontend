@@ -1,7 +1,17 @@
+/**
+ * Sales Analytics Component
+ * Dashboard Doanh Số - High-End Modern Style
+ * 
+ * Style: Stripe, Shopify, Binance Dashboard
+ * Layout: Full container (margin: 0, padding: 0), vertical stack
+ * Display: 2 charts hiển thị cùng lúc (không có tabs)
+ */
+
 import React from 'react';
-import { Card, Row, Col, Spin, Alert } from 'antd';
-import ReactApexChart from 'react-apexcharts';
-import type { ApexOptions } from 'apexcharts';
+import { Spin, Alert } from 'antd';
+import ChartCard from '../../components/layout/ChartCard';
+import SalesLast30Days from '../../components/charts/SalesLast30Days';
+import SalesByMonth from '../../components/charts/SalesByMonth';
 import type { DailySalesData, MonthlySalesData } from '../../services/analytics/index';
 
 interface SalesAnalyticsProps {
@@ -17,199 +27,58 @@ const SalesAnalytics: React.FC<SalesAnalyticsProps> = ({
     loading,
     error
 }) => {
-    // Daily Sales Line Chart
-    const dailyChartOptions: ApexOptions = {
-        chart: {
-            type: 'line',
-            height: 350,
-            toolbar: {
-                show: true
-            },
-            zoom: {
-                enabled: true
-            }
-        },
-        stroke: {
-            curve: 'smooth',
-            width: 3
-        },
-        colors: ['#1677ff', '#52c41a'],
-        dataLabels: {
-            enabled: false
-        },
-        legend: {
-            show: true,
-            position: 'top'
-        },
-        xaxis: {
-            categories: dailySales.map(d => {
-                const date = new Date(d.date);
-                return `${date.getDate()}/${date.getMonth() + 1}`;
-            }),
-            title: {
-                text: 'Ngày'
-            }
-        },
-        yaxis: [
-            {
-                title: {
-                    text: 'Doanh thu (₫)'
-                },
-                labels: {
-                    formatter: (value) => {
-                        return `${(value / 1000000).toFixed(1)}M`;
-                    }
-                }
-            },
-            {
-                opposite: true,
-                title: {
-                    text: 'Số đơn hàng'
-                }
-            }
-        ],
-        tooltip: {
-            shared: true,
-            intersect: false,
-            y: {
-                formatter: (value, { seriesIndex }) => {
-                    if (seriesIndex === 0) {
-                        return value.toLocaleString('vi-VN') + '₫';
-                    }
-                    return value.toString() + ' đơn';
-                }
-            }
-        },
-        grid: {
-            borderColor: '#f1f1f1'
-        }
-    };
-
-    const dailyChartSeries = [
-        {
-            name: 'Doanh thu',
-            type: 'line',
-            data: dailySales.map(d => d.revenue)
-        },
-        {
-            name: 'Số đơn hàng',
-            type: 'line',
-            data: dailySales.map(d => d.orders)
-        }
-    ];
-
-    // Monthly Sales Bar Chart
-    const monthlyChartOptions: ApexOptions = {
-        chart: {
-            type: 'bar',
-            height: 350,
-            toolbar: {
-                show: true
-            }
-        },
-        plotOptions: {
-            bar: {
-                horizontal: false,
-                columnWidth: '55%',
-                borderRadius: 8
-            }
-        },
-        colors: ['#1677ff', '#52c41a'],
-        dataLabels: {
-            enabled: false
-        },
-        legend: {
-            show: true,
-            position: 'top'
-        },
-        xaxis: {
-            categories: monthlySales.map(m => m.month),
-            title: {
-                text: 'Tháng'
-            }
-        },
-        yaxis: [
-            {
-                title: {
-                    text: 'Doanh thu (₫)'
-                },
-                labels: {
-                    formatter: (value) => {
-                        return `${(value / 1000000).toFixed(0)}M`;
-                    }
-                }
-            },
-            {
-                opposite: true,
-                title: {
-                    text: 'Số đơn hàng'
-                }
-            }
-        ],
-        tooltip: {
-            shared: true,
-            intersect: false,
-            y: {
-                formatter: (value, { seriesIndex }) => {
-                    if (seriesIndex === 0) {
-                        return value.toLocaleString('vi-VN') + '₫';
-                    }
-                    return value.toString() + ' đơn';
-                }
-            }
-        },
-        grid: {
-            borderColor: '#f1f1f1'
-        }
-    };
-
-    const monthlyChartSeries = [
-        {
-            name: 'Doanh thu',
-            data: monthlySales.map(m => m.revenue)
-        },
-        {
-            name: 'Số đơn hàng',
-            data: monthlySales.map(m => m.orders)
-        }
-    ];
-
+    // ============================================================
+    // LOADING & ERROR STATES
+    // ============================================================
     if (loading) {
         return (
-            <div style={{ textAlign: 'center', padding: '50px' }}>
-                <Spin size="large" />
+            <div style={{ margin: 0, padding: 0 }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '500px'
+                }}>
+                    <Spin size="large" tip="Đang tải dữ liệu doanh số..." />
+                </div>
             </div>
         );
     }
 
     if (error) {
-        return <Alert message="Lỗi" description={error} type="error" showIcon />;
+        return (
+            <div style={{ margin: 0, padding: 0 }}>
+                <Alert
+                    message="Lỗi tải dữ liệu"
+                    description={error}
+                    type="error"
+                    showIcon
+                    style={{ marginBottom: '16px' }}
+                />
+            </div>
+        );
     }
 
+    // ============================================================
+    // RENDER UI - VERTICAL STACK (2 CHARTS)
+    // ============================================================
     return (
-        <div>
-            <Row gutter={[16, 16]}>
-                <Col span={24}>
-                    <Card title="Doanh số 30 ngày gần nhất" bordered={false}>
-                        <ReactApexChart
-                            options={dailyChartOptions}
-                            series={dailyChartSeries}
-                            type="line"
-                            height={350}
-                        />
-                    </Card>
-                </Col>
-                <Col span={24}>
-                    <Card title="Doanh số theo tháng" bordered={false}>
-                        <ReactApexChart
-                            options={monthlyChartOptions}
-                            series={monthlyChartSeries}
-                            type="bar"
-                            height={350}
-                        />
-                    </Card>
-                </Col>
-            </Row>
+        <div style={{ margin: 0, padding: 0 }}>
+            {/* Line Chart - Doanh số 30 ngày gần nhất */}
+            <ChartCard
+                title="Doanh số 30 ngày gần nhất"
+                subtitle="Theo dõi xu hướng doanh thu và số lượng đơn hàng theo ngày"
+            >
+                <SalesLast30Days data={dailySales} loading={false} />
+            </ChartCard>
+
+            {/* Column Chart - Doanh số theo tháng */}
+            <ChartCard
+                title="Doanh số theo tháng"
+                subtitle="So sánh hiệu suất kinh doanh giữa các tháng"
+            >
+                <SalesByMonth data={monthlySales} loading={false} />
+            </ChartCard>
         </div>
     );
 };
