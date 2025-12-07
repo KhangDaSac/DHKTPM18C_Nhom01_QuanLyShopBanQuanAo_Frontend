@@ -1,11 +1,14 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import styles from "./Header.module.css"
 import { AiOutlineLeft, AiOutlineRight, AiOutlineSearch, AiOutlineHeart, AiOutlineUser, AiOutlineShoppingCart, AiFillCaretDown } from "react-icons/ai";
 
 import { useAuth } from '@/contexts/authContext';
+import { useCart } from '@/hooks/useCart';
+import { cartService } from '@/services/cart';
 
 export default function Header() {
+    const navigate = useNavigate();
     const announcements = [
         "CHÀO ĐÓN BỘ SƯU TẬP ĐÔNG 2025",
         "PHÁI ĐẸP ĐỂ YÊU",
@@ -16,7 +19,27 @@ export default function Header() {
     const [currentAnnouncementIndex, setCurrentAnnouncementIndex] = useState(0);
     const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const { isAuthenticated, user, logout } = useAuth();
+
+    const { getTotalItems, setCartFromBackend } = useCart();
+
+    // Refresh cart every 2 seconds to update badge count
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            try {
+                const res = await cartService.getCart();
+                if (res.success && res.data) {
+                    setCartFromBackend(res.data);
+                }
+            } catch (error) {
+                console.error('Failed to refresh cart:', error);
+            }
+        }, 2000);
+
+        return () => clearInterval(interval);
+    }, [setCartFromBackend]);
+
     const getDisplayName = () => {
         if (user) {
             if (user.firstName && user.lastName) {
@@ -28,37 +51,44 @@ export default function Header() {
     };
     const displayName = getDisplayName();
 
-    const showPreviousAnnouncement = () => {
-        if (isTransitioning) return;
-        setSlideDirection('left');
-        setIsTransitioning(true);
-        setTimeout(() => {
-            setCurrentAnnouncementIndex((prevIndex) =>
-                prevIndex === 0 ? announcements.length - 1 : prevIndex - 1
-            );
-            setTimeout(() => {
-                setIsTransitioning(false);
-                setSlideDirection(null);
-            }, 10);
-        }, 300);
-    };
+  
 
-    const showNextAnnouncement = () => {
-        if (isTransitioning) return;
-        setSlideDirection('right');
-        setIsTransitioning(true);
-        setTimeout(() => {
-            setCurrentAnnouncementIndex((prevIndex) =>
-                (prevIndex + 1) % announcements.length
-            );
-            setTimeout(() => {
-                setIsTransitioning(false);
-                setSlideDirection(null);
-            }, 10);
-        }, 300);
-    };
+  const showPreviousAnnouncement = () => {
+    if (isTransitioning) return;
+    setSlideDirection("left");
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentAnnouncementIndex((prevIndex) =>
+        prevIndex === 0 ? announcements.length - 1 : prevIndex - 1
+      );
+      setTimeout(() => {
+        setIsTransitioning(false);
+        setSlideDirection(null);
+      }, 10);
+    }, 300);
+  };
 
-    // No auto-rotation needed
+  const showNextAnnouncement = () => {
+    if (isTransitioning) return;
+    setSlideDirection("right");
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentAnnouncementIndex(
+        (prevIndex) => (prevIndex + 1) % announcements.length
+      );
+      setTimeout(() => {
+        setIsTransitioning(false);
+        setSlideDirection(null);
+      }, 10);
+    }, 300);
+  };
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+        }
+    };
 
     return (
         <>
@@ -96,15 +126,17 @@ export default function Header() {
                             </Link>
                         </div>
                         <div className={styles['header__search-container']}>
-                            <div className={styles['header__search-box']}>
+                            <form onSubmit={handleSearch} className={styles['header__search-box']}>
                                 <input type="text"
                                     className={styles['header__search-input']}
                                     placeholder='Tìm kiếm...'
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
                                 />
-                                <button className={styles['header__search-button']}>
+                                <button type="submit" className={styles['header__search-button']}>
                                     <AiOutlineSearch />
                                 </button>
-                            </div>
+                            </form>
                         </div>
                         <div className={styles.header__actions}>
                             <Link to="/favorites" className={`${styles.header__action} ${styles['header__action--link']}`}>
@@ -135,7 +167,7 @@ export default function Header() {
                             <Link to="/carts" className={`${styles.header__action} ${styles['header__action--link']}`}>
                                 <div className={styles['header__cart-wrapper']}>
                                     <AiOutlineShoppingCart className={styles['header__action-icon']} />
-                                    <span className={styles['header__cart-count']}>1</span>
+                                    <span className={styles['header__cart-count']}>{getTotalItems()}</span>
                                 </div>
                                 <span className={styles['header__action-text']}>Giỏ hàng</span>
                             </Link>
@@ -145,9 +177,14 @@ export default function Header() {
                 <div className={styles.header__menu}>
                     <div className={styles.header__container}>
                         <ul className={styles.header__nav}>
-                            <li className={`${styles.header__item} ${styles['header__item--active']}`}><Link to="/">Trang chủ</Link></li>
+                            <li className={`${styles.header__item} ${styles['header__item--active']}`}>
+                                <Link to="/">Trang chủ</Link>
+                            </li>
+                            {/* Menu Nam */}
                             <li className={`${styles.header__item} ${styles['header__item--dropdown']}`}>
-                                <Link to="/nam">Nam <AiFillCaretDown className={styles['header__menu-arrow']} /></Link>
+                                <Link to="/nam/ao">
+                                    Nam <AiFillCaretDown className={styles['header__menu-arrow']} />
+                                </Link>
                                 <div className={styles.header__submenu}>
                                     <div className={styles['header__submenu-column']}>
                                         <h3>Danh mục</h3>
@@ -160,8 +197,12 @@ export default function Header() {
                                     </div>
                                 </div>
                             </li>
+
+                            {/* Menu Nữ */}
                             <li className={`${styles.header__item} ${styles['header__item--dropdown']}`}>
-                                <Link to="/nu">Nữ <AiFillCaretDown className={styles['header__menu-arrow']} /></Link>
+                                <Link to="/nu/ao">
+                                    Nữ <AiFillCaretDown className={styles['header__menu-arrow']} />
+                                </Link>
                                 <div className={styles.header__submenu}>
                                     <div className={styles['header__submenu-column']}>
                                         <h3>Danh mục</h3>
@@ -175,16 +216,25 @@ export default function Header() {
                                     </div>
                                 </div>
                             </li>
-                            <li className={styles.header__item}><Link to="/news">Tin tức</Link></li>
-                            <li className={styles.header__item}><Link to="/contact">Liên hệ</Link></li>
-                            <li className={styles.header__item}><Link to="/stores">Hệ thống cửa hàng</Link></li>
-                            <li className={styles.header__item}><Link to="/kiem-tra-don-hang">Kiểm tra đơn hàng</Link></li>
-                            <li className={styles.header__item}><Link to="/detail/1">Chi tiết sản phẩm</Link></li>
+                            <li className={styles.header__item}>
+                                <Link to="/news">Tin tức</Link>
+                            </li>
+                            <li className={styles.header__item}>
+                                <Link to="/contact">Liên hệ</Link>
+                            </li>
+                            <li className={styles.header__item}>
+                                <Link to="/stores">Hệ thống cửa hàng</Link>
+                            </li>
+                            <li className={styles.header__item}>
+                                <Link to="/profile/order">Kiểm tra đơn hàng</Link>
+                            </li>
+                            <li className={styles.header__item}>
+                                <Link to="/detail/1">Chi tiết sản phẩm</Link>
+                            </li>
                         </ul>
                     </div>
                 </div>
             </div>
         </>
-    )
+    );
 }
-

@@ -957,3 +957,118 @@
 .modal_container::-webkit-scrollbar-thumb:hover {
   background: #ff4d4d;
 }
+
+/* Icon Animations */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modal Images Input Wrapper */
+.modal_images__input_wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 20px;
+  border: 2px dashed #d0d0d0;
+  border-radius: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fafafa;
+  box-sizing: border-box;
+  font-weight: 600;
+  color: #666;
+}
+
+.modal_images__input_wrapper:hover:not(:has(input:disabled)) {
+  border-color: #ff6448;
+  background: #fff5f3;
+  color: #ff6448;
+}
+
+.modal_images__input_wrapper:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f0f0f0;
+}
+
+.modal_images__input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.modal_images__input:disabled {
+  cursor: not-allowed;
+}
+
+/* Star Icon Styles */
+.modal_rating__star {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal_rating__star:hover {
+  transform: scale(1.15) rotate(-5deg);
+}
+
+.modal_rating__star_active {
+  animation: starPulse 0.3s ease-out;
+}
+
+/* Review List Toggle Button with Icons */
+.review_list__toggle_button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 40px;
+  background: #ffffff;
+  border: 2px solid #ff6448;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ff6448;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(255, 77, 77, 0.15);
+}
+
+.review_list__toggle_button:hover {
+  background: linear-gradient(135deg, #ff6448 0%, #ff4d4d 100%);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 77, 77, 0.35);
+}
+
+/* Upload Progress with Icon */
+.upload_progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  background: linear-gradient(135deg, #fff5f3 0%, #ffe8e4 100%);
+  border: 2px solid #ff6448;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ff6448;
+  margin-top: 16px;
+}

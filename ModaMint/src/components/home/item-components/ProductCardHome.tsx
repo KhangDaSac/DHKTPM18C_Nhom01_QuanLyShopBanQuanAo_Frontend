@@ -141,7 +141,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             }
           }}
         >
-          <Heart fill={isFavorite ? '#FF6347' : undefined} color={isFavorite ? '#FF6347' : undefined} />
+          <Heart fill={isFavorite ? '#FF3914' : '#FF765C'} color={isFavorite ? '#FF3914' : '#fff'} />
         </button>
 
         {/* Navigation buttons - chỉ hiện khi hover và có nhiều hơn 1 ảnh */}

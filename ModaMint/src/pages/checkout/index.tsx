@@ -34,6 +34,11 @@ const CheckoutPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [loadingData, setLoadingData] = useState(true);
     const [showAddressInput, setShowAddressInput] = useState(false);
+    
+    // States for guest checkout
+    const [isGuest, setIsGuest] = useState(!user);
+    const [guestName, setGuestName] = useState('');
+    const [guestEmail, setGuestEmail] = useState('');
 
     const [provinces, setProvinces] = useState<Province[]>([]);
     const [districts, setDistricts] = useState<District[]>([]);
@@ -47,17 +52,25 @@ const CheckoutPage: React.FC = () => {
     const [applyingPromo, setApplyingPromo] = useState(false);
 
     const cartItems = cart?.items || [];
-    const subtotal = cart?.subtotal || cartItems.reduce((sum, item) => {
-        const price = item.unitPrice || 0;
-        const qty = item.quantity || 0;
-        return sum + (price * qty);
+    
+    // Tính subtotal từ từng item để đảm bảo chính xác
+    const subtotal = cartItems.reduce((sum, item) => {
+        const itemPrice = (item.unitPrice ?? (item as any).price) ?? 0;
+        const itemQty = item.quantity || 0;
+        const itemTotal = (item.totalPrice ?? (item as any).totalPrice) ?? (itemPrice * itemQty);
+        return sum + itemTotal;
     }, 0);
+    
     const shippingFee = cart?.shipping || 30000;
+    
+    // Tính giảm giá
     const discountAmount = selectedPromotion
         ? (selectedPromotion.type === 'PERCENTAGE'
             ? (subtotal * (selectedPromotion.discountPercent || 0) / 100)
             : (selectedPromotion.discountAmount || 0))
         : 0;
+    
+    // Tổng tiền cuối cùng
     const totalAmount = subtotal + shippingFee - discountAmount;
 
     const applyPromoCode = async () => {
@@ -89,11 +102,14 @@ const CheckoutPage: React.FC = () => {
     };
 
     useEffect(() => {
-        if (!user) {
-            navigate('/login');
-            return;
+        setIsGuest(!user);
+        if (user) {
+            loadCheckoutData();
+        } else {
+            // Load guest cart from localStorage
+            loadGuestCart();
+            loadGuestPromotions();
         }
-        loadCheckoutData();
         loadProvinces();
     }, [user]);
 
@@ -126,6 +142,35 @@ const CheckoutPage: React.FC = () => {
 
     const handleWardChange = (wardCode: number) => {
         setSelectedWard(wardCode);
+    };
+
+    const loadGuestCart = async () => {
+        setLoadingData(true);
+        try {
+            const guestCart = cartService.getGuestCart();
+            if (guestCart && guestCart.items && guestCart.items.length > 0) {
+                setCart(guestCart);
+            } else {
+                setCart(null);
+            }
+            setShowAddressInput(true); // Guest always needs to input address
+        } catch (error) {
+            console.error('Error loading guest cart:', error);
+            toast.error('Không thể tải giỏ hàng');
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    const loadGuestPromotions = async () => {
+        try {
+            // Load all active promotions for guests (without customerId)
+            const promotionsData = await getAvailablePromotions('guest');
+            setPromotions(promotionsData);
+        } catch (error) {
+            console.error('Error loading guest promotions:', error);
+            // Don't show error to user - promotions are optional
+        }
     };
 
     const loadCheckoutData = async () => {
@@ -190,36 +235,56 @@ const CheckoutPage: React.FC = () => {
     };
 
     const handleCheckout = async () => {
+        // Validation for guest
+        if (isGuest) {
+            if (!guestName.trim()) {
+                toast.error('Vui lòng nhập họ tên');
+                return;
+            }
+            if (!guestEmail.trim() || !guestEmail.includes('@')) {
+                toast.error('Vui lòng nhập email hợp lệ');
+                return;
+            }
+        }
+        
         if (!phone.trim()) {
             toast.error('Vui lòng nhập số điện thoại');
             return;
         }
+        
         if (!selectedAddressId && !showAddressInput) {
             toast.error('Vui lòng chọn địa chỉ giao hàng hoặc nhập địa chỉ mới');
             return;
         }
-        if (showAddressInput) {
+        
+        if (showAddressInput || isGuest) {
             if (!selectedProvince || !selectedDistrict || !selectedWard || !addressDetail.trim()) {
                 toast.error('Vui lòng điền đầy đủ thông tin địa chỉ');
                 return;
             }
         }
-        if (!user?.id) {
-            navigate('/login');
-            return;
-        }
 
         setLoading(true);
         try {
+            let customerIdToUse = user?.id;
+
+            // Handle guest checkout
+            if (isGuest) {
+                // For guest, use a temporary ID (backend will create proper customer)
+                customerIdToUse = 'guest';
+                toast.info('Đang xử lý đơn hàng cho khách vãng lai...');
+            }
+
+            // Prepare address info
             let addressIdToUse = selectedAddressId;
+            const province = provinces.find(p => p.code === selectedProvince);
+            const district = districts.find(d => d.code === selectedDistrict);
+            const ward = wards.find(w => w.code === selectedWard);
 
-            if (showAddressInput && selectedProvince && selectedDistrict && selectedWard) {
-                const province = provinces.find(p => p.code === selectedProvince);
-                const district = districts.find(d => d.code === selectedDistrict);
-                const ward = wards.find(w => w.code === selectedWard);
-
+            // For registered users with new address, create address first
+            if (!isGuest && showAddressInput && selectedProvince && selectedDistrict && selectedWard) {
                 const newAddressRequest: CreateAddressRequest = {
-                    customerId: user.id,
+                    customerId: customerIdToUse!,
                     city: province?.name || '',
                     district: district?.name || '',
                     ward: ward?.name || '',
@@ -229,26 +294,64 @@ const CheckoutPage: React.FC = () => {
                 addressIdToUse = createdAddress.id;
             }
 
-            if (!addressIdToUse) {
+            // For registered users, address ID is required
+            if (!isGuest && !addressIdToUse) {
                 toast.error('Không thể tạo địa chỉ giao hàng');
                 return;
             }
 
             const request: CheckoutRequest = {
-                customerId: user.id,
-                shippingAddressId: addressIdToUse,
+                customerId: customerIdToUse!,
+                shippingAddressId: addressIdToUse || undefined,
                 paymentMethod,
                 phone: phone.trim(),
                 note: note.trim(),
             };
+            
+            // Add guest info to request if guest checkout
+            if (isGuest) {
+                (request as any).guestName = guestName.trim();
+                (request as any).guestEmail = guestEmail.trim();
+                (request as any).isGuest = true;
+                
+                // Add guest cart items from localStorage
+                const guestCart = cartService.getGuestCart();
+                if (guestCart && guestCart.items) {
+                    (request as any).guestCartItems = guestCart.items.map(item => ({
+                        variantId: item.variantId,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice || (item as any).price
+                    }));
+                }
+                
+                // Add guest address info directly to request (backend will create address)
+                (request as any).city = province?.name || '';
+                (request as any).district = district?.name || '';
+                (request as any).ward = ward?.name || '';
+                (request as any).addressDetail = addressDetail.trim();
+            }
 
             if (selectedPromotion) {
                 request.percentagePromotionCode = selectedPromotion.type === 'PERCENTAGE' ? selectedPromotion.code : undefined;
                 request.amountPromotionCode = selectedPromotion.type !== 'PERCENTAGE' ? selectedPromotion.code : undefined;
             }
 
+            // Debug logging
+            console.log('=== CHECKOUT REQUEST ===');
+            console.log('Is Guest:', isGuest);
+            console.log('Customer ID:', customerIdToUse);
+            console.log('Request:', JSON.stringify(request, null, 2));
+            
             const response = await processCheckout(request);
-            toast.success('Tạo đơn hàng thành công!');
+            console.log('=== CHECKOUT RESPONSE ===');
+            console.log('Response:', JSON.stringify(response, null, 2));
+            
+            // Show success message with email info for guests
+            if (isGuest) {
+                toast.success(`Đơn hàng đã được tạo thành công! Thông tin đơn hàng sẽ được gửi đến ${guestEmail}`);
+            } else {
+                toast.success('Tạo đơn hàng thành công!');
+            }
 
             // Lưu vào localStorage
             localStorage.setItem(`orderData_${response.orderId}`, JSON.stringify(response));
@@ -256,10 +359,23 @@ const CheckoutPage: React.FC = () => {
             if (paymentMethod === 'BANK_TRANSFER') {
                 await handleVNPayPayment(response.orderId, totalAmount);
             } else {
-                await cartService.clearCart();
-                navigate(`/order-success/${response.orderId}`, { state: { orderData: response } });
+                // Clear cart based on user type
+                if (isGuest) {
+                    cartService.clearGuestCart();
+                } else {
+                    await cartService.clearCart();
+                }
+                // Always navigate to order success page (not login)
+                navigate(`/order-success/${response.orderId}`, { 
+                    state: { orderData: response },
+                    replace: true // Replace history to prevent back button issues
+                });
             }
         } catch (error: any) {
+            console.error('=== CHECKOUT ERROR ===');
+            console.error('Error:', error);
+            console.error('Error response:', error?.response);
+            console.error('Error data:', error?.response?.data);
             const errorMessage = error?.response?.data?.message || 'Đặt hàng thất bại';
             toast.error(errorMessage);
         } finally {
@@ -313,17 +429,57 @@ const CheckoutPage: React.FC = () => {
                         {/* Contact Info */}
                         <div className={styles.section_card}>
                             <h2 className={styles.section_title}>Thông tin liên hệ</h2>
-                            <div className={styles.form_group}>
-                                <div>
-                                    <label className={styles.label}>Họ và tên *</label>
-                                    <input
-                                        type="text"
-                                        value={user?.username || ''}
-                                        disabled
-                                        className={styles.input_disabled}
-                                        placeholder="Tên khách hàng"
-                                    />
+                            {isGuest && (
+                                <div style={{ marginBottom: '12px', padding: '8px 12px', backgroundColor: '#e6f7ff', borderRadius: '4px', border: '1px solid #91d5ff' }}>
+                                    <p style={{ margin: 0, fontSize: '14px', color: '#0050b3' }}>
+                                        💡 Bạn đang mua hàng với tư cách khách vãng lai. 
+                                        <button 
+                                            onClick={() => navigate('/login')}
+                                            style={{ marginLeft: '8px', color: '#1890ff', background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer' }}
+                                        >
+                                            Đăng nhập
+                                        </button> để nhận ưu đãi!
+                                    </p>
                                 </div>
+                            )}
+                            <div className={styles.form_group}>
+                                {isGuest ? (
+                                    <>
+                                        <div>
+                                            <label className={styles.label}>Họ và tên *</label>
+                                            <input
+                                                type="text"
+                                                value={guestName}
+                                                onChange={(e) => setGuestName(e.target.value)}
+                                                className={styles.input}
+                                                placeholder="Nhập họ và tên"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={styles.label}>Email *</label>
+                                            <input
+                                                type="email"
+                                                value={guestEmail}
+                                                onChange={(e) => setGuestEmail(e.target.value)}
+                                                className={styles.input}
+                                                placeholder="Nhập email để nhận thông báo đơn hàng"
+                                                required
+                                            />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div>
+                                        <label className={styles.label}>Họ và tên *</label>
+                                        <input
+                                            type="text"
+                                            value={user?.username || ''}
+                                            disabled
+                                            className={styles.input_disabled}
+                                            placeholder="Tên khách hàng"
+                                        />
+                                    </div>
+                                )}
                                 <div>
                                     <label className={styles.label}>Số điện thoại *</label>
                                     <input

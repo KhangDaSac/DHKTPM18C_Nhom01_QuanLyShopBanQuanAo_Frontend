@@ -252,7 +252,7 @@ class CartService {
         const authDataStr = localStorage.getItem('authData');
         if (authDataStr) {
           try {
-            const authData = JSON.parse(authDataStr);
+            const authData = JSON.parse(authData);
             customerId = authData?.user?.id;
             if (!customerId && authData?.accessToken) {
               const userInfo = getUserInfoFromToken(authData.accessToken);
@@ -273,6 +273,94 @@ class CartService {
     } catch (err: any) {
       return { success: false, message: err?.message || 'Network error' };
     }
+  }
+
+  // Guest cart methods using localStorage
+  getGuestCart(): CartDto | null {
+    try {
+      const guestCartData = localStorage.getItem('guestCart');
+      if (guestCartData) {
+        return JSON.parse(guestCartData);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error loading guest cart:', error);
+      return null;
+    }
+  }
+
+  saveGuestCart(cart: CartDto): void {
+    try {
+      localStorage.setItem('guestCart', JSON.stringify(cart));
+    } catch (error) {
+      console.error('Error saving guest cart:', error);
+    }
+  }
+
+  addItemToGuestCart(item: CartItemDto): void {
+    console.log('🛒 Adding item to guest cart:', item);
+    const cart = this.getGuestCart() || { items: [] };
+    console.log('📦 Current guest cart:', cart);
+    const items = cart.items || [];
+    
+    const existingItemIndex = items.findIndex(i => i.variantId === item.variantId);
+    
+    if (existingItemIndex >= 0) {
+      // Update quantity
+      console.log('✏️ Updating existing item at index:', existingItemIndex);
+      items[existingItemIndex].quantity = (items[existingItemIndex].quantity || 0) + (item.quantity || 1);
+      items[existingItemIndex].totalPrice = (items[existingItemIndex].unitPrice || items[existingItemIndex].price || 0) * items[existingItemIndex].quantity!;
+    } else {
+      // Add new item
+      console.log('➕ Adding new item to cart');
+      items.push({
+        ...item,
+        quantity: item.quantity || 1,
+        totalPrice: (item.unitPrice || item.price || 0) * (item.quantity || 1)
+      });
+    }
+    
+    cart.items = items;
+    this.updateGuestCartTotals(cart);
+    console.log('💾 Saving guest cart:', cart);
+    this.saveGuestCart(cart);
+  }
+
+  removeItemFromGuestCart(variantId: number): void {
+    const cart = this.getGuestCart();
+    if (cart && cart.items) {
+      cart.items = cart.items.filter(item => item.variantId !== variantId);
+      this.updateGuestCartTotals(cart);
+      this.saveGuestCart(cart);
+    }
+  }
+
+  updateGuestCartItemQuantity(variantId: number, quantity: number): void {
+    const cart = this.getGuestCart();
+    if (cart && cart.items) {
+      const item = cart.items.find(i => i.variantId === variantId);
+      if (item) {
+        item.quantity = quantity;
+        item.totalPrice = (item.unitPrice || item.price || 0) * quantity;
+        this.updateGuestCartTotals(cart);
+        this.saveGuestCart(cart);
+      }
+    }
+  }
+
+  clearGuestCart(): void {
+    localStorage.removeItem('guestCart');
+  }
+
+  private updateGuestCartTotals(cart: CartDto): void {
+    const subtotal = (cart.items || []).reduce((sum, item) => {
+      return sum + ((item.unitPrice || item.price || 0) * (item.quantity || 0));
+    }, 0);
+    
+    cart.subtotal = subtotal;
+    cart.shipping = 30000; // Default shipping fee
+    cart.total = subtotal + (cart.shipping || 0);
+    cart.totalPrice = cart.total;
   }
 }
 
