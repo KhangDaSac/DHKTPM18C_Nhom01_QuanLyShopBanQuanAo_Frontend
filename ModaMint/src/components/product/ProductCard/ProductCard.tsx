@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import styles from './ProductCard.module.css'
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFavorites } from '@/contexts/favoritesContext';
 import { useAuth } from '@/contexts/authContext';
@@ -40,13 +40,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   
   const isProductFavorite = isFavorite(product.id);
 
-  const handleButtonClick = () => {
+  const handleAddToCart = () => {
     if (onButtonClick) {
       onButtonClick(product);
-    } else {
-      // Default action: navigate to product detail page
-      navigate(`/detail/${product.id}`);
     }
+  };
+
+  const handleViewDetails = () => {
+    navigate(`/detail/${product.id}`);
   };
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
@@ -83,11 +84,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   return (
-    <div
-      className={styles.product_card}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <div className={styles.product_card}>
       <div className={styles.product_image}>
         <img src={product.image || product.imageUrl || '/placeholder.png'} alt={product.name} />
         {product.discount && (
@@ -125,14 +122,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <span className={styles.original_price}>{product.originalPrice}</span>
           </div>
         </div>
-        <button
-          className={`${styles.option_button} ${
-            isHovered ? styles.hovered : ''
-          }`}
-          onClick={handleButtonClick}
-        >
-          {buttonText}
-        </button>
+        <div className={styles.button_group}>
+          <button
+            className={styles.option_button}
+            onClick={handleViewDetails}
+          >
+            Xem chi tiết
+          </button>
+          <button
+            className={styles.cart_icon_button}
+            onClick={handleAddToCart}
+            title={buttonText}
+          >
+            <ShoppingCart size={20} />
+          </button>
+        </div>
       </div>
     </div>
   );
