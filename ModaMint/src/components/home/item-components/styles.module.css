@@ -836,7 +836,7 @@
   background: white;
   border: 2px solid #ff6347;
   color: #ff6347;
-  border-radius: 6px;
+  border-radius: 999px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
