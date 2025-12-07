@@ -160,8 +160,8 @@ const OrderDetailPage: React.FC = () => {
     <div className={styles.order_detail_page}>
       {/* Breadcrumb */}
       <div className={styles.breadcrumb}>
-        <Link to="/">Trang chủ</Link> →{' '}
-        <Link to="/profile/order">Đơn hàng của tôi</Link> →{' '}
+        <Link to="/">Trang chủ</Link><span className={styles.breadcrumb_separator}>›</span>
+        <Link to="/profile/order">Đơn hàng của tôi</Link><span className={styles.breadcrumb_separator}>›</span>
         <span>Đơn hàng #{order.orderCode}</span>
       </div>
 

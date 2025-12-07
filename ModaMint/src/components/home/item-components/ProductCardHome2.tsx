@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import styles from './styles.module.css';
+import styles from './styles2.module.css';
 import { Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { ProductResponse, ProductVariant } from '@/services/product';
@@ -24,7 +24,7 @@ export interface ProductCardProps {
   onButtonClick?: (product: ProductResponse) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({
+export const ProductCard2: React.FC<ProductCardProps> = ({
   product,
   buttonText = 'Xem chi tiết',
   onButtonClick,
@@ -199,7 +199,7 @@ useEffect(() => {
 
       <div className={styles.product_details}>
         <div className={styles.user_info}>
-          <span>{product.name}</span>
+          <span className={styles.product_name}>{product.name}</span>
         </div>
 
         <div className={styles.price_section}>
