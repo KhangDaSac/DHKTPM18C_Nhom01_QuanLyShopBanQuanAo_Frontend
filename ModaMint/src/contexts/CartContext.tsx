@@ -1,5 +1,6 @@
-import { createContext, useState, type ReactNode } from "react";
+import { createContext, useState, useEffect, type ReactNode } from "react";
 import type { CartDto, CartItemDto } from '../services/cart';
+import { cartService } from '../services/cart';
 
 interface CartItem {
   id: string;
@@ -28,6 +29,36 @@ interface CartProviderProps {
 
 export const CartProvider = ({ children }: CartProviderProps) => {
   const [cart, setCart] = useState<CartItem[]>([]);
+
+  // Load cart from backend (authenticated) or localStorage (guest) on mount
+  useEffect(() => {
+    const loadCart = async () => {
+      try {
+        // Try to load from backend first (for authenticated users)
+        const res = await cartService.getCart();
+        if (res.success && res.data) {
+          console.log('✅ Loaded cart from backend:', res.data);
+          setCartFromBackend(res.data);
+        } else {
+          // If backend fails, try to load guest cart from localStorage
+          const guestCart = cartService.getGuestCart();
+          if (guestCart) {
+            console.log('✅ Loaded guest cart from localStorage:', guestCart);
+            setCartFromBackend(guestCart);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load cart from backend, trying localStorage:', error);
+        // Fallback to guest cart
+        const guestCart = cartService.getGuestCart();
+        if (guestCart) {
+          console.log('✅ Loaded guest cart from localStorage (fallback):', guestCart);
+          setCartFromBackend(guestCart);
+        }
+      }
+    };
+    loadCart();
+  }, []);
 
   // Thêm sản phẩm vào giỏ (local fallback)
   const addToCart = (product: Omit<CartItem, 'qty'>) => {
@@ -61,19 +92,31 @@ export const CartProvider = ({ children }: CartProviderProps) => {
 
   // Map backend CartDto -> local CartItem[] and set state
   const setCartFromBackend = (cartDto?: CartDto | null) => {
+    console.log('🔄 [CartContext] setCartFromBackend called with:', cartDto);
     if (!cartDto || !cartDto.items) {
       setCart([]);
       return;
     }
 
-    const mapped: CartItem[] = cartDto.items.map((it: CartItemDto) => ({
-      id: String(it.itemId ?? it.variantId ?? it.productId ?? Math.random()),
-      name: it.productName ?? 'Sản phẩm',
-      price: it.unitPrice ?? 0,
-      qty: it.quantity ?? 1,
-      image: it.image ?? undefined,
-    }));
+    const mapped: CartItem[] = cartDto.items.map((it: CartItemDto) => {
+      const itemPrice = it.price ?? it.unitPrice ?? 0;
+      console.log('💰 [CartContext] Mapping item:', {
+        variantId: it.variantId,
+        productName: it.productName,
+        rawPrice: it.price,
+        rawUnitPrice: it.unitPrice,
+        finalPrice: itemPrice
+      });
+      return {
+        id: String(it.itemId ?? it.id ?? it.variantId ?? it.productId ?? Math.random()),
+        name: it.productName ?? 'Sản phẩm',
+        price: itemPrice,
+        qty: it.quantity ?? 1,
+        image: it.imageUrl ?? it.image ?? undefined,
+      };
+    });
 
+    console.log('✅ [CartContext] Mapped cart items:', mapped);
     setCart(mapped);
   };
 

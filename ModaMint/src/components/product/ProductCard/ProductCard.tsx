@@ -89,7 +89,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className={styles.product_image}>
-        <img src={product.image} alt={product.name} />
+        <img src={product.image || product.imageUrl || '/placeholder.png'} alt={product.name} />
         {product.discount && (
           <div className={styles.discount_badge}>{product.discount}</div>
         )}

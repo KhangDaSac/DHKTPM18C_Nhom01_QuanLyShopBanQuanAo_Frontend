@@ -7,12 +7,18 @@ const PUBLIC_ENDPOINTS = [
     '/auth/logout',
     '/auth/refresh',
     '/auth/introspect',
+    '/checkout', // Guest checkout support
+    '/checkout/promotions', // Guest promotions support
+    '/addresses', // Guest address creation support
 ];
 
 // Kiểm tra xem endpoint có phải là public không
 const isPublicEndpoint = (url?: string): boolean => {
     if (!url) return false;
-    return PUBLIC_ENDPOINTS.some(endpoint => url.includes(endpoint));
+    console.log('[Auth Interceptor] Checking URL:', url);
+    const isPublic = PUBLIC_ENDPOINTS.some(endpoint => url.includes(endpoint));
+    console.log('[Auth Interceptor] Is public?', isPublic);
+    return isPublic;
 };
 
 /**
@@ -41,6 +47,11 @@ export const authRequestInterceptor = (config: InternalAxiosRequestConfig) => {
  */
 export const authResponseInterceptor = async (error: any) => {
     const originalRequest = error.config;
+
+    // Skip auth handling for public endpoints
+    if (isPublicEndpoint(originalRequest?.url)) {
+        return Promise.reject(error);
+    }
 
     // Nếu lỗi 401 và chưa thử refresh
     if (error.response?.status === 401 && !originalRequest._retry) {

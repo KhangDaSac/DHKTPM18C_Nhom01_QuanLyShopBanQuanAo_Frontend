@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Heart, Share2, Zap, Award, Package, Clock, X } from 'lucide-react';
 import ProductTabs from '@/components/detail/DetailInforTab';
 
@@ -13,6 +13,8 @@ import { productService } from '@/services/product';
 import { productVariantService } from '@/services/productVariant';
 import { cartService } from '@/services/cart';
 import { useFavorites } from '@/contexts/favoritesContext';
+import { useAuth } from '@/contexts/authContext';
+import { useCart } from '@/hooks/useCart';
 import { toast } from 'react-toastify';
 
 // Lightbox Component (Đã refactor)
@@ -124,6 +126,10 @@ const SizeChart: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const productId = parseInt(id || '0', 10);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const favorites = useFavorites();
+  const { setCartFromBackend } = useCart();
 
   const [product, setProduct] = useState<ProductResponse | null>(null);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
@@ -139,8 +145,6 @@ const ProductDetailPage: React.FC = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [added, setAdded] = useState(false);
-  const navigate = useNavigate();
-  const favorites = useFavorites();
 
   const uniqueColors = Array.from(new Set(variants.map((v) => v.color)));
   const uniqueSizes = Array.from(new Set(variants.map((v) => v.size)));
@@ -163,9 +167,9 @@ const ProductDetailPage: React.FC = () => {
 
   const currentPrice = currentVariant
     ? currentVariant.price - currentVariant.discount
-    : product?.price || 0;
+    : 0;
 
-  const originalPrice = currentVariant?.price || product?.price || 0;
+  const originalPrice = currentVariant?.price || 0;
   const currentSKU = currentVariant?.id.toString() || 'N/A';
 
   // Lọc ảnh theo màu
@@ -256,18 +260,47 @@ const ProductDetailPage: React.FC = () => {
     if (!currentVariant) return;
     setAddingToCart(true);
     try {
-      const res = await cartService.addItem({ variantId: currentVariant.id, quantity });
-      if (res && res.success) {
+      if (user) {
+        // Authenticated user
+        const res = await cartService.addItem({ variantId: currentVariant.id, quantity });
+        if (res && res.success) {
+          setAdded(true);
+          toast.success('Đã thêm sản phẩm vào giỏ hàng!');
+          setTimeout(() => setAdded(false), 1800);
+        } else {
+          console.error('Add to cart failed', res?.message);
+          toast.error(res?.message || 'Không thể thêm sản phẩm vào giỏ hàng');
+        }
+      } else {
+        // Guest user
+        const itemPrice = currentVariant.price || 0;
+        console.log('🛒 Adding to guest cart - Variant price:', itemPrice, 'Variant:', currentVariant);
+        
+        cartService.addItemToGuestCart({
+          variantId: currentVariant.id,
+          productId: product?.id,
+          productName: product?.name,
+          image: currentVariant.image || product?.images?.[0],
+          imageUrl: currentVariant.image || product?.images?.[0],
+          unitPrice: itemPrice,
+          price: itemPrice,
+          quantity: quantity,
+          color: currentVariant.color,
+          size: currentVariant.size
+        });
+        
+        // Sync guest cart to CartContext
+        const updatedGuestCart = cartService.getGuestCart();
+        console.log('🔄 Syncing guest cart to context:', updatedGuestCart);
+        setCartFromBackend(updatedGuestCart);
+        
         setAdded(true);
         toast.success('Đã thêm sản phẩm vào giỏ hàng!');
-        // show added state briefly
         setTimeout(() => setAdded(false), 1800);
-      } else {
-        console.error('Add to cart failed', res?.message);
-        toast.error(res?.message || 'Không thể thêm sản phẩm vào giỏ hàng');
       }
     } catch (e) {
       console.error('Add to cart error', e);
+      toast.error('Có lỗi xảy ra khi thêm vào giỏ hàng');
     } finally {
       setAddingToCart(false);
     }
@@ -278,17 +311,44 @@ const ProductDetailPage: React.FC = () => {
     if (!currentVariant) return;
     setAddingToCart(true);
     try {
-      const res = await cartService.addItem({ variantId: currentVariant.id, quantity });
-      if (res && res.success) {
-        // Navigate to checkout page
+      if (user) {
+        // Authenticated user
+        const res = await cartService.addItem({ variantId: currentVariant.id, quantity });
+        if (res && res.success) {
+          toast.success('Đã thêm vào giỏ hàng, chuyển đến thanh toán...');
+          navigate('/checkoutpage');
+        } else {
+          console.error('Buy now failed', res?.message);
+          toast.error(res?.message || 'Không thể thêm sản phẩm vào giỏ hàng');
+        }
+      } else {
+        // Guest user
+        const itemPrice = currentVariant.price || 0;
+        console.log('🛒 Buy Now - Adding to guest cart - Variant price:', itemPrice);
+        
+        cartService.addItemToGuestCart({
+          variantId: currentVariant.id,
+          productId: product?.id,
+          productName: product?.name,
+          image: currentVariant.image || product?.images?.[0],
+          imageUrl: currentVariant.image || product?.images?.[0],
+          unitPrice: itemPrice,
+          price: itemPrice,
+          quantity: quantity,
+          color: currentVariant.color,
+          size: currentVariant.size
+        });
+        
+        // Sync guest cart to CartContext
+        const updatedGuestCart = cartService.getGuestCart();
+        setCartFromBackend(updatedGuestCart);
+        
         toast.success('Đã thêm vào giỏ hàng, chuyển đến thanh toán...');
         navigate('/checkoutpage');
-      } else {
-        console.error('Buy now add to cart failed', res?.message);
-        toast.error(res?.message || 'Không thể thêm sản phẩm để thanh toán ngay');
       }
     } catch (e) {
       console.error('Buy now error', e);
+      toast.error('Có lỗi xảy ra');
     } finally {
       setAddingToCart(false);
     }
@@ -314,7 +374,7 @@ const ProductDetailPage: React.FC = () => {
           toast.error('Không thể xóa khỏi yêu thích');
         }
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('Favorite error', e);
       toast.error('Có lỗi xảy ra. Vui lòng thử lại');
     }
@@ -325,7 +385,7 @@ const ProductDetailPage: React.FC = () => {
     if (!product) return;
     try {
       setIsFavorite(favorites.isFavorite(product.id));
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, [product, favorites]);
@@ -337,9 +397,9 @@ const ProductDetailPage: React.FC = () => {
   return (
     <div className={styles.product_detail_page}>
       <div className={styles.product_detail_page_breadcrumb}>
-        <span className={styles.product_detail_page_breadcrumb_link}>Trang chủ</span>
+        <span className={styles.product_detail_page_breadcrumb_link}><Link to={'/'}>Trang chủ</Link></span>
         <span className={styles.product_detail_page_breadcrumb_separator}>›</span>
-        <span className={styles.product_detail_page_breadcrumb_link}>Sản phẩm nổi bật</span>
+        <span className={styles.product_detail_page_breadcrumb_link}><Link to={'/products'}>Sản phẩm nổi bật</Link></span>
         <span className={styles.product_detail_page_breadcrumb_separator}>›</span>
         <span className={styles.product_detail_page_breadcrumb_active}>{product.name}</span>
       </div>

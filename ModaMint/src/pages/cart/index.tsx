@@ -5,20 +5,32 @@ import { AiOutlineMinusCircle, AiOutlinePlusCircle, AiOutlineCloseCircle } from 
 // Connect to backend cart service
 import { cartService } from '@/services/cart';
 import type { CartDto, CartItemDto } from '@/services/cart';
+import { useAuth } from '@/contexts/authContext';
 
 const Cart = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [cart, setCart] = useState<CartDto | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      const res = await cartService.getCart();
-      if (res.success && res.data) {
-        setCart(res.data);
+      if (user) {
+        // Logged in user - load from backend
+        const res = await cartService.getCart();
+        if (res.success && res.data) {
+          setCart(res.data);
+          setIsGuest(false);
+        } else {
+          setCart(null);
+        }
       } else {
-        setCart(null);
+        // Guest user - load from localStorage
+        const guestCart = cartService.getGuestCart();
+        setCart(guestCart);
+        setIsGuest(true);
       }
     } catch (error) {
       console.error('Error loading cart:', error);
@@ -30,12 +42,28 @@ const Cart = () => {
 
   useEffect(() => {
     load();
-  }, []);
+    
+    // Listen for cart updates
+    const handleCartUpdate = () => {
+      load();
+    };
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+    };
+  }, [user]);
 
   const removeFromCart = async (variantId?: number) => {
     if (!variantId) return;
-    await cartService.deleteItem(variantId);
-    await load();
+    
+    if (isGuest) {
+      cartService.removeItemFromGuestCart(variantId);
+      await load();
+    } else {
+      await cartService.deleteItem(variantId);
+      await load();
+    }
   };
 
   const clearCart = async () => {
@@ -45,11 +73,16 @@ const Cart = () => {
     
     setLoading(true);
     try {
-      const result = await cartService.clearCart();
-      if (result.success) {
+      if (isGuest) {
+        cartService.clearGuestCart();
         await load();
       } else {
-        alert('Không thể xóa giỏ hàng: ' + (result.message || 'Unknown error'));
+        const result = await cartService.clearCart();
+        if (result.success) {
+          await load();
+        } else {
+          alert('Không thể xóa giỏ hàng: ' + (result.message || 'Unknown error'));
+        }
       }
     } catch (error) {
       console.error('Error clearing cart:', error);
@@ -68,12 +101,17 @@ const Cart = () => {
       newQty 
     });
     
-    const result = await cartService.updateItem(item.variantId, newQty);
-    console.log('Update result:', result);
-    if (result.success) {
+    if (isGuest) {
+      cartService.updateGuestCartItemQuantity(item.variantId, newQty);
       await load();
     } else {
-      alert('Không thể cập nhật: ' + (result as any).message || 'Unknown error');
+      const result = await cartService.updateItem(item.variantId, newQty);
+      console.log('Update result:', result);
+      if (result.success) {
+        await load();
+      } else {
+        alert('Không thể cập nhật: ' + (result as any).message || 'Unknown error');
+      }
     }
   };
 
@@ -87,25 +125,40 @@ const Cart = () => {
     });
     
     if (newQty <= 0) {
-      const result = await cartService.deleteItem(item.variantId);
-      console.log('Delete result:', result);
-      if (result.success) {
+      if (isGuest) {
+        cartService.removeItemFromGuestCart(item.variantId);
         await load();
       } else {
-        alert('Không thể xóa: ' + result.message);
+        const result = await cartService.deleteItem(item.variantId);
+        console.log('Delete result:', result);
+        if (result.success) {
+          await load();
+        } else {
+          alert('Không thể xóa: ' + result.message);
+        }
       }
     } else {
-      const result = await cartService.updateItem(item.variantId, newQty);
-      console.log('Update result:', result);
-      if (result.success) {
+      if (isGuest) {
+        cartService.updateGuestCartItemQuantity(item.variantId, newQty);
         await load();
       } else {
-        alert('Không thể cập nhật: ' + (result as any).message || 'Unknown error');
+        const result = await cartService.updateItem(item.variantId, newQty);
+        console.log('Update result:', result);
+        if (result.success) {
+          await load();
+        } else {
+          alert('Không thể cập nhật: ' + (result as any).message || 'Unknown error');
+        }
       }
     }
   };
 
-  const total = cart?.totalPrice ?? 0;
+  // Calculate total - always calculate from items to exclude shipping fee
+  const total = cart?.items?.reduce((sum, item) => {
+    const price = item.unitPrice ?? item.price ?? 0;
+    const qty = item.quantity ?? 0;
+    return sum + (price * qty);
+  }, 0) ?? 0;
 
   if (loading) {
     return (
@@ -128,6 +181,17 @@ const Cart = () => {
           <h2 className={styles['cart-title']}>Giỏ hàng của bạn</h2>
         </header>
 
+        {isGuest && (
+          <div style={{ marginBottom: '16px', padding: '12px 16px', backgroundColor: '#fff7e6', borderRadius: '8px', border: '1px solid #ffd591' }}>
+            <p style={{ margin: 0, fontSize: '14px', color: '#d46b08' }}>
+              💡 Bạn đang mua hàng với tư cách khách vãng lai. 
+              <Link to="/login" style={{ marginLeft: '8px', color: '#fa8c16', fontWeight: 500, textDecoration: 'underline' }}>
+                Đăng nhập
+              </Link> để lưu giỏ hàng và nhận ưu đãi!
+            </p>
+          </div>
+        )}
+
         {(!cart || (cart.items?.length ?? 0) === 0) ? (
           <div className={styles['empty-box']}>
             <p className={styles['empty-title']}>Giỏ hàng trống</p>
@@ -149,7 +213,7 @@ const Cart = () => {
             </div>
             <ul className={styles['cart-list']}>
               {cart.items?.map((item) => (
-                <li key={item.id || item.itemId} className={styles['cart-item']}>
+                <li key={item.variantId || item.id || item.itemId || Math.random()} className={styles['cart-item']}>
                   <button 
                     aria-label="Xóa sản phẩm" 
                     className={styles['remove-icon']} 

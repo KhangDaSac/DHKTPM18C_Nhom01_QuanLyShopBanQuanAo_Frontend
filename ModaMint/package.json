@@ -17,6 +17,7 @@
     "antd": "^5.27.4",
     "apexcharts": "^5.3.6",
     "axios": "^1.13.2",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.10",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",

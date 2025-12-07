@@ -22,7 +22,6 @@ const Filters: React.FC<Props> = ({ prices, colors, sizes, selected, onChange })
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h4>Chọn mức giá</h4>
         {prices.map((p) => (
           <div key={p.id} style={{ marginBottom: 8 }}>
             <label 
@@ -52,7 +51,6 @@ const Filters: React.FC<Props> = ({ prices, colors, sizes, selected, onChange })
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <h4>Màu phổ biến</h4>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {colors.map((c) => (
             <button
@@ -75,7 +73,6 @@ const Filters: React.FC<Props> = ({ prices, colors, sizes, selected, onChange })
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <h4>Size</h4>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {sizes.map(s => (
             <button

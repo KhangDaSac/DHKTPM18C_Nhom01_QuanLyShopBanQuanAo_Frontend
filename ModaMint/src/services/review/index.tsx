@@ -349,6 +349,28 @@ class ReviewService {
             return { success: false, message: 'Lỗi kết nối đến server' };
         }
     }
+
+    async getReviewsByOrderItemId(orderItemId: number): Promise<{
+        success: boolean;
+        data?: ReviewResponse[];
+        message?: string;
+    }> {
+        try {
+            const response = await reviewApiClient.get<ApiResponse<ReviewResponse[]>>(`/reviews/order-item/${orderItemId}`);
+            const apiResponse = response.data;
+
+            if (apiResponse.code !== 1000) {
+                return { success: false, message: apiResponse.message || 'Không thể lấy đánh giá cho mục đơn hàng' };
+            }
+            return { success: true, data: apiResponse.result, message: apiResponse.message };
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const errorResponse = error.response?.data as ApiResponse<any>;
+                return { success: false, message: errorResponse?.message || 'Không thể lấy đánh giá cho mục đơn hàng' };
+            }
+            return { success: false, message: 'Lỗi kết nối đến server' };
+        }
+    }
 }
 
 // Export instance để sử dụng trong các component

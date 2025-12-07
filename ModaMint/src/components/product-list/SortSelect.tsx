@@ -7,14 +7,12 @@ type Props = {
 
 const SortSelect: React.FC<Props> = ({ value, onChange }) => {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)}>
+    <select style={{border:"1px solid #ff6347",borderRadius:"4px"}} value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="default">Mặc định</option>
       <option value="az">A-Z</option>
       <option value="za">Z-A</option>
       <option value="price-asc">Giá tăng dần</option>
       <option value="price-desc">Giá giảm dần</option>
-      <option value="newest">Hàng mới nhất</option>
-      <option value="oldest">Hàng cũ nhất</option>
     </select>
   );
 };
