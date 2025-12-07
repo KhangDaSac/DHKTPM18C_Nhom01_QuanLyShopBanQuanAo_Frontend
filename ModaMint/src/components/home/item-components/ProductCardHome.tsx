@@ -39,6 +39,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const images = product.images && product.images.length > 0 ? product.images : [''];
   const hasMultipleImages = images.length > 1;
 
+  // Tính giá thấp nhất từ variants
+  const minPrice = product.productVariants && product.productVariants.length > 0
+    ? Math.min(...product.productVariants.map(v => v.price || 0))
+    : 0;
+
   // Tính % còn lại dựa trên quantity
   const remaining = product.quantity ?? 0;
   const maxDisplay = 200;
@@ -111,7 +116,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     >
       <div className={styles.product_image}>
         <img src={images[currentImageIndex]} alt={product.name} />
-        
+
         <button
           className={`${styles.heart_icon} ${isHovered ? styles.visible : ''}`}
           aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
@@ -170,9 +175,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {images.map((_, index) => (
               <div
                 key={index}
-                className={`${styles.indicator_dot} ${
-                  index === currentImageIndex ? styles.active : ''
-                }`}
+                className={`${styles.indicator_dot} ${index === currentImageIndex ? styles.active : ''
+                  }`}
               />
             ))}
           </div>
@@ -208,7 +212,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
 
           <div className={styles.price}>
-            <span className={styles.current_price}>{formatVND(product.price)}</span>
+            <span className={styles.current_price}>{formatVND(minPrice)}</span>
           </div>
         </div>
 

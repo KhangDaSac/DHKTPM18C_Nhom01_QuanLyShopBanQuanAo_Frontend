@@ -6,6 +6,8 @@ import { AiOutlineLeft, AiOutlineRight, AiOutlineSearch, AiOutlineHeart, AiOutli
 import { useAuth } from '@/contexts/authContext';
 import { useCart } from '@/hooks/useCart';
 import { cartService } from '@/services/cart';
+import { categoryService, type Category } from '@/services/category';
+import { brandService, type BrandResponse } from '@/services/brand';
 
 export default function Header() {
     const navigate = useNavigate();
@@ -20,9 +22,51 @@ export default function Header() {
     const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [allCategories, setAllCategories] = useState<Category[]>([]);
+    const [brands, setBrands] = useState<BrandResponse[]>([]);
     const { isAuthenticated, user, logout } = useAuth();
 
     const { getTotalItems, setCartFromBackend } = useCart();
+
+    // Load categories from database
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await categoryService.getAllCategories();
+                if (res.code === 1000 && res.result) {
+                    const activeCategories = res.result.filter(cat => cat.isActive);
+                    setAllCategories(activeCategories);
+                    // Filter only active top-level categories (no parentId)
+                    const topCategories = activeCategories.filter(cat => !cat.parentId);
+                    setCategories(topCategories);
+                }
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    // Load brands from database
+    useEffect(() => {
+        const fetchBrands = async () => {
+            try {
+                const res = await brandService.getActiveBrands();
+                if (res.code === 1000 && res.result) {
+                    setBrands(res.result);
+                }
+            } catch (error) {
+                console.error('Failed to load brands:', error);
+            }
+        };
+        fetchBrands();
+    }, []);
+
+    // Get subcategories for a parent category
+    const getSubcategories = (parentId: number): Category[] => {
+        return allCategories.filter(cat => cat.parentId === parentId);
+    };
 
     // Refresh cart every 2 seconds to update badge count
     useEffect(() => {
@@ -51,37 +95,37 @@ export default function Header() {
     };
     const displayName = getDisplayName();
 
-  
 
-  const showPreviousAnnouncement = () => {
-    if (isTransitioning) return;
-    setSlideDirection("left");
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setCurrentAnnouncementIndex((prevIndex) =>
-        prevIndex === 0 ? announcements.length - 1 : prevIndex - 1
-      );
-      setTimeout(() => {
-        setIsTransitioning(false);
-        setSlideDirection(null);
-      }, 10);
-    }, 300);
-  };
 
-  const showNextAnnouncement = () => {
-    if (isTransitioning) return;
-    setSlideDirection("right");
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setCurrentAnnouncementIndex(
-        (prevIndex) => (prevIndex + 1) % announcements.length
-      );
-      setTimeout(() => {
-        setIsTransitioning(false);
-        setSlideDirection(null);
-      }, 10);
-    }, 300);
-  };
+    const showPreviousAnnouncement = () => {
+        if (isTransitioning) return;
+        setSlideDirection("left");
+        setIsTransitioning(true);
+        setTimeout(() => {
+            setCurrentAnnouncementIndex((prevIndex) =>
+                prevIndex === 0 ? announcements.length - 1 : prevIndex - 1
+            );
+            setTimeout(() => {
+                setIsTransitioning(false);
+                setSlideDirection(null);
+            }, 10);
+        }, 300);
+    };
+
+    const showNextAnnouncement = () => {
+        if (isTransitioning) return;
+        setSlideDirection("right");
+        setIsTransitioning(true);
+        setTimeout(() => {
+            setCurrentAnnouncementIndex(
+                (prevIndex) => (prevIndex + 1) % announcements.length
+            );
+            setTimeout(() => {
+                setIsTransitioning(false);
+                setSlideDirection(null);
+            }, 10);
+        }, 300);
+    };
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -180,40 +224,81 @@ export default function Header() {
                             <li className={`${styles.header__item} ${styles['header__item--active']}`}>
                                 <Link to="/">Trang chủ</Link>
                             </li>
-                            {/* Menu Nam */}
+                            <li className={styles.header__item}>
+                                <Link to="/products">Sản Phẩm</Link>
+                            </li>
+                            {/* Menu Danh mục - Load from database */}
                             <li className={`${styles.header__item} ${styles['header__item--dropdown']}`}>
-                                <Link to="/nam/ao">
-                                    Nam <AiFillCaretDown className={styles['header__menu-arrow']} />
+                                <Link to="/products">
+                                    Danh mục <AiFillCaretDown className={styles['header__menu-arrow']} />
                                 </Link>
                                 <div className={styles.header__submenu}>
-                                    <div className={styles['header__submenu-column']}>
-                                        <h3>Danh mục</h3>
-                                        <ul>
-                                            <li><Link to="/nam/ao">Áo</Link></li>
-                                            <li><Link to="/nam/quan">Quần</Link></li>
-                                            <li><Link to="/nam/giay">Giày</Link></li>
-                                            <li><Link to="/nam/phu-kien">Phụ kiện</Link></li>
-                                        </ul>
-                                    </div>
+                                    {categories.length === 0 ? (
+                                        <div className={styles['header__submenu-column']}>
+                                            <p className="text-gray-400 text-sm">Đang tải...</p>
+                                        </div>
+                                    ) : (
+                                        categories.map((parentCategory) => {
+                                            const subcategories = getSubcategories(parentCategory.id);
+                                            return (
+                                                <div key={parentCategory.id} className={styles['header__submenu-column']}>
+                                                    <h3>
+                                                        <Link to={`/products?categoryId=${parentCategory.id}`}>
+                                                            {parentCategory.name}
+                                                        </Link>
+                                                    </h3>
+                                                    {subcategories.length > 0 && (
+                                                        <ul>
+                                                            {subcategories.map((subCategory) => (
+                                                                <li key={subCategory.id}>
+                                                                    <Link to={`/products?categoryId=${subCategory.id}`}>
+                                                                        {subCategory.name}
+                                                                    </Link>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
+                                    )}
                                 </div>
                             </li>
-
-                            {/* Menu Nữ */}
+                            {/* Menu Thương hiệu - Load from database */}
                             <li className={`${styles.header__item} ${styles['header__item--dropdown']}`}>
-                                <Link to="/nu/ao">
-                                    Nữ <AiFillCaretDown className={styles['header__menu-arrow']} />
+                                <Link to="/products">
+                                    Thương hiệu <AiFillCaretDown className={styles['header__menu-arrow']} />
                                 </Link>
                                 <div className={styles.header__submenu}>
-                                    <div className={styles['header__submenu-column']}>
-                                        <h3>Danh mục</h3>
-                                        <ul>
-                                            <li><Link to="/nu/ao">Áo</Link></li>
-                                            <li><Link to="/nu/quan">Quần</Link></li>
-                                            <li><Link to="/nu/vay">Váy</Link></li>
-                                            <li><Link to="/nu/giay">Giày</Link></li>
-                                            <li><Link to="/nu/phu-kien">Phụ kiện</Link></li>
-                                        </ul>
-                                    </div>
+                                    {brands.length === 0 ? (
+                                        <div className={styles['header__submenu-column']}>
+                                            <p className="text-gray-400 text-sm">Đang tải...</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* Split brands into 3 columns */}
+                                            {Array.from({ length: 3 }).map((_, colIndex) => {
+                                                const brandsPerColumn = Math.ceil(brands.length / 3);
+                                                const startIndex = colIndex * brandsPerColumn;
+                                                const endIndex = Math.min(startIndex + brandsPerColumn, brands.length);
+                                                const columnBrands = brands.slice(startIndex, endIndex);
+
+                                                return columnBrands.length > 0 ? (
+                                                    <div key={colIndex} className={styles['header__submenu-column']}>
+                                                        <ul>
+                                                            {columnBrands.map((brand) => (
+                                                                <li key={brand.id}>
+                                                                    <Link to={`/products?brandId=${brand.id}`}>
+                                                                        {brand.name}
+                                                                    </Link>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                ) : null;
+                                            })}
+                                        </>
+                                    )}
                                 </div>
                             </li>
                             <li className={styles.header__item}>
