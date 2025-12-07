@@ -13,7 +13,6 @@ export default function ProfileOrders() {
     const [currentTime, setCurrentTime] = useState(Date.now());
     const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
 
-    // Fetch orders từ API
     const fetchOrders = async () => {
         if (!user?.id) {
             alert('Vui lòng đăng nhập để xem đơn hàng');
@@ -36,13 +35,10 @@ export default function ProfileOrders() {
             setLoading(false);
         }
     };
-
-    // Load orders khi component mount
     useEffect(() => {
         fetchOrders();
     }, [user?.id]);
 
-    // Update current time mỗi giây để cập nhật đếm ngược
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentTime(Date.now());
@@ -51,13 +47,11 @@ export default function ProfileOrders() {
         return () => clearInterval(interval);
     }, []);
 
-    // Tính thời gian hết hạn (createAt + 15 phút)
     const calculateExpiryTime = (createAt: string) => {
         const createTime = new Date(createAt).getTime();
         return createTime + 15 * 60 * 1000;
     };
 
-    // Tính thời gian còn lại
     const calculateTimeRemaining = (createAt: string) => {
         const expiryTime = calculateExpiryTime(createAt);
         const remaining = expiryTime - currentTime;
@@ -70,7 +64,6 @@ export default function ProfileOrders() {
         return { minutes, seconds, total: remaining };
     };
 
-    // Kiểm tra order có thể thanh toán không
     const canPayOrder = (order: OrderResponse) => {
         if (order.orderStatus !== 'PENDING') return false;
         if (order.paymentMethod !== 'BANK_TRANSFER') return false;
@@ -79,7 +72,6 @@ export default function ProfileOrders() {
         return timeRemaining !== null;
     };
 
-    // Xử lý tiếp tục thanh toán
     const handleContinuePayment = async (order: OrderResponse) => {
         try {
             const result = await orderService.retryPayment(order.id);
@@ -99,7 +91,7 @@ export default function ProfileOrders() {
 
     const getStatusConfig = (status: string) => {
         const config: Record<string, { color: string; text: string }> = {
-            PENDING: { color: '#FF9800', text: 'Chờ thanh toán' },
+            PENDING: { color: '#FF9800', text: 'Chờ xác nhận' },
             PREPARING: { color: '#2196F3', text: 'Đang chuẩn bị' },
             ARRIVED_AT_LOCATION: { color: '#00BCD4', text: 'Đã đến khu vực' },
             SHIPPED: { color: '#2196F3', text: 'Đang giao' },
@@ -138,14 +130,13 @@ export default function ProfileOrders() {
 
     const statusFilters = [
         { key: 'ALL', label: 'Tất cả' },
-        { key: 'PENDING', label: 'Chờ thanh toán' },
+        { key: 'PENDING', label: 'Chờ xác nhận' },
         { key: 'PREPARING', label: 'Đang chuẩn bị' },
         { key: 'SHIPPED', label: 'Đang giao' },
         { key: 'DELIVERED', label: 'Đã giao' },
         { key: 'CANCELLED', label: 'Đã hủy' }
     ];
 
-    // Filter orders based on selected status
     const filteredOrders = selectedStatus === 'ALL'
         ? orders
         : orders.filter(o => o.orderStatus === selectedStatus);
