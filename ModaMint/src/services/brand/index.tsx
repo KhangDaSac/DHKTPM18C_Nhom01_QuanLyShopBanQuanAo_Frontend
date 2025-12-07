@@ -2,7 +2,7 @@
 
 import axios from "axios";
 // Giả sử bạn có file định nghĩa ApiResponse chung
-import type { ApiResponse } from "../authentication"; 
+import type { ApiResponse } from "../authentication";
 
 // ==================== INTERFACES ====================
 
@@ -13,7 +13,7 @@ export interface BrandResponse {
     description?: string;
     logoUrl?: string;
     productCount?: number; // Số lượng sản phẩm
-    active?: boolean; // Thêm 'active' vì service có dùng
+    isActive?: boolean; // Backend trả về isActive
 }
 
 // DTO để tạo/cập nhật
@@ -106,14 +106,25 @@ class BrandService {
             const response = await brandApiClient.get<ApiResponse<BrandResponse[]>>('/brands');
             const apiResponse = response.data;
 
-            if (apiResponse.code !== 1000) {
-                return { success: false, message: apiResponse.message || 'Lấy danh sách thương hiệu thất bại' };
+            if (!apiResponse || apiResponse.code !== 1000 || !apiResponse.result) {
+                return {
+                    success: false,
+                    message: apiResponse?.message || 'Lấy danh sách thương hiệu thất bại'
+                };
             }
-            return { success: true, data: apiResponse.result, message: apiResponse.message };
+
+            return {
+                success: true,
+                data: apiResponse.result,
+                message: apiResponse.message
+            };
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const errorResponse = error.response?.data as ApiResponse<any>;
-                return { success: false, message: errorResponse?.message || 'Lấy danh sách thương hiệu thất bại' };
+                return {
+                    success: false,
+                    message: errorResponse?.message || 'Lấy danh sách thương hiệu thất bại'
+                };
             }
             return { success: false, message: 'Lỗi kết nối đến server' };
         }

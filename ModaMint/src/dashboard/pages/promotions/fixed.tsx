@@ -7,6 +7,7 @@ import { amountPromotionService, type AmountPromotion } from '../../../services/
 import * as XLSX from 'xlsx';
 import './style.css';
 import '../../components/common-styles.css';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -80,18 +81,18 @@ const FixedPromotions: React.FC = () => {
             'Số lượng': item.quantity,
             'Trạng thái': item.isActive ? 'Hoạt động' : 'Tạm dừng',
         }));
-        
+
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Khuyến mãi');
-        
+
         // Auto-width columns
         const maxWidth = 20;
         const colWidths = Object.keys(data[0] || {}).map(key => ({
             wch: Math.min(Math.max(key.length, (data[0] as any)[key]?.toString().length || 0), maxWidth)
         }));
         ws['!cols'] = colWidths;
-        
+
         XLSX.writeFile(wb, `KhuyenMai_GiaCoDinh_${new Date().toISOString().split('T')[0]}.xlsx`);
         message.success('Xuất Excel thành công!');
     };
@@ -317,7 +318,7 @@ const FixedPromotions: React.FC = () => {
 
             {/* Action Bar */}
             <Card style={{ marginBottom: '16px', marginTop: 0 }}>
-                <Row justify="space-between" align="middle">
+                <Row justify="end" align="middle">
                     <Col>
                         <Space>
                             <Button
@@ -349,11 +350,11 @@ const FixedPromotions: React.FC = () => {
 
             {/* Table */}
             <Card>
-                        <Table
-                            columns={columns}
+                <Table
+                    columns={columns}
                     dataSource={amountPromotions}
                     loading={loading}
-                            rowKey="id"
+                    rowKey="id"
                     locale={{
                         emptyText: (
                             <Empty
@@ -365,27 +366,27 @@ const FixedPromotions: React.FC = () => {
                                 }
                             />
                         )
-                            }}
-                            pagination={{
+                    }}
+                    pagination={{
                         pageSize: 10,
-                                showSizeChanger: true,
+                        showSizeChanger: true,
                         showQuickJumper: true,
                         showTotal: (total, range) =>
                             `${range[0]}-${range[1]} của ${total} khuyến mãi`,
                         pageSizeOptions: ['5', '10', '20', '50'],
-                            }}
-                        />
-                    </Card>
+                    }}
+                />
+            </Card>
 
-                    {/* Add/Edit Modal */}
-                    <Modal
+            {/* Add/Edit Modal */}
+            <Modal
                 title={editingPromotion ? 'Sửa khuyến mãi giá cố định' : 'Thêm khuyến mãi giá cố định'}
-                        open={isModalVisible}
+                open={isModalVisible}
                 onOk={handleSubmit}
-                        onCancel={() => {
-                            setIsModalVisible(false);
+                onCancel={() => {
+                    setIsModalVisible(false);
                     form.resetFields();
-                        }}
+                }}
                 width={600}
                 footer={[
                     <Button key="cancel" onClick={() => {
@@ -398,21 +399,21 @@ const FixedPromotions: React.FC = () => {
                         {editingPromotion ? 'Cập nhật' : 'Thêm mới'}
                     </Button>
                 ]}
-                    >
-                        <Form
-                            form={form}
-                            layout="vertical"
+            >
+                <Form
+                    form={form}
+                    layout="vertical"
                     initialValues={{ isActive: true }}
-                        >
-                            <Form.Item
-                                name="name"
+                >
+                    <Form.Item
+                        name="name"
                         label="Tên khuyến mãi"
                         rules={[{ required: true, message: 'Vui lòng nhập tên khuyến mãi' }]}
                     >
                         <Input placeholder="Nhập tên khuyến mãi" />
-                            </Form.Item>
+                    </Form.Item>
 
-                                    <Form.Item
+                    <Form.Item
                         name="code"
                         label="Mã khuyến mãi"
                         rules={[{ required: true, message: 'Vui lòng nhập mã khuyến mãi' }]}
@@ -423,24 +424,24 @@ const FixedPromotions: React.FC = () => {
                     <Form.Item
                         name="discountAmount"
                         label="Số tiền giảm (đ)"
-                                        rules={[
+                        rules={[
                             { required: true, message: 'Vui lòng nhập số tiền giảm' },
                             { type: 'number', min: 1, message: 'Số tiền phải lớn hơn 0' },
-                                        ]}
-                                    >
-                                        <InputNumber
-                                            style={{ width: '100%' }}
+                        ]}
+                    >
+                        <InputNumber
+                            style={{ width: '100%' }}
                             placeholder="Nhập số tiền giảm"
                             min={1}
                             formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                             parser={(value) => value!.replace(/\$\s?|(,*)/g, '') as any}
-                                        />
-                                    </Form.Item>
+                        />
+                    </Form.Item>
 
-                            <Form.Item
+                    <Form.Item
                         name="minOrderValue"
                         label="Giá trị đơn tối thiểu (đ)"
-                                rules={[
+                        rules={[
                             { required: true, message: 'Vui lòng nhập giá trị đơn tối thiểu' },
                             { type: 'number', min: 0, message: 'Giá trị phải lớn hơn 0' },
                         ]}
@@ -451,10 +452,10 @@ const FixedPromotions: React.FC = () => {
                             min={0}
                             formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                             parser={(value) => value!.replace(/\$\s?|(,*)/g, '') as any}
-                                />
-                            </Form.Item>
+                        />
+                    </Form.Item>
 
-                                    <Form.Item
+                    <Form.Item
                         name="startAt"
                         label="Thời gian áp dụng"
                         rules={[{ required: true, message: 'Vui lòng chọn thời gian áp dụng' }]}
@@ -465,12 +466,12 @@ const FixedPromotions: React.FC = () => {
                             style={{ width: '100%' }}
                             placeholder={['Ngày bắt đầu', 'Ngày kết thúc']}
                         />
-                                    </Form.Item>
+                    </Form.Item>
 
-                                    <Form.Item
+                    <Form.Item
                         name="quantity"
                         label="Số lượng"
-                                        rules={[
+                        rules={[
                             { required: true, message: 'Vui lòng nhập số lượng' },
                             { type: 'number', min: 1, message: 'Số lượng phải lớn hơn 0' },
                         ]}
@@ -480,9 +481,9 @@ const FixedPromotions: React.FC = () => {
                             placeholder="Nhập số lượng"
                             min={1}
                         />
-                                    </Form.Item>
+                    </Form.Item>
 
-                            <Form.Item
+                    <Form.Item
                         name="isActive"
                         label="Trạng thái"
                     >
@@ -490,18 +491,18 @@ const FixedPromotions: React.FC = () => {
                             <Option value={true}>Hoạt động</Option>
                             <Option value={false}>Tạm dừng</Option>
                         </Select>
-                            </Form.Item>
-                        </Form>
-                    </Modal>
+                    </Form.Item>
+                </Form>
+            </Modal>
 
             {/* View Modal */}
-                    <Modal
+            <Modal
                 title="Chi tiết khuyến mãi giá cố định"
-                        open={isViewModalVisible}
-                        onCancel={() => setIsViewModalVisible(false)}
-                        footer={[
-                            <Button key="close" onClick={() => setIsViewModalVisible(false)}>
-                                Đóng
+                open={isViewModalVisible}
+                onCancel={() => setIsViewModalVisible(false)}
+                footer={[
+                    <Button key="close" onClick={() => setIsViewModalVisible(false)}>
+                        Đóng
                     </Button>,
                 ]}
                 width={600}
@@ -510,39 +511,39 @@ const FixedPromotions: React.FC = () => {
                     <Descriptions column={1} size="small">
                         <Descriptions.Item label="Mã khuyến mãi">
                             <Tag color="green">{viewingPromotion.code}</Tag>
-                                            </Descriptions.Item>
+                        </Descriptions.Item>
                         <Descriptions.Item label="Số tiền giảm">
                             <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#52c41a' }}>
                                 <DollarOutlined /> {viewingPromotion.discountAmount.toLocaleString('vi-VN')} đ
                             </span>
-                                            </Descriptions.Item>
+                        </Descriptions.Item>
                         <Descriptions.Item label="Giá trị đơn tối thiểu">
                             {viewingPromotion.minOrderValue.toLocaleString('vi-VN')} đ
-                                            </Descriptions.Item>
+                        </Descriptions.Item>
                         <Descriptions.Item label="Ngày bắt đầu">
                             <CalendarOutlined /> {dayjs(viewingPromotion.startAt).format('DD/MM/YYYY HH:mm')}
-                                            </Descriptions.Item>
+                        </Descriptions.Item>
                         <Descriptions.Item label="Ngày kết thúc">
                             <CalendarOutlined /> {dayjs(viewingPromotion.endAt).format('DD/MM/YYYY HH:mm')}
                         </Descriptions.Item>
                         <Descriptions.Item label="Số lượng">
                             {viewingPromotion.quantity}
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="Trạng thái">
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Trạng thái">
                             {viewingPromotion.isActive ? (
                                 <Badge status="success" text="Hoạt động" />
                             ) : (
                                 <Badge status="default" text="Tạm dừng" />
                             )}
-                                            </Descriptions.Item>
+                        </Descriptions.Item>
                         {viewingPromotion.createAt && (
-                                                <Descriptions.Item label="Ngày tạo">
+                            <Descriptions.Item label="Ngày tạo">
                                 {dayjs(viewingPromotion.createAt).format('DD/MM/YYYY HH:mm')}
-                                                </Descriptions.Item>
-                                            )}
-                                        </Descriptions>
+                            </Descriptions.Item>
                         )}
-                    </Modal>
+                    </Descriptions>
+                )}
+            </Modal>
         </div>
     );
 };

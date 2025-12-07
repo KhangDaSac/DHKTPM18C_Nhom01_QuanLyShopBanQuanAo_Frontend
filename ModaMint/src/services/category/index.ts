@@ -20,6 +20,7 @@ export interface CategoryRequest {
     name: string;
     isActive?: boolean;
     parentId?: number;
+    image?: string;  // URL ảnh từ Cloudinary
 }
 
 // ==================== API CLIENT ====================
@@ -261,16 +262,16 @@ class CategoryService {
         try {
             // 1. Gọi đúng endpoint mới đã tạo ở backend
             const response = await categoryApiClient.get('/categories/top-8-active-by-products'); // <-- THAY ĐỔI URL
-            
+
             return response.data;
-            
+
         } catch (error: any) {
             console.error('Error getting top 8 active categories:', error);
-            
+
             return {
                 code: 1001,
                 message: error.response?.data?.message || 'Không thể lấy top 8 danh mục', // <-- THAY ĐỔI MESSAGE LỖI
-                result: [] 
+                result: []
             };
         }
     }

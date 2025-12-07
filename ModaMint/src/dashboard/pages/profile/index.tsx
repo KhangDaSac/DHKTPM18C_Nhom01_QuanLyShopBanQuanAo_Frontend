@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Card,
     Form,
@@ -17,7 +17,8 @@ import {
     message,
     Badge,
     Tag,
-    Descriptions
+    Descriptions,
+    Spin
 } from 'antd';
 import {
     UserOutlined,
@@ -30,15 +31,21 @@ import {
     EnvironmentOutlined,
     CrownOutlined,
     CheckCircleOutlined,
-    SafetyCertificateOutlined
+    SafetyCertificateOutlined,
+    LoadingOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { authenticationService, type UserResponse } from '../../../services/authentication';
+import { userService } from '../../../services/user';
+import { toast } from 'react-toastify';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
 interface ProfileData {
+    id?: string;
     username: string;
     email: string;
     fullName: string;
@@ -46,70 +53,99 @@ interface ProfileData {
     lastName: string;
     phone: string;
     avatar?: string;
-    gender: 'male' | 'female' | 'other';
-    dateOfBirth: string;
-    address: string;
-    city: string;
-    district: string;
-    ward: string;
-    bio?: string;
-    language: string;
-    theme: 'light' | 'dark';
+    dob?: string;
+    createdDate?: string;
 }
 
 const AdminProfile: React.FC = () => {
     const [form] = Form.useForm();
     const [editing, setEditing] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [pageLoading, setPageLoading] = useState(true);
+    const [profileData, setProfileData] = useState<ProfileData | null>(null);
+    const [avatarUrl, setAvatarUrl] = useState<string | undefined>();
 
-    // Mock data - sẽ được load từ API
-    const [profileData, setProfileData] = useState<ProfileData>({
-        username: 'admin',
-        email: 'admin@modamint.com',
-        fullName: 'Admin ModaMint',
-        firstName: 'Admin',
-        lastName: 'ModaMint',
-        phone: '0123456789',
-        gender: 'other',
-        dateOfBirth: '1990-01-01',
-        address: '123 Đường ABC',
-        city: 'TP. Hồ Chí Minh',
-        district: 'Quận 1',
-        ward: 'Phường 1',
-        bio: 'Quản trị viên hệ thống ModaMint',
-        language: 'vi',
-        theme: 'light'
-    });
+    // Load thông tin user khi component mount
+    useEffect(() => {
+        loadUserProfile();
+    }, []);
 
+    const loadUserProfile = async () => {
+        try {
+            setPageLoading(true);
+            const result = await authenticationService.getCurrentUser();
 
-    const [avatarUrl, setAvatarUrl] = useState<string | undefined>(profileData.avatar);
+            if (result.success && result.data) {
+                const user = result.data;
+                const profile: ProfileData = {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    fullName: `${user.firstName} ${user.lastName}`.trim(),
+                    phone: user.phone || '',
+                    dob: user.dob,
+                    avatar: user.image,
+                    createdDate: user.createdDate
+                };
+                setProfileData(profile);
+                setAvatarUrl(user.image);
+            } else {
+                toast.error(result.message || 'Không thể tải thông tin người dùng');
+            }
+        } catch (error) {
+            console.error('Load profile error:', error);
+            toast.error('Có lỗi xảy ra khi tải thông tin');
+        } finally {
+            setPageLoading(false);
+        }
+    };
 
     const handleEdit = () => {
+        if (!profileData) return;
         setEditing(true);
         form.setFieldsValue({
-            ...profileData,
-            dateOfBirth: dayjs(profileData.dateOfBirth)
+            firstName: profileData.firstName,
+            lastName: profileData.lastName,
+            phone: profileData.phone,
+            dob: profileData.dob ? dayjs(profileData.dob) : undefined,
+            email: profileData.email
         });
     };
 
     const handleSave = async (values: any) => {
+        if (!profileData || !profileData.id) {
+            toast.error('Không tìm thấy thông tin người dùng');
+            return;
+        }
+
         try {
             setLoading(true);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Update profile data
-            setProfileData({
-                ...profileData,
-                ...values,
-                dateOfBirth: values.dateOfBirth ? dayjs(values.dateOfBirth).format('YYYY-MM-DD') : profileData.dateOfBirth,
-                avatar: avatarUrl
-            });
-            
-            // TODO: Gọi API để update profile
-            message.success('Cập nhật thông tin thành công!');
-            setEditing(false);
+
+            // Chuẩn bị data để update
+            const updateData = {
+                firstName: values.firstName,
+                lastName: values.lastName,
+                phone: values.phone,
+                dob: values.dob ? dayjs(values.dob).format('YYYY-MM-DD') : undefined,
+            };
+
+            console.log('Updating user with ID:', profileData.id, 'Data:', updateData);
+
+            const result = await userService.updateUser(profileData.id, updateData);
+
+            if (result.success) {
+                toast.success(result.message || 'Cập nhật thông tin thành công!');
+                // Reload lại thông tin user
+                await loadUserProfile();
+                setEditing(false);
+            } else {
+                toast.error(result.message || 'Cập nhật thông tin thất bại');
+            }
         } catch (error) {
-            message.error('Có lỗi xảy ra khi cập nhật!');
+            console.error('Update error:', error);
+            toast.error('Có lỗi xảy ra khi cập nhật!');
         } finally {
             setLoading(false);
         }
@@ -118,12 +154,11 @@ const AdminProfile: React.FC = () => {
     const handleCancel = () => {
         setEditing(false);
         form.resetFields();
-        setAvatarUrl(profileData.avatar);
     };
 
     const handleAvatarChange = (info: any) => {
+        // TODO: Implement Cloudinary upload
         if (info.file.status === 'done' || info.file.status === 'uploading') {
-            // Get the uploaded image URL
             const url = info.file.response?.url || URL.createObjectURL(info.file.originFileObj);
             setAvatarUrl(url);
         }
@@ -132,14 +167,36 @@ const AdminProfile: React.FC = () => {
     const beforeUpload = (file: File) => {
         const isImage = file.type.startsWith('image/');
         if (!isImage) {
-            message.error('Chỉ có thể upload file ảnh!');
+            toast.error('Chỉ có thể upload file ảnh!');
         }
         const isLt2M = file.size / 1024 / 1024 < 2;
         if (!isLt2M) {
-            message.error('Ảnh phải nhỏ hơn 2MB!');
+            toast.error('Ảnh phải nhỏ hơn 2MB!');
         }
         return isImage && isLt2M;
     };
+
+    // Hiển thị loading khi đang tải dữ liệu
+    if (pageLoading) {
+        return (
+            <LoadingSpinner size="large" tip="Đang tải thông tin..." />
+        );
+    }
+
+    // Hiển thị lỗi nếu không load được data
+    if (!profileData) {
+        return (
+            <Card>
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <Text type="danger">Không thể tải thông tin người dùng</Text>
+                    <br />
+                    <Button type="primary" onClick={loadUserProfile} style={{ marginTop: '16px' }}>
+                        Thử lại
+                    </Button>
+                </div>
+            </Card>
+        );
+    }
 
     return (
         <div>
@@ -213,11 +270,11 @@ const AdminProfile: React.FC = () => {
                     color: #262626;
                 }
             `}</style>
-            
+
             <Title level={2} className="text-primary" style={{ marginBottom: '16px', marginTop: 0 }}>
                 Thông tin cá nhân
             </Title>
-            
+
             {/* Profile Content */}
             <Row gutter={24}>
                 <Col xs={24} lg={8}>
@@ -238,11 +295,11 @@ const AdminProfile: React.FC = () => {
                                             count={<CrownOutlined style={{ color: '#faad14', fontSize: '20px' }} />}
                                             offset={[-10, 80]}
                                         >
-                                            <Avatar 
-                                                size={120} 
+                                            <Avatar
+                                                size={120}
                                                 src={avatarUrl}
                                                 icon={<UserOutlined />}
-                                                style={{ 
+                                                style={{
                                                     border: '4px solid #fff',
                                                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                                                 }}
@@ -259,22 +316,22 @@ const AdminProfile: React.FC = () => {
                             <Title level={4} style={{ marginBottom: '8px', marginTop: '16px' }}>
                                 {profileData.fullName}
                             </Title>
-                            <Tag 
-                                icon={<SafetyCertificateOutlined />} 
-                                color="gold" 
+                            <Tag
+                                icon={<SafetyCertificateOutlined />}
+                                color="gold"
                                 style={{ marginBottom: '20px', padding: '4px 12px', fontSize: '13px' }}
                             >
                                 Administrator
                             </Tag>
-                            <Badge 
-                                status="success" 
-                                text={<span style={{ fontSize: '14px', color: '#52c41a' }}>Đang hoạt động</span>} 
+                            <Badge
+                                status="success"
+                                text={<span style={{ fontSize: '14px', color: '#52c41a' }}>Đang hoạt động</span>}
                                 style={{ marginBottom: '16px' }}
                             />
                         </div>
-                        
+
                         <Divider style={{ margin: '24px 0' }} />
-                        
+
                         <div>
                             <div className="profile-stat-item">
                                 <div className="profile-stat-label">
@@ -286,21 +343,23 @@ const AdminProfile: React.FC = () => {
                                 <div className="profile-stat-label">
                                     <PhoneOutlined /> Số điện thoại
                                 </div>
-                                <div className="profile-stat-value">{profileData.phone}</div>
+                                <div className="profile-stat-value">{profileData.phone || 'Chưa cập nhật'}</div>
                             </div>
                             <div className="profile-stat-item">
                                 <div className="profile-stat-label">
-                                    <EnvironmentOutlined /> Địa chỉ
+                                    <CalendarOutlined /> Ngày sinh
                                 </div>
                                 <div className="profile-stat-value">
-                                    {profileData.ward}, {profileData.district}, {profileData.city}
+                                    {profileData.dob ? dayjs(profileData.dob).format('DD/MM/YYYY') : 'Chưa cập nhật'}
                                 </div>
                             </div>
                             <div className="profile-stat-item">
                                 <div className="profile-stat-label">
                                     <CalendarOutlined /> Thành viên từ
                                 </div>
-                                <div className="profile-stat-value">01/01/2024</div>
+                                <div className="profile-stat-value">
+                                    {profileData.createdDate ? dayjs(profileData.createdDate).format('DD/MM/YYYY') : 'N/A'}
+                                </div>
                             </div>
                         </div>
                     </Card>
@@ -308,8 +367,8 @@ const AdminProfile: React.FC = () => {
 
                 <Col xs={24} lg={16}>
                     {/* Personal Information */}
-                    <Card 
-                        className="profile-info-card" 
+                    <Card
+                        className="profile-info-card"
                         title={<div className="profile-section-title"><UserOutlined /> Thông tin cá nhân</div>}
                         extra={
                             !editing ? (
@@ -370,6 +429,9 @@ const AdminProfile: React.FC = () => {
                                     <Form.Item
                                         name="phone"
                                         label="Số điện thoại"
+                                        rules={[
+                                            { pattern: /^[0-9]{10,11}$/, message: 'Số điện thoại không hợp lệ' }
+                                        ]}
                                     >
                                         <Input
                                             prefix={<PhoneOutlined />}
@@ -380,109 +442,29 @@ const AdminProfile: React.FC = () => {
                                 </Col>
                                 <Col span={12}>
                                     <Form.Item
-                                        name="dateOfBirth"
+                                        name="dob"
                                         label="Ngày sinh"
                                     >
                                         <DatePicker
                                             style={{ width: '100%' }}
                                             placeholder="Chọn ngày sinh"
                                             size="large"
+                                            format="DD/MM/YYYY"
                                         />
                                     </Form.Item>
                                 </Col>
                             </Row>
 
                             <Form.Item
-                                name="gender"
-                                label="Giới tính"
-                            >
-                                <Select placeholder="Chọn giới tính" size="large">
-                                    <Option value="male">Nam</Option>
-                                    <Option value="female">Nữ</Option>
-                                    <Option value="other">Khác</Option>
-                                </Select>
-                            </Form.Item>
-
-                            <Form.Item
-                                name="bio"
-                                label="Giới thiệu"
-                            >
-                                <TextArea
-                                    rows={4}
-                                    placeholder="Viết một vài dòng giới thiệu về bản thân"
-                                    showCount
-                                    maxLength={200}
-                                />
-                            </Form.Item>
-
-                            <Form.Item
                                 name="email"
                                 label="Email"
+                                tooltip="Email không thể thay đổi"
                             >
                                 <Input
                                     prefix={<MailOutlined />}
                                     disabled
                                     style={{ background: '#f5f5f5' }}
                                     size="large"
-                                />
-                            </Form.Item>
-
-                            <Form.Item
-                                name="address"
-                                label="Địa chỉ chi tiết"
-                            >
-                                <Input
-                                    prefix={<EnvironmentOutlined />}
-                                    placeholder="Nhập địa chỉ"
-                                    size="large"
-                                />
-                            </Form.Item>
-
-                            <Row gutter={16}>
-                                <Col span={8}>
-                                    <Form.Item
-                                        name="ward"
-                                        label="Phường/Xã"
-                                    >
-                                        <Input placeholder="Phường/Xã" size="large" />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={8}>
-                                    <Form.Item
-                                        name="district"
-                                        label="Quận/Huyện"
-                                    >
-                                        <Input placeholder="Quận/Huyện" size="large" />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={8}>
-                                    <Form.Item
-                                        name="city"
-                                        label="Tỉnh/Thành phố"
-                                    >
-                                        <Input placeholder="Tỉnh/Thành phố" size="large" />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-
-                            <Form.Item
-                                name="language"
-                                label="Ngôn ngữ"
-                            >
-                                <Select placeholder="Chọn ngôn ngữ" size="large">
-                                    <Option value="vi">Tiếng Việt</Option>
-                                    <Option value="en">English</Option>
-                                </Select>
-                            </Form.Item>
-
-                            <Form.Item
-                                name="theme"
-                                label="Giao diện"
-                                valuePropName="checked"
-                            >
-                                <Switch
-                                    checkedChildren="Dark"
-                                    unCheckedChildren="Light"
                                 />
                             </Form.Item>
                         </Form>
@@ -494,4 +476,3 @@ const AdminProfile: React.FC = () => {
 };
 
 export default AdminProfile;
-

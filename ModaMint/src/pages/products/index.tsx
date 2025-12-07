@@ -7,6 +7,7 @@ import axios from 'axios';
 import { cartService } from '@/services/cart';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/authContext';
+import { useCart } from '@/hooks/useCart';
 import { productVariantService } from '@/services/productVariant';
 import BrandCarousel from '@/components/product-list/BrandCarousel';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -60,6 +61,7 @@ const ProductList: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
+  const { setCartFromBackend } = useCart();
 
   // Get categoryId directly from URL - don't need intermediate state
   const urlCategoryId = searchParams.get('categoryId');
@@ -170,7 +172,7 @@ const ProductList: React.FC = () => {
         return {
           id: p.id,
           name: p.name || '',
-          price: p.price || 0,
+          price: currentPriceNum,
           originalPrice: originalPriceNum,
           currentPrice: currentPriceNum,
           image: p.images && p.images.length > 0 ? p.images[0] : (p.imageUrl || ''),
@@ -194,11 +196,6 @@ const ProductList: React.FC = () => {
   // Handle add to cart
   const handleAddToCart = async (product: any) => {
     console.log('🛒 Adding to cart, product:', product);
-
-    if (!isAuthenticated) {
-      toast.warning('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
-      return;
-    }
 
     let variantId = product.variantId;
     console.log('🔑 variantId from product:', variantId);
@@ -228,21 +225,50 @@ const ProductList: React.FC = () => {
       return;
     }
 
-    console.log('📤 Calling cartService.addItem with variantId:', variantId);
+    console.log('📤 Adding to cart with variantId:', variantId);
     try {
-      const result = await cartService.addItem({
-        variantId: variantId,
-        quantity: 1
-      });
+      if (isAuthenticated) {
+        // Authenticated user - use backend cart
+        const result = await cartService.addItem({
+          variantId: variantId,
+          quantity: 1
+        });
 
-      if (result.success) {
+        if (result.success) {
+          toast.success('Đã thêm sản phẩm vào giỏ hàng!');
+          const event = new CustomEvent('cartUpdated', {
+            detail: { timestamp: Date.now() }
+          });
+          window.dispatchEvent(event);
+        } else {
+          toast.error(result.message || 'Không thể thêm sản phẩm vào giỏ hàng');
+        }
+      } else {
+        // Guest user - use localStorage cart
+        console.log('🛒 [ProductList] Adding to guest cart - Price:', product.price);
+        cartService.addItemToGuestCart({
+          variantId: variantId,
+          productId: product.id,
+          productName: product.name,
+          image: product.imageUrl || product.image,
+          imageUrl: product.imageUrl || product.image,
+          unitPrice: product.price,
+          price: product.price,
+          quantity: 1,
+          color: product.color,
+          size: product.size
+        });
+        
+        // Sync guest cart to CartContext
+        const updatedGuestCart = cartService.getGuestCart();
+        console.log('🔄 [ProductList] Syncing guest cart to context:', updatedGuestCart);
+        setCartFromBackend(updatedGuestCart);
+        
         toast.success('Đã thêm sản phẩm vào giỏ hàng!');
         const event = new CustomEvent('cartUpdated', {
           detail: { timestamp: Date.now() }
         });
         window.dispatchEvent(event);
-      } else {
-        toast.error(result.message || 'Không thể thêm sản phẩm vào giỏ hàng');
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng');

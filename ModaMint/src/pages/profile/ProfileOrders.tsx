@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/authContext';
 import { orderService, type OrderResponse } from '@/services/order';
+import { CancelOrderModal } from '@/components/common/CancelOrderModal';
+import { toast } from 'react-toastify';
 import styles from './style.module.css';
 
 export default function ProfileOrders() {
@@ -12,11 +14,14 @@ export default function ProfileOrders() {
     const [loading, setLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(Date.now());
     const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
+    const [cancelModal, setCancelModal] = useState<{ isOpen: boolean; order: OrderResponse | null }>({
+        isOpen: false,
+        order: null
+    });
 
-    // Fetch orders từ API
     const fetchOrders = async () => {
         if (!user?.id) {
-            alert('Vui lòng đăng nhập để xem đơn hàng');
+            toast.error('Vui lòng đăng nhập để xem đơn hàng');
             return;
         }
 
@@ -27,22 +32,19 @@ export default function ProfileOrders() {
                 setOrders(result.data);
                 console.log('Orders loaded:', result.data.length);
             } else {
-                alert(result.message || 'Không thể tải danh sách đơn hàng');
+                toast.error(result.message || 'Không thể tải danh sách đơn hàng');
             }
         } catch (error) {
-            alert('Lỗi khi tải đơn hàng');
+            toast.error('Lỗi khi tải đơn hàng');
             console.error('Fetch orders error:', error);
         } finally {
             setLoading(false);
         }
     };
-
-    // Load orders khi component mount
     useEffect(() => {
         fetchOrders();
     }, [user?.id]);
 
-    // Update current time mỗi giây để cập nhật đếm ngược
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentTime(Date.now());
@@ -51,13 +53,11 @@ export default function ProfileOrders() {
         return () => clearInterval(interval);
     }, []);
 
-    // Tính thời gian hết hạn (createAt + 15 phút)
     const calculateExpiryTime = (createAt: string) => {
         const createTime = new Date(createAt).getTime();
         return createTime + 15 * 60 * 1000;
     };
 
-    // Tính thời gian còn lại
     const calculateTimeRemaining = (createAt: string) => {
         const expiryTime = calculateExpiryTime(createAt);
         const remaining = expiryTime - currentTime;
@@ -70,7 +70,6 @@ export default function ProfileOrders() {
         return { minutes, seconds, total: remaining };
     };
 
-    // Kiểm tra order có thể thanh toán không
     const canPayOrder = (order: OrderResponse) => {
         if (order.orderStatus !== 'PENDING') return false;
         if (order.paymentMethod !== 'BANK_TRANSFER') return false;
@@ -79,27 +78,51 @@ export default function ProfileOrders() {
         return timeRemaining !== null;
     };
 
-    // Xử lý tiếp tục thanh toán
     const handleContinuePayment = async (order: OrderResponse) => {
         try {
             const result = await orderService.retryPayment(order.id);
 
             if (result.success && result.data) {
                 window.open(result.data.paymentUrl, '_blank');
-                alert('Đã tạo liên kết thanh toán mới');
+                toast.success('Đã tạo liên kết thanh toán mới');
             } else {
-                alert(result.message || 'Không thể tạo liên kết thanh toán');
+                toast.error(result.message || 'Không thể tạo liên kết thanh toán');
                 fetchOrders();
             }
         } catch (error) {
-            alert('Lỗi khi tạo liên kết thanh toán');
+            toast.error('Lỗi khi tạo liên kết thanh toán');
             console.error('Retry payment error:', error);
+        }
+    };
+
+    const handleCancelOrder = (order: OrderResponse) => {
+        setCancelModal({ isOpen: true, order });
+    };
+
+    const handleConfirmCancel = async (reason: string) => {
+        if (!cancelModal.order) return;
+
+        try {
+            const result = await orderService.cancelOrder(
+                cancelModal.order.id, 
+                user?.id || '', 
+                reason
+            );
+            if (result.success) {
+                toast.success('Đã hủy đơn hàng thành công');
+                fetchOrders();
+            } else {
+                toast.error(result.message || 'Không thể hủy đơn hàng');
+            }
+        } catch (error) {
+            toast.error('Lỗi khi hủy đơn hàng');
+            console.error('Cancel order error:', error);
         }
     };
 
     const getStatusConfig = (status: string) => {
         const config: Record<string, { color: string; text: string }> = {
-            PENDING: { color: '#FF9800', text: 'Chờ thanh toán' },
+            PENDING: { color: '#FF9800', text: 'Chờ xác nhận' },
             PREPARING: { color: '#2196F3', text: 'Đang chuẩn bị' },
             ARRIVED_AT_LOCATION: { color: '#00BCD4', text: 'Đã đến khu vực' },
             SHIPPED: { color: '#2196F3', text: 'Đang giao' },
@@ -138,14 +161,13 @@ export default function ProfileOrders() {
 
     const statusFilters = [
         { key: 'ALL', label: 'Tất cả' },
-        { key: 'PENDING', label: 'Chờ thanh toán' },
+        { key: 'PENDING', label: 'Chờ xác nhận' },
         { key: 'PREPARING', label: 'Đang chuẩn bị' },
         { key: 'SHIPPED', label: 'Đang giao' },
         { key: 'DELIVERED', label: 'Đã giao' },
         { key: 'CANCELLED', label: 'Đã hủy' }
     ];
 
-    // Filter orders based on selected status
     const filteredOrders = selectedStatus === 'ALL'
         ? orders
         : orders.filter(o => o.orderStatus === selectedStatus);
@@ -239,7 +261,7 @@ export default function ProfileOrders() {
                                         <td>
                                             <div className={styles.profile__actions}>
                                                 <button
-                                                    onClick={() => navigate(`/order-detail/${order.id}`)}
+                                                    onClick={() => navigate(`/profile/order/${order.id}`)}
                                                     className={styles.profile__action_btn}
                                                 >
                                                     Chi tiết
@@ -257,6 +279,14 @@ export default function ProfileOrders() {
                                                         })()}
                                                     </button>
                                                 )}
+                                                {order.orderStatus === 'PENDING' && (
+                                                    <button
+                                                        onClick={() => handleCancelOrder(order)}
+                                                        className={`${styles.profile__action_btn} ${styles.profile__action_btn__danger}`}
+                                                    >
+                                                        Hủy đơn
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -266,6 +296,13 @@ export default function ProfileOrders() {
                     </table>
                 )}
             </div>
+
+            <CancelOrderModal
+                isOpen={cancelModal.isOpen}
+                onClose={() => setCancelModal({ isOpen: false, order: null })}
+                onConfirm={handleConfirmCancel}
+                orderCode={cancelModal.order?.orderCode || ''}
+            />
         </div>
     );
 }

@@ -68,6 +68,7 @@ export interface CheckoutResponse {
 
 /**
  * Lấy danh sách mã giảm giá khả dụng
+ * Pass 'guest' as customerId for guest customers to get all available promotions
  */
 export const getAvailablePromotions = async (customerId: string): Promise<PromotionSummary[]> => {
     try {
@@ -75,6 +76,10 @@ export const getAvailablePromotions = async (customerId: string): Promise<Promot
         return response.data.result || [];
     } catch (error) {
         console.error('Error fetching available promotions:', error);
+        // Return empty array for guests if backend doesn't support guest promotions yet
+        if (customerId === 'guest') {
+            return [];
+        }
         throw error;
     }
 };

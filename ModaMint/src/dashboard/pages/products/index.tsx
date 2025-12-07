@@ -50,10 +50,13 @@ import * as XLSX from 'xlsx';
 import '../../components/common-styles.css';
 import { productService, type ProductRequest } from '../../../services/product';
 import { categoryService, type Category } from '../../../services/category';
+import { brandService, type BrandResponse } from '../../../services/brand/index.ts';
 import { useProducts } from '../../../hooks/useProducts';
 import { productVariantService, type ProductVariant, type ProductVariantRequest } from '../../../services/productVariant';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ProductModal from './ProductModal';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -63,13 +66,16 @@ const { TextArea } = Input;
 interface Product {
     id: number;
     name: string;
-    price: number;
+    minPrice: number;
+    maxPrice: number;
+    priceRange: string;
     active: boolean;
     description: string;
     brandName: string;
     categoryName: string;
     createAt?: string;
     updateAt?: string;
+    productVariants?: ProductVariant[];
     // Thêm các trường để hiển thị
     image?: string;
     images?: string[]; // Mảng ảnh của sản phẩm
@@ -79,25 +85,29 @@ interface Product {
 const Products: React.FC = () => {
     // Sử dụng hook để lấy dữ liệu từ API
     const { products: apiProducts, loading: apiLoading, error: apiError, refetch } = useProducts();
-    
+
     // State cho local products (để thêm/sửa/xóa)
     const [localProducts, setLocalProducts] = useState<Product[]>([]);
-    
+
     // State cho categories từ API
     const [categories, setCategories] = useState<Category[]>([]);
     const [categoriesLoading, setCategoriesLoading] = useState(false);
-    
+
+    // State cho brands từ API
+    const [brands, setBrands] = useState<BrandResponse[]>([]);
+    const [brandsLoading, setBrandsLoading] = useState(false);
+
     // State cho modals
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isViewModalVisible, setIsViewModalVisible] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
     const [form] = Form.useForm();
-    
+
     // State cho upload ảnh
     const [fileList, setFileList] = useState<UploadFile[]>([]);
-    
-    // State cho upload ảnh variant
+
+    // State cho upload ảnh variant (dùng cho variant management modal)
     const [variantFileLists, setVariantFileLists] = useState<{ [key: number]: UploadFile[] }>({});
 
     // States cho bulk actions và filtering  
@@ -119,6 +129,7 @@ const Products: React.FC = () => {
     const [editingVariants, setEditingVariants] = useState<ProductVariant[]>([]);
     const [currentProductId, setCurrentProductId] = useState<number | null>(null);
     const [variantsLoading, setVariantsLoading] = useState(false);
+    const [savingVariantId, setSavingVariantId] = useState<number | null>(null);
     const [variantForm] = Form.useForm();
 
     // Load categories từ API
@@ -136,29 +147,64 @@ const Products: React.FC = () => {
         }
     };
 
-    // Load categories khi component mount
+    // Load brands từ API
+    const loadBrands = async () => {
+        setBrandsLoading(true);
+        try {
+            const result = await brandService.getAllBrands();
+            if (result.code === 1000 && result.result) {
+                setBrands(result.result);
+            }
+        } catch (error) {
+            console.error('Error loading brands:', error);
+        } finally {
+            setBrandsLoading(false);
+        }
+    };
+
+    // Load categories và brands khi component mount
     useEffect(() => {
         loadCategories();
-    }, []); // Chỉ load categories khi component mount
+        loadBrands();
+    }, []); // Chỉ load khi component mount
 
     // Kết hợp dữ liệu từ API và local
     const allProducts = [
-        ...apiProducts.map(apiProduct => ({
-            id: apiProduct.id,
-            name: apiProduct.name,
-            price: apiProduct.price,
-            active: apiProduct.active,
-            description: apiProduct.description,
-            brandName: apiProduct.brandName,
-            categoryName: apiProduct.categoryName,
-            createAt: apiProduct.createAt,
-            updateAt: apiProduct.updateAt,
-            image: apiProduct.images && apiProduct.images.length > 0 
-                ? apiProduct.images[0] 
-                : `https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop&random=${apiProduct.id}`,
-            images: apiProduct.images || [],
-            stock: apiProduct.quantity || 0 // Sử dụng quantity từ API
-        })),
+        ...apiProducts.map(apiProduct => {
+            // Tính giá từ variants
+            const variants = apiProduct.productVariants || [];
+            const prices = variants.map(v => v.price).filter(p => p > 0);
+            const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+            const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+            const priceRange = prices.length === 0
+                ? 'Chưa có giá'
+                : minPrice === maxPrice
+                    ? `${minPrice.toLocaleString('vi-VN')}₫`
+                    : `${minPrice.toLocaleString('vi-VN')}₫ - ${maxPrice.toLocaleString('vi-VN')}₫`;
+
+            // Tính tổng tồn kho từ tất cả variants
+            const totalStock = apiProduct.productVariants?.reduce((sum, v) => sum + (v.quantity || 0), 0) || 0;
+
+            return {
+                id: apiProduct.id,
+                name: apiProduct.name,
+                minPrice,
+                maxPrice,
+                priceRange,
+                active: apiProduct.active,
+                description: apiProduct.description,
+                brandName: apiProduct.brandName,
+                categoryName: apiProduct.categoryName,
+                createAt: apiProduct.createAt,
+                updateAt: apiProduct.updateAt,
+                productVariants: apiProduct.productVariants,
+                image: apiProduct.images && apiProduct.images.length > 0
+                    ? apiProduct.images[0]
+                    : `https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop&random=${apiProduct.id}`,
+                images: apiProduct.images || [],
+                stock: totalStock
+            };
+        }),
         ...localProducts
     ];
 
@@ -170,9 +216,10 @@ const Products: React.FC = () => {
             // Nếu showDeleted = false: chỉ hiển thị sản phẩm hoạt động (p.active)
             const activeCheck = showDeleted ? !p.active : p.active;
             const categoryCheck = filterCategory === 'all' || p.categoryName === filterCategory;
-            const priceCheck = p.price >= priceRange[0] && p.price <= priceRange[1];
+            // Kiểm tra giá bằng minPrice
+            const priceCheck = p.minPrice >= priceRange[0] && p.minPrice <= priceRange[1];
             const searchCheck = !searchText || p.name.toLowerCase().includes(searchText.toLowerCase());
-            
+
             return activeCheck && categoryCheck && priceCheck && searchCheck;
         })
         .sort((a, b) => b.id - a.id); // Sắp xếp giảm dần theo ID (mới nhất lên đầu)
@@ -181,7 +228,7 @@ const Products: React.FC = () => {
     const startIndex = (pagination.current - 1) * pagination.pageSize;
     const endIndex = startIndex + pagination.pageSize;
     const currentPageProducts = filteredProducts.slice(startIndex, endIndex);
-    
+
     // Cập nhật total cho pagination dựa trên filtered products
     const filteredTotal = filteredProducts.length;
 
@@ -189,7 +236,7 @@ const Products: React.FC = () => {
     const totalProducts = allProducts.length;
     const activeProducts = allProducts.filter(p => p.active).length;
     const inactiveProducts = allProducts.filter(p => !p.active).length;
-    const totalValue = allProducts.reduce((sum, p) => sum + p.price, 0);
+    const totalValue = allProducts.reduce((sum, p) => sum + (p.minPrice || 0), 0);
     const totalStock = allProducts.reduce((sum, p) => sum + (p.stock || 0), 0);
 
     const columns = [
@@ -210,9 +257,9 @@ const Products: React.FC = () => {
                 if (record.images && record.images.length > 1) {
                     const imagesLength = record.images.length;
                     return (
-                        <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
                             justifyContent: 'center',
                             height: '70px',
                             padding: '8px 0',
@@ -226,7 +273,7 @@ const Products: React.FC = () => {
                                         height={idx === 0 ? 45 : 0}
                                         src={img}
                                         fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
-                                        style={{ 
+                                        style={{
                                             borderRadius: '4px',
                                             objectFit: 'cover',
                                             border: '1px solid #f0f0f0',
@@ -256,9 +303,9 @@ const Products: React.FC = () => {
                     );
                 }
                 return (
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         justifyContent: 'center',
                         height: '70px',
                         padding: '8px 0'
@@ -268,7 +315,7 @@ const Products: React.FC = () => {
                             height={45}
                             src={image}
                             fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
-                            style={{ 
+                            style={{
                                 borderRadius: '4px',
                                 objectFit: 'cover',
                                 border: '1px solid #f0f0f0'
@@ -282,9 +329,9 @@ const Products: React.FC = () => {
             title: 'Thông tin sản phẩm',
             key: 'product_info',
             render: (record: Product) => (
-                <div style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
                     justifyContent: 'center',
                     height: '70px',
                     padding: '8px 0'
@@ -310,16 +357,16 @@ const Products: React.FC = () => {
             width: 120,
             align: 'center' as const,
             render: (record: Product) => (
-                <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     height: '70px',
                     padding: '8px 0'
                 }}>
                     <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
                         <span className="text-primary">
-                            {(record.price || 0).toLocaleString()}đ
+                            {record.priceRange}
                         </span>
                     </div>
                 </div>
@@ -332,9 +379,9 @@ const Products: React.FC = () => {
             width: 80,
             align: 'center' as const,
             render: (stock: number | undefined) => (
-                <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     height: '70px',
                     padding: '8px 0'
@@ -356,9 +403,9 @@ const Products: React.FC = () => {
             width: 120,
             align: 'center' as const,
             render: (active: boolean) => (
-                <Badge 
-                    status={active ? 'success' : 'default'} 
-                    text={active ? 'Đang bán' : 'Ngừng bán'} 
+                <Badge
+                    status={active ? 'success' : 'default'}
+                    text={active ? 'Đang bán' : 'Ngừng bán'}
                 />
             ),
         },
@@ -369,72 +416,54 @@ const Products: React.FC = () => {
             align: 'center' as const,
             render: (record: Product) => (
                 <Space size="small">
-                        <Button
-                            type="text"
-                            icon={<EyeOutlined />}
-                            onClick={() => handleView(record)}
-                            title="Xem chi tiết"
-                            size="small"
-                        />
-                        <Button
-                            type="text"
-                            icon={<AppstoreOutlined />}
-                            onClick={() => handleManageVariants(record)}
-                            title="Quản lý biến thể"
-                            size="small"
-                        />
-                        <Button
-                            type="text"
-                            icon={<EditOutlined />}
-                            onClick={() => handleEdit(record)}
-                            title="Chỉnh sửa"
-                            size="small"
-                        />
-                        {record.active ? (
-                            <Popconfirm
-                                title="Bạn có chắc muốn vô hiệu hóa sản phẩm này?"
-                                description="Sản phẩm sẽ không hiển thị trên website nhưng vẫn có thể khôi phục."
-                                onConfirm={() => handleSoftDelete(record.id)}
-                                okText="Vô hiệu hóa"
-                                cancelText="Hủy"
-                                icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
-                            >
-                                <Button
-                                    type="text"
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    title="Vô hiệu hóa"
-                                    size="small"
-                                />
-                            </Popconfirm>
-                        ) : (
-                            <Popconfirm
-                                title="Bạn có chắc muốn xóa vĩnh viễn sản phẩm này?"
-                                description="Hành động này không thể hoàn tác!"
-                                onConfirm={() => handleHardDelete(record.id)}
-                                okText="Xóa vĩnh viễn"
-                                cancelText="Hủy"
-                                icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
-                            >
-                                <Button
-                                    type="text"
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    title="Xóa vĩnh viễn"
-                                    size="small"
-                                />
-                            </Popconfirm>
-                        )}
-                        {!record.active && (
+                    <Button
+                        type="text"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleView(record)}
+                        title="Xem chi tiết"
+                        size="small"
+                    />
+                    <Button
+                        type="text"
+                        icon={<AppstoreOutlined />}
+                        onClick={() => handleManageVariants(record)}
+                        title="Quản lý biến thể"
+                        size="small"
+                    />
+                    <Button
+                        type="text"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                        title="Chỉnh sửa"
+                        size="small"
+                    />
+                    {record.active ? (
+                        <Popconfirm
+                            title="Bạn có chắc muốn vô hiệu hóa sản phẩm này?"
+                            description="Sản phẩm sẽ không hiển thị trên website nhưng vẫn có thể khôi phục."
+                            onConfirm={() => handleSoftDelete(record.id)}
+                            okText="Vô hiệu hóa"
+                            cancelText="Hủy"
+                            icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
+                        >
                             <Button
                                 type="text"
-                                icon={<RestOutlined />}
-                                onClick={() => handleRestore(record.id)}
-                                title="Khôi phục"
+                                danger
+                                icon={<DeleteOutlined />}
+                                title="Vô hiệu hóa"
                                 size="small"
                             />
-                        )}
-                    </Space>
+                        </Popconfirm>
+                    ) : (
+                        <Button
+                            type="text"
+                            icon={<RestOutlined />}
+                            onClick={() => handleRestore(record.id)}
+                            title="Khôi phục"
+                            size="small"
+                        />
+                    )}
+                </Space>
             ),
         },
     ];
@@ -450,10 +479,12 @@ const Products: React.FC = () => {
         setEditingProduct(product);
         // Tìm categoryId từ categoryName
         const category = categories.find(cat => cat.name === product.categoryName);
-        
+        // Tìm brandId từ brandName
+        const brand = brands.find(b => b.name === product.brandName);
+
         // Convert images array thành string với delimiter |
         const imagesString = product.images ? product.images.join('|') : '';
-        
+
         // Tạo fileList từ images URLs
         const initialFiles: UploadFile[] = product.images ? product.images.map((img, idx) => ({
             uid: `-${idx}`,
@@ -462,12 +493,11 @@ const Products: React.FC = () => {
             url: img,
         })) : [];
         setFileList(initialFiles);
-        
+
         form.setFieldsValue({
             name: product.name,
-            price: product.price,
             description: product.description,
-            brandId: product.brandName, // Mock brandId
+            brandId: brand?.id, // Sử dụng brandId thực từ API
             categoryId: category?.id, // Sử dụng categoryId thực từ API
             active: product.active,
             images: imagesString
@@ -486,10 +516,16 @@ const Products: React.FC = () => {
             const result = await productService.deleteProduct(id);
             if (result.success) {
                 toast.success('Đã vô hiệu hóa sản phẩm thành công');
-                
+
+                // Đóng modal nếu đang edit sản phẩm này
+                if (editingProduct?.id === id) {
+                    setIsModalVisible(false);
+                    setEditingProduct(null);
+                }
+
                 // Reload dữ liệu từ API để cập nhật trạng thái mới nhất
                 refetch();
-                
+
                 // Nếu đang ở trang cuối và trang đó trống sau khi xóa, chuyển về trang trước
                 const remainingFilteredProducts = filteredProducts.filter(p => p.id !== id);
                 const maxPage = Math.ceil(remainingFilteredProducts.length / pagination.pageSize);
@@ -509,48 +545,7 @@ const Products: React.FC = () => {
     };
 
     // Hard delete - xóa vĩnh viễn sản phẩm
-    const handleHardDelete = async (id: number) => {
-        try {
-            const result = await productService.permanentDeleteProduct(id);
-            if (result.success) {
-                toast.success('Đã xóa vĩnh viễn sản phẩm thành công');
-                
-                // Reload dữ liệu từ API để cập nhật trạng thái mới nhất
-                refetch();
-                
-                // Tính toán lại pagination sau khi xóa
-                const remainingProducts = allProducts.filter(p => p.id !== id);
-                const remainingFilteredProducts = remainingProducts.filter(p => {
-                    const activeCheck = showDeleted ? !p.active : p.active;
-                    const categoryCheck = filterCategory === 'all' || p.categoryName === filterCategory;
-                    const priceCheck = p.price >= priceRange[0] && p.price <= priceRange[1];
-                    const searchCheck = !searchText || p.name.toLowerCase().includes(searchText.toLowerCase());
-                    return activeCheck && categoryCheck && priceCheck && searchCheck;
-                });
-                
-                const maxPage = Math.ceil(remainingFilteredProducts.length / pagination.pageSize);
-                
-                // Nếu đang ở trang cuối và trang đó trống sau khi xóa, chuyển về trang trước
-                if (pagination.current > maxPage && maxPage > 0) {
-                    setPagination(prev => ({
-                        ...prev,
-                        current: maxPage,
-                        total: remainingProducts.length
-                    }));
-                } else {
-                    setPagination(prev => ({
-                        ...prev,
-                        total: remainingProducts.length
-                    }));
-                }
-            } else {
-                toast.error(result.message || 'Không thể xóa vĩnh viễn sản phẩm');
-            }
-        } catch (error) {
-            toast.error('Lỗi khi xóa vĩnh viễn sản phẩm');
-            console.error('Error hard deleting product:', error);
-        }
-    };
+
 
     // Khôi phục sản phẩm đã xóa
     const handleRestore = async (id: number) => {
@@ -558,13 +553,19 @@ const Products: React.FC = () => {
             const result = await productService.restoreProduct(id);
             if (result.success) {
                 toast.success('Đã khôi phục sản phẩm thành công');
-                
+
+                // Đóng modal nếu đang edit sản phẩm này
+                if (editingProduct?.id === id) {
+                    setIsModalVisible(false);
+                    setEditingProduct(null);
+                }
+
                 // Reload dữ liệu từ API để cập nhật trạng thái mới nhất
                 refetch();
-                
+
                 // Chuyển sang tab sản phẩm đang hoạt động
                 setShowDeleted(false);
-                
+
                 // Nếu đang xem danh sách sản phẩm vô hiệu và khôi phục sản phẩm,
                 // sản phẩm sẽ biến mất khỏi danh sách hiện tại
                 const remainingFilteredProducts = filteredProducts.filter(p => p.id !== id);
@@ -592,48 +593,54 @@ const Products: React.FC = () => {
         }
 
         const selectedIds = selectedRowKeys as number[];
+        const selectedProducts = allProducts.filter(p => selectedIds.includes(p.id));
+
+        // Lọc sản phẩm theo hành động
+        const targetProducts = action === 'delete'
+            ? selectedProducts.filter(p => p.active) // Chỉ vô hiệu hóa sản phẩm đang hoạt động
+            : selectedProducts.filter(p => !p.active); // Chỉ khôi phục sản phẩm ngừng bán
+
+        if (targetProducts.length === 0) {
+            message.warning(action === 'delete'
+                ? 'Không có sản phẩm nào đang hoạt động để vô hiệu hóa'
+                : 'Không có sản phẩm nào ngừng bán để khôi phục');
+            return;
+        }
+
         let successCount = 0;
 
         try {
-            for (const id of selectedIds) {
+            for (const product of targetProducts) {
                 let result;
-                switch (action) {
-                    case 'delete':
-                        result = await productService.deleteProduct(id);
-                        if (result.success) {
-                            // Cập nhật local state ngay lập tức
-                            setLocalProducts(prevProducts => 
-                                prevProducts.map(product => 
-                                    product.id === id ? { ...product, active: false } : product
-                                )
-                            );
-                        }
-                        break;
-                    case 'restore':
-                        result = await productService.restoreProduct(id);
-                        if (result.success) {
-                            // Cập nhật local state ngay lập tức
-                            setLocalProducts(prevProducts => 
-                                prevProducts.map(product => 
-                                    product.id === id ? { ...product, active: true } : product
-                                )
-                            );
-                        }
-                        break;
-                    default:
-                        continue;
-                }
-                if (result.success) {
-                    successCount++;
+                if (action === 'delete') {
+                    result = await productService.deleteProduct(product.id);
+                    if (result.success) {
+                        setLocalProducts(prevProducts =>
+                            prevProducts.map(p =>
+                                p.id === product.id ? { ...p, active: false } : p
+                            )
+                        );
+                        successCount++;
+                    }
+                } else if (action === 'restore') {
+                    result = await productService.restoreProduct(product.id);
+                    if (result.success) {
+                        setLocalProducts(prevProducts =>
+                            prevProducts.map(p =>
+                                p.id === product.id ? { ...p, active: true } : p
+                            )
+                        );
+                        successCount++;
+                    }
                 }
             }
-            
+
             if (successCount > 0) {
-                toast.success(`Đã ${action === 'delete' ? 'vô hiệu hóa' : 'khôi phục'} ${successCount}/${selectedIds.length} sản phẩm`);
-                
+                toast.success(`Đã ${action === 'delete' ? 'vô hiệu hóa' : 'khôi phục'} ${successCount}/${targetProducts.length} sản phẩm`);
+
                 // Reload dữ liệu từ API để cập nhật trạng thái mới nhất
                 refetch();
-                
+
                 // Tính toán lại pagination nếu cần
                 const maxPage = Math.ceil(filteredProducts.length / pagination.pageSize);
                 if (pagination.current > maxPage && maxPage > 0) {
@@ -642,7 +649,7 @@ const Products: React.FC = () => {
                         current: maxPage
                     }));
                 }
-                
+
                 // Nếu khôi phục, chuyển sang tab active
                 if (action === 'restore') {
                     setShowDeleted(false);
@@ -652,7 +659,7 @@ const Products: React.FC = () => {
             toast.error('Lỗi khi thực hiện hành động hàng loạt');
             console.error('Error in bulk action:', error);
         }
-        
+
         setSelectedRowKeys([]);
     };
 
@@ -663,7 +670,7 @@ const Products: React.FC = () => {
             'Tên sản phẩm': product.name,
             'Thương hiệu': product.brandName,
             'Danh mục': product.categoryName,
-            'Giá': product.price,
+            'Giá': product.priceRange,
             'Trạng thái': product.active ? 'Đang bán' : 'Ngừng bán',
             'Mô tả': product.description,
             'Ngày tạo': product.createAt || '',
@@ -676,90 +683,35 @@ const Products: React.FC = () => {
         toast.success('Đã xuất file Excel thành công!');
     };
 
-    const handleSave = async (values: any) => {
-        try {
-            // Validate required fields
-            if (!values.name?.trim()) {
-                toast.error('Tên sản phẩm không được để trống');
-                return;
-            }
-            if (!values.description?.trim()) {
-                toast.error('Mô tả sản phẩm không được để trống');
-                return;
-            }
-            if (!values.price || values.price <= 0) {
-                toast.error('Giá sản phẩm phải lớn hơn 0');
-                return;
-            }
-            if (!values.brandId) {
-                toast.error('Vui lòng chọn thương hiệu');
-                return;
-            }
-            if (!values.categoryId) {
-                toast.error('Vui lòng chọn danh mục');
-                return;
-            }
-
-            const productData: ProductRequest = {
-                name: values.name.trim(),
-                price: values.price, // Backend sẽ convert number thành BigDecimal
-                description: values.description.trim(),
-                brandId: values.brandId,
-                categoryId: values.categoryId,
-                active: values.active !== undefined ? values.active : true
-            };
-
-            // Xử lý images nếu có
-            if (values.images) {
-                const imagesArray = values.images.split('|').filter((url: string) => url.trim());
-                if (imagesArray.length > 0) {
-                    productData.images = imagesArray;
-                }
-            }
-
-            let result;
-            if (editingProduct) {
-                result = await productService.updateProduct(editingProduct.id, productData);
-                if (result.success) {
-                    toast.success('Đã cập nhật sản phẩm thành công');
-                } else {
-                    toast.error(result.message || 'Không thể cập nhật sản phẩm');
-                }
-            } else {
-                result = await productService.createProduct(productData);
-                if (result.success) {
-                    toast.success('Đã thêm sản phẩm thành công');
-                } else {
-                    toast.error(result.message || 'Không thể thêm sản phẩm');
-                }
-            }
-
-            if (result.success) {
-                setIsModalVisible(false);
-                form.resetFields();
-                
-                // Reload toàn bộ dữ liệu sau khi thêm/sửa để đảm bảo dữ liệu chính xác
-                refetch();
-                loadCategories();
-            }
-        } catch (error) {
-            toast.error('Có lỗi xảy ra, vui lòng thử lại');
-            console.error('Error saving product:', error);
-        }
-    };
-
     // Handler cho quản lý biến thể
     const handleManageVariants = async (product: Product) => {
         setCurrentProductId(product.id);
         setEditingVariants([]);
+        setVariantFileLists({}); // Reset variant file lists
         setIsVariantModalVisible(true);
         setVariantsLoading(true);
-        
+
         try {
             const result = await productVariantService.getProductVariantsByProductId(product.id);
-            
+
             if (result.success && result.data) {
                 setEditingVariants(result.data);
+
+                // Initialize variantFileLists with existing images
+                const initialFileLists: { [key: number]: UploadFile[] } = {};
+                result.data.forEach((variant) => {
+                    if (variant.image) {
+                        initialFileLists[variant.id] = [{
+                            uid: `${variant.id}`,
+                            name: `variant-${variant.id}.jpg`,
+                            status: 'done',
+                            url: variant.image,
+                            thumbUrl: variant.image
+                        }];
+                    }
+                });
+                setVariantFileLists(initialFileLists);
+
                 if (result.data.length === 0) {
                     toast.info('Sản phẩm này chưa có biến thể. Nhấn "Thêm biến thể" để tạo mới.');
                 }
@@ -784,12 +736,13 @@ const Products: React.FC = () => {
             price: 0,
             discount: 0,
             quantity: 0,
-            additionalPrice: 0
+            additionalPrice: 0,
+            active: true
         };
         setEditingVariants([...editingVariants, newVariant]);
     };
 
-    // Xóa biến thể
+    // Vô hiệu hóa biến thể (soft delete)
     const handleDeleteVariant = async (variantId: number) => {
         // Nếu là variant mới (có ID tạm thời - số lớn)
         if (variantId > 1000000) {
@@ -797,22 +750,60 @@ const Products: React.FC = () => {
             return;
         }
 
+        setSavingVariantId(variantId);
         try {
             const result = await productVariantService.deleteProductVariant(variantId);
             if (result.success) {
-                toast.success('Đã xóa biến thể thành công');
-                setEditingVariants(editingVariants.filter(v => v.id !== variantId));
+                toast.success('Đã vô hiệu hóa biến thể thành công');
+                // Update active status instead of removing from list
+                setEditingVariants(editingVariants.map(v =>
+                    v.id === variantId ? { ...v, active: false } : v
+                ));
             } else {
                 toast.error(result.message);
             }
         } catch (error) {
-            console.error('Error deleting variant:', error);
-            toast.error('Lỗi khi xóa biến thể');
+            console.error('Error soft deleting variant:', error);
+            toast.error('Lỗi khi vô hiệu hóa biến thể');
+        } finally {
+            setSavingVariantId(null);
+        }
+    };
+
+    // Khôi phục biến thể
+    const handleRestoreVariant = async (variantId: number) => {
+        setSavingVariantId(variantId);
+        try {
+            const result = await productVariantService.restoreProductVariant(variantId);
+            if (result.success) {
+                toast.success('Đã khôi phục biến thể thành công');
+                setEditingVariants(editingVariants.map(v =>
+                    v.id === variantId ? { ...v, active: true } : v
+                ));
+            } else {
+                toast.error(result.message);
+            }
+        } catch (error) {
+            console.error('Error restoring variant:', error);
+            toast.error('Lỗi khi khôi phục biến thể');
+        } finally {
+            setSavingVariantId(null);
         }
     };
 
     // Lưu biến thể
     const handleSaveVariant = async (variant: ProductVariant) => {
+        // Validate required fields
+        if (!variant.price || variant.price <= 0) {
+            toast.error('Giá sản phẩm phải lớn hơn 0');
+            return false;
+        }
+        if (variant.quantity === undefined || variant.quantity === null || variant.quantity < 0) {
+            toast.error('Số lượng không hợp lệ');
+            return false;
+        }
+
+        setSavingVariantId(variant.id);
         const variantData: ProductVariantRequest = {
             productId: currentProductId!,
             size: variant.size,
@@ -821,35 +812,52 @@ const Products: React.FC = () => {
             price: variant.price,
             discount: variant.discount,
             quantity: variant.quantity,
-            additionalPrice: variant.additionalPrice
+            additionalPrice: variant.additionalPrice,
+            active: variant.active !== undefined ? variant.active : true
         };
 
         try {
             let result;
-            if (variant.id > 1000000) {
+            const isNewVariant = variant.id > 1000000; // ID tạm thời cho variant mới
+
+            if (isNewVariant) {
                 // Thêm mới
                 result = await productVariantService.createProductVariant(variantData);
+                if (result.success && result.data) {
+                    toast.success('Đã thêm biến thể mới thành công');
+                    // Thay thế variant tạm bằng variant mới có ID thật từ server
+                    setEditingVariants(editingVariants.map(v =>
+                        v.id === variant.id ? result.data! : v
+                    ));
+                    // Reload danh sách sản phẩm để cập nhật giá
+                    refetch();
+                    return true;
+                } else {
+                    toast.error(result.message || 'Không thể thêm biến thể');
+                    return false;
+                }
             } else {
                 // Cập nhật
                 result = await productVariantService.updateProductVariant(variant.id, variantData);
-            }
-
-            if (result.success) {
-                toast.success('Đã lưu biến thể thành công');
-                if (result.data) {
-                    setEditingVariants(editingVariants.map(v => 
+                if (result.success && result.data) {
+                    toast.success('Đã cập nhật biến thể thành công');
+                    setEditingVariants(editingVariants.map(v =>
                         v.id === variant.id ? result.data! : v
                     ));
+                    // Reload danh sách sản phẩm để cập nhật giá
+                    refetch();
+                    return true;
+                } else {
+                    toast.error(result.message || 'Không thể cập nhật biến thể');
+                    return false;
                 }
-                return true;
-            } else {
-                toast.error(result.message);
-                return false;
             }
         } catch (error) {
             console.error('Error saving variant:', error);
             toast.error('Lỗi khi lưu biến thể');
             return false;
+        } finally {
+            setSavingVariantId(null);
         }
     };
 
@@ -925,10 +933,7 @@ const Products: React.FC = () => {
 
             {/* Loading State */}
             {apiLoading && (
-                <div style={{ textAlign: 'center', padding: '50px' }}>
-                    <Spin size="large" />
-                    <p style={{ marginTop: '16px' }}>Đang tải dữ liệu sản phẩm từ API...</p>
-                </div>
+                <LoadingSpinner size="large" tip="Đang tải dữ liệu sản phẩm từ API..." />
             )}
 
             {/* Content */}
@@ -981,117 +986,127 @@ const Products: React.FC = () => {
                         </Col>
                     </Row>
 
-            {/* Action Bar */}
-            <Card style={{ marginBottom: '16px', marginTop: 0 }}>
-                <Row justify="space-between" align="middle">
-                    <Col>
-                        <Space wrap>
-                            <Input.Search
-                                placeholder="Tìm kiếm sản phẩm..."
-                                style={{ width: 300 }}
-                                allowClear
-                                value={searchText}
-                                onChange={(e) => setSearchText(e.target.value)}
-                            />
-                            <Select
-                                placeholder="Danh mục"
-                                style={{ width: 150 }}
-                                value={filterCategory}
-                                onChange={(value) => setFilterCategory(value || 'all')}
-                                loading={categoriesLoading}
-                            >
-                                <Option value="all">Tất cả</Option>
-                                {categories.map(cat => (
-                                    <Option key={cat.id} value={cat.name}>{cat.name}</Option>
-                                ))}
-                            </Select>
-                            <div style={{ width: 200 }}>
-                                <Text style={{ fontSize: '12px', color: '#666' }}>Giá: {priceRange[0].toLocaleString()}đ - {priceRange[1].toLocaleString()}đ</Text>
-                                <Slider
-                                    range
-                                    min={0}
-                                    max={2000000}
-                                    step={50000}
-                                    value={priceRange}
-                                    onChange={(value) => setPriceRange(value as [number, number])}
-                                />
-                            </div>
-                            <div>
-                                <Checkbox
-                                    checked={showDeleted}
-                                    onChange={(e) => setShowDeleted(e.target.checked)}
-                                >
-                                    Hiện sản phẩm ngừng bán ({inactiveProducts})
-                                </Checkbox>
-                            </div>
-                        </Space>
-                    </Col>
-                    <Col>
-                        <Space>
-                            <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={handleAdd}
-                            >
-                                Thêm sản phẩm
-                            </Button>
-                            <Button
-                                type="default"
-                                icon={<ReloadOutlined />}
-                                onClick={refetch}
-                                loading={apiLoading}
-                            >
-                                Làm mới sản phẩm
-                            </Button>
-                            <Button
-                                type="default"
-                                icon={<DownloadOutlined />}
-                                onClick={handleExportExcel}
-                            >
-                                Xuất Excel
-                            </Button>
-                        </Space>
-                    </Col>
-                </Row>
-            </Card>
+                    {/* Action Bar */}
+                    <Card style={{ marginBottom: '16px', marginTop: 0 }}>
+                        <Row justify="space-between" align="middle">
+                            <Col>
+                                <Space wrap>
+                                    <Input.Search
+                                        placeholder="Tìm kiếm sản phẩm..."
+                                        style={{ width: 300 }}
+                                        allowClear
+                                        value={searchText}
+                                        onChange={(e) => setSearchText(e.target.value)}
+                                    />
+                                    <Select
+                                        placeholder="Danh mục"
+                                        style={{ width: 150 }}
+                                        value={filterCategory}
+                                        onChange={(value) => setFilterCategory(value || 'all')}
+                                        loading={categoriesLoading}
+                                    >
+                                        <Option value="all">Tất cả</Option>
+                                        {categories.map(cat => (
+                                            <Option key={cat.id} value={cat.name}>{cat.name}</Option>
+                                        ))}
+                                    </Select>
+                                    <div style={{ width: 200 }}>
+                                        <Text style={{ fontSize: '12px', color: '#666' }}>Giá: {priceRange[0].toLocaleString()}đ - {priceRange[1].toLocaleString()}đ</Text>
+                                        <Slider
+                                            range
+                                            min={0}
+                                            max={2000000}
+                                            step={50000}
+                                            value={priceRange}
+                                            onChange={(value) => setPriceRange(value as [number, number])}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Checkbox
+                                            checked={showDeleted}
+                                            onChange={(e) => setShowDeleted(e.target.checked)}
+                                        >
+                                            Hiện sản phẩm ngừng bán ({inactiveProducts})
+                                        </Checkbox>
+                                    </div>
+                                </Space>
+                            </Col>
+                            <Col>
+                                <Space>
+                                    <Button
+                                        type="primary"
+                                        icon={<PlusOutlined />}
+                                        onClick={handleAdd}
+                                    >
+                                        Thêm sản phẩm
+                                    </Button>
+                                    <Button
+                                        type="default"
+                                        icon={<ReloadOutlined />}
+                                        onClick={refetch}
+                                        loading={apiLoading}
+                                    >
+                                        Làm mới sản phẩm
+                                    </Button>
+                                    <Button
+                                        type="default"
+                                        icon={<DownloadOutlined />}
+                                        onClick={handleExportExcel}
+                                    >
+                                        Xuất Excel
+                                    </Button>
+                                </Space>
+                            </Col>
+                        </Row>
+                    </Card>
 
-            {/* Bulk Actions */}
-            {selectedRowKeys.length > 0 && (
-                <Card style={{ marginBottom: '16px', backgroundColor: '#f0f9ff', border: '1px solid #0ea5e9' }}>
-                    <Row justify="space-between" align="middle">
-                        <Col>
-                            <Text strong>Đã chọn {selectedRowKeys.length} sản phẩm</Text>
-                        </Col>
-                        <Col>
-                            <Space>
-                                <Button
-                                    onClick={() => handleBulkAction('restore')}
-                                    type="default"
-                                    icon={<RestOutlined />}
-                                >
-                                    Khôi phục
-                                </Button>
-                                <Button
-                                    onClick={() => handleBulkAction('delete')}
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                >
-                                    Vô hiệu hóa
-                                </Button>
-                                <Button
-                                    onClick={() => setSelectedRowKeys([])}
-                                >
-                                    Bỏ chọn
-                                </Button>
-                            </Space>
-                        </Col>
-                    </Row>
-                </Card>
-            )}
+                    {/* Bulk Actions */}
+                    {selectedRowKeys.length > 0 && (() => {
+                        const selectedProducts = allProducts.filter(p => selectedRowKeys.includes(p.id));
+                        const hasActiveProducts = selectedProducts.some(p => p.active);
+                        const hasInactiveProducts = selectedProducts.some(p => !p.active);
 
-            {/* Products Table */}
-            <Card style={{ marginTop: 0 }}>
-                <style>{`
+                        return (
+                            <Card style={{ marginBottom: '16px', backgroundColor: '#f0f9ff', border: '1px solid #0ea5e9' }}>
+                                <Row justify="space-between" align="middle">
+                                    <Col>
+                                        <Text strong>Đã chọn {selectedRowKeys.length} sản phẩm</Text>
+                                    </Col>
+                                    <Col>
+                                        <Space>
+                                            {hasInactiveProducts && (
+                                                <Button
+                                                    onClick={() => handleBulkAction('restore')}
+                                                    type="default"
+                                                    icon={<RestOutlined />}
+                                                >
+                                                    Khôi phục {hasInactiveProducts && !hasActiveProducts ? '' : `(${selectedProducts.filter(p => !p.active).length})`}
+                                                </Button>
+                                            )}
+                                            {hasActiveProducts && (
+                                                <Button
+                                                    onClick={() => handleBulkAction('delete')}
+                                                    danger
+                                                    icon={<DeleteOutlined />}
+                                                >
+                                                    Vô hiệu hóa {hasActiveProducts && !hasInactiveProducts ? '' : `(${selectedProducts.filter(p => p.active).length})`}
+                                                </Button>
+                                            )}
+                                            <Button
+                                                onClick={() => setSelectedRowKeys([])}
+                                            >
+                                                Bỏ chọn
+                                            </Button>
+                                        </Space>
+                                    </Col>
+                                </Row>
+                            </Card>
+                        );
+                    })()}
+
+                    {/* Products Table */}
+                    <Card style={{ marginTop: 0 }}>
+                        <style>{`
                     .ant-table-measure-row {
                         display: none !important;
                         height: 0 !important;
@@ -1127,549 +1142,532 @@ const Products: React.FC = () => {
                         margin-top: 0 !important;
                     }
                 `}</style>
-                <Table
-                    columns={columns}
-                    dataSource={currentPageProducts}
-                    rowKey="id"
-                    loading={apiLoading}
-                    rowSelection={{
-                        selectedRowKeys,
-                        onChange: setSelectedRowKeys,
-                        getCheckboxProps: (record: Product) => ({
-                            disabled: !record.active
-                        })
-                    }}
-                    pagination={{
-                        current: pagination.current,
-                        pageSize: pagination.pageSize,
-                        total: filteredTotal,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                        showTotal: (total) => `Tổng ${total} sản phẩm`,
-                        onChange: (page, pageSize) => {
-                            setPagination(prev => ({
-                                ...prev,
-                                current: page,
-                                pageSize: pageSize || prev.pageSize
-                            }));
-                        },
-                        onShowSizeChange: (_, size) => {
-                            setPagination(prev => ({
-                                ...prev,
-                                current: 1, // Reset về trang 1 khi thay đổi page size
-                                pageSize: size
-                            }));
-                        }
-                    }}
-                    scroll={{ x: 1000 }}
-                    style={{
-                        '--ant-table-row-height': '70px'
-                    } as React.CSSProperties}
-                    components={{
-                        body: {
-                            row: (props: any) => (
-                                <tr {...props} style={{ height: '70px', verticalAlign: 'middle' }} />
-                            )
-                        }
-                    }}
-                />
-            </Card>
-
-            {/* Add/Edit Modal */}
-            <Modal
-                title={editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
-                open={isModalVisible}
-                onOk={() => form.submit()}
-                onCancel={() => {
-                    setIsModalVisible(false);
-                    setFileList([]);
-                }}
-                width={700}
-                okText={editingProduct ? 'Cập nhật' : 'Thêm mới'}
-                cancelText="Hủy"
-            >
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={handleSave}
-                >
-                    <Form.Item
-                        name="name"
-                        label="Tên sản phẩm"
-                        rules={[
-                            { required: true, message: 'Vui lòng nhập tên sản phẩm' },
-                            { min: 1, message: 'Tên sản phẩm không được để trống' }
-                        ]}
-                    >
-                        <Input placeholder="Nhập tên sản phẩm" />
-                    </Form.Item>
-
-                    <Row gutter={16}>
-                        <Col span={12}>
-                            <Form.Item
-                                name="price"
-                                label="Giá (đ)"
-                                rules={[
-                                    { required: true, message: 'Vui lòng nhập giá' },
-                                    { type: 'number', min: 0.01, message: 'Giá phải lớn hơn 0' }
-                                ]}
-                            >
-                                <InputNumber
-                                    style={{ width: '100%' }}
-                                    placeholder="0"
-                                    min={0.01}
-                                    step={1000}
-                                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                />
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item
-                                name="active"
-                                label="Trạng thái"
-                            >
-                                <Select placeholder="Chọn trạng thái">
-                                    <Option value={true}>Đang bán</Option>
-                                    <Option value={false}>Ngừng bán</Option>
-                                </Select>
-                            </Form.Item>
-                        </Col>
-                    </Row>
-
-                    <Form.Item
-                        name="description"
-                        label="Mô tả sản phẩm"
-                        rules={[
-                            { required: true, message: 'Vui lòng nhập mô tả sản phẩm' },
-                            { min: 1, message: 'Mô tả sản phẩm không được để trống' }
-                        ]}
-                    >
-                        <TextArea
-                            rows={4}
-                            placeholder="Nhập mô tả sản phẩm"
+                        <Table
+                            columns={columns}
+                            dataSource={currentPageProducts}
+                            rowKey="id"
+                            loading={apiLoading}
+                            rowSelection={{
+                                selectedRowKeys,
+                                onChange: setSelectedRowKeys
+                            }}
+                            pagination={{
+                                current: pagination.current,
+                                pageSize: pagination.pageSize,
+                                total: filteredTotal,
+                                showSizeChanger: true,
+                                showQuickJumper: true,
+                                showTotal: (total) => `Tổng ${total} sản phẩm`,
+                                onChange: (page, pageSize) => {
+                                    setPagination(prev => ({
+                                        ...prev,
+                                        current: page,
+                                        pageSize: pageSize || prev.pageSize
+                                    }));
+                                },
+                                onShowSizeChange: (_, size) => {
+                                    setPagination(prev => ({
+                                        ...prev,
+                                        current: 1, // Reset về trang 1 khi thay đổi page size
+                                        pageSize: size
+                                    }));
+                                }
+                            }}
+                            scroll={{ x: 1000 }}
+                            style={{
+                                '--ant-table-row-height': '70px'
+                            } as React.CSSProperties}
+                            components={{
+                                body: {
+                                    row: (props: any) => (
+                                        <tr {...props} style={{ height: '70px', verticalAlign: 'middle' }} />
+                                    )
+                                }
+                            }}
                         />
-                    </Form.Item>
+                    </Card>
 
-                    <Row gutter={16}>
-                        <Col span={12}>
-                            <Form.Item
-                                name="brandId"
-                                label="Thương hiệu"
-                                rules={[
-                                    { required: true, message: 'Vui lòng chọn thương hiệu' },
-                                    { type: 'number', message: 'Vui lòng chọn thương hiệu hợp lệ' }
-                                ]}
-                            >
-                                <Select placeholder="Chọn thương hiệu">
-                                    <Option value={1}>Nike</Option>
-                                    <Option value={2}>Adidas</Option>
-                                    <Option value={3}>Puma</Option>
-                                    <Option value={4}>Uniqlo</Option>
-                                    <Option value={5}>Chanel</Option>
-                                    <Option value={6}>Gucci</Option>
-                                </Select>
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item
-                                name="categoryId"
-                                label="Danh mục"
-                                rules={[
-                                    { required: true, message: 'Vui lòng chọn danh mục' },
-                                    { type: 'number', message: 'Vui lòng chọn danh mục hợp lệ' }
-                                ]}
-                            >
-                                <Select 
-                                    placeholder="Chọn danh mục"
-                                    loading={categoriesLoading}
-                                >
-                                    {categories.map(cat => (
-                                        <Option key={cat.id} value={cat.id}>{cat.name}</Option>
-                                    ))}
-                                </Select>
-                            </Form.Item>
-                        </Col>
-                    </Row>
+                    {/* Add/Edit Modal */}
+                    <ProductModal
+                        key={editingProduct?.id || 'new'}
+                        visible={isModalVisible}
+                        editingProduct={editingProduct}
+                        categories={categories}
+                        brands={brands}
+                        categoriesLoading={categoriesLoading}
+                        brandsLoading={brandsLoading}
+                        onClose={() => {
+                            setIsModalVisible(false);
+                            setEditingProduct(null);
+                            setFileList([]);
+                        }}
+                        onSuccess={async () => {
+                            const currentProductId = editingProduct?.id;
+                            await refetch();
 
-                    <Divider orientation="left">Hình ảnh sản phẩm</Divider>
-                    
-                    {/* Upload Component */}
-                    <Form.Item
-                        name="upload"
-                        label="Upload ảnh từ máy"
-                        tooltip="Có thể upload tối đa 4 ảnh"
+                            // Re-fetch and update editingProduct if modal is still open
+                            if (currentProductId && isModalVisible) {
+                                try {
+                                    const result = await productService.getProductById(currentProductId);
+                                    if (result.success && result.data) {
+                                        const freshProduct = result.data;
+                                        console.log('Fetched fresh product data:', freshProduct);
+                                        // Transform to match Product interface
+                                        const variants = freshProduct.productVariants || [];
+                                        const prices = variants.map(v => v.price).filter(p => p > 0);
+                                        const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+                                        const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+                                        const priceRange = prices.length === 0
+                                            ? 'Chưa có giá'
+                                            : minPrice === maxPrice
+                                                ? `${minPrice.toLocaleString('vi-VN')}₫`
+                                                : `${minPrice.toLocaleString('vi-VN')}₫ - ${maxPrice.toLocaleString('vi-VN')}₫`;
+
+                                        // Tính tổng tồn kho từ tất cả variants
+                                        const totalStock = variants.reduce((sum, v) => sum + (v.quantity || 0), 0);
+
+                                        const updatedProduct = {
+                                            id: freshProduct.id,
+                                            name: freshProduct.name,
+                                            minPrice,
+                                            maxPrice,
+                                            priceRange,
+                                            active: freshProduct.active,
+                                            description: freshProduct.description,
+                                            brandName: freshProduct.brandName,
+                                            categoryName: freshProduct.categoryName,
+                                            createAt: freshProduct.createAt,
+                                            updateAt: freshProduct.updateAt,
+                                            productVariants: freshProduct.productVariants as any,
+                                            image: freshProduct.images?.[0],
+                                            images: freshProduct.images,
+                                            stock: totalStock
+                                        };
+                                        console.log('Setting editingProduct with fresh data:', updatedProduct);
+
+                                        // Force modal re-render by closing and reopening
+                                        setIsModalVisible(false);
+                                        setTimeout(() => {
+                                            setEditingProduct(updatedProduct);
+                                            setIsModalVisible(true);
+                                        }, 100);
+                                    }
+                                } catch (error) {
+                                    console.error('Error fetching fresh product:', error);
+                                }
+                            }
+                        }}
+                    />
+
+                    {/* View Product Modal */}
+                    <Modal
+                        title="Chi tiết sản phẩm"
+                        open={isViewModalVisible}
+                        onCancel={() => setIsViewModalVisible(false)}
+                        footer={[
+                            <Button key="close" onClick={() => setIsViewModalVisible(false)}>
+                                Đóng
+                            </Button>
+                        ]}
+                        width={700}
                     >
-                        <Upload
-                            listType="picture-card"
-                            fileList={fileList}
-                            onPreview={async (file) => {
-                                let src = file.url as string;
-                                if (!src) {
-                                    src = await new Promise((resolve) => {
-                                        const reader = new FileReader();
-                                        reader.readAsDataURL(file.originFileObj as File);
-                                        reader.onload = () => resolve(reader.result as string);
-                                    });
-                                }
-                                const imgElement = document.createElement('img');
-                                imgElement.src = src;
-                                const imgWindow = window.open(src);
-                                imgWindow?.document.write(imgElement.outerHTML);
-                            }}
-                            beforeUpload={(file) => {
-                                const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
-                                if (!isJpgOrPng) {
-                                    message.error('Chỉ upload file JPG/PNG!');
-                                }
-                                const isLt2M = file.size / 1024 / 1024 < 2;
-                                if (!isLt2M) {
-                                    message.error('Ảnh phải nhỏ hơn 2MB!');
-                                }
-                                return false;
-                            }}
-                            maxCount={4}
-                            multiple={true}
-                            onChange={({ fileList: newFileList }) => {
-                                setFileList(newFileList);
-                                // Convert fileList thành URLs string cho form
-                                const urls = newFileList.map(file => {
-                                    if (file.status === 'done' && file.url) {
-                                        return file.url;
-                                    }
-                                    if (file.originFileObj) {
-                                        return URL.createObjectURL(file.originFileObj);
-                                    }
-                                    return '';
-                                }).filter(url => url);
-                                form.setFieldsValue({ images: urls.join('|') });
-                            }}
-                            onRemove={(file) => {
-                                const newFileList = fileList.filter(item => item.uid !== file.uid);
-                                setFileList(newFileList);
-                                const urls = newFileList.map(f => {
-                                    if (f.status === 'done' && f.url) return f.url;
-                                    if (f.originFileObj) return URL.createObjectURL(f.originFileObj);
-                                    return '';
-                                }).filter(url => url);
-                                form.setFieldsValue({ images: urls.join('|') });
-                            }}
-                        >
-                            {fileList.length < 4 && (
-                                <div>
-                                    <PlusOutlined />
-                                    <div style={{ marginTop: 8 }}>Upload</div>
-                                </div>
-                            )}
-                        </Upload>
-                    </Form.Item>
-                </Form>
-            </Modal>
+                        {viewingProduct && (
+                            <div>
+                                <Row gutter={24}>
+                                    <Col span={8}>
+                                        <PreviewGroup>
+                                            {viewingProduct.images && viewingProduct.images.length > 1 ? (
+                                                viewingProduct.images.map((img, idx) => (
+                                                    <Image
+                                                        key={idx}
+                                                        width={idx === 0 ? '100%' : 0}
+                                                        src={img}
+                                                        fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+                                                        style={{
+                                                            borderRadius: '8px',
+                                                            display: idx === 0 ? 'block' : 'none'
+                                                        }}
+                                                        preview={{
+                                                            mask: idx === 0 ? <div style={{ color: 'white', fontSize: '12px' }}>Xem {viewingProduct.images?.length} ảnh</div> : false
+                                                        }}
+                                                    />
+                                                ))
+                                            ) : (
+                                                <Image
+                                                    width="100%"
+                                                    src={viewingProduct.image}
+                                                    fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+                                                    style={{ borderRadius: '8px' }}
+                                                    preview={false}
+                                                />
+                                            )}
+                                        </PreviewGroup>
+                                        {viewingProduct.images && viewingProduct.images.length > 1 && (
+                                            <div style={{ marginTop: '8px', textAlign: 'center' }}>
+                                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                                    {viewingProduct.images.length} ảnh (Click để xem tất cả)
+                                                </Text>
+                                            </div>
+                                        )}
+                                    </Col>
+                                    <Col span={16}>
+                                        <Title level={3} style={{ marginBottom: '16px' }}>
+                                            {viewingProduct.name}
+                                        </Title>
 
-            {/* View Product Modal */}
-            <Modal
-                title="Chi tiết sản phẩm"
-                open={isViewModalVisible}
-                onCancel={() => setIsViewModalVisible(false)}
-                footer={[
-                    <Button key="close" onClick={() => setIsViewModalVisible(false)}>
-                        Đóng
-                    </Button>
-                ]}
-                width={700}
-            >
-                {viewingProduct && (
-                    <div>
-                        <Row gutter={24}>
-                            <Col span={8}>
-                                <PreviewGroup>
-                                    {viewingProduct.images && viewingProduct.images.length > 1 ? (
-                                        viewingProduct.images.map((img, idx) => (
-                                            <Image
-                                                key={idx}
-                                                width={idx === 0 ? '100%' : 0}
-                                                src={img}
-                                                fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
-                                                style={{ 
-                                                    borderRadius: '8px',
-                                                    display: idx === 0 ? 'block' : 'none'
-                                                }}
-                                                preview={{
-                                                    mask: idx === 0 ? <div style={{ color: 'white', fontSize: '12px' }}>Xem {viewingProduct.images?.length} ảnh</div> : false
-                                                }}
+                                        <Descriptions column={1} size="small">
+                                            <Descriptions.Item label="ID">
+                                                <Text code>{viewingProduct.id}</Text>
+                                            </Descriptions.Item>
+                                            <Descriptions.Item label="Thương hiệu">
+                                                <Tag color="blue">{viewingProduct.brandName}</Tag>
+                                            </Descriptions.Item>
+                                            <Descriptions.Item label="Danh mục">
+                                                <Tag color="green">{viewingProduct.categoryName}</Tag>
+                                            </Descriptions.Item>
+                                            <Descriptions.Item label="Giá">
+                                                <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+                                                    {viewingProduct.priceRange}
+                                                </Text>
+                                            </Descriptions.Item>
+                                            <Descriptions.Item label="Số biến thể">
+                                                <Badge
+                                                    count={viewingProduct.productVariants?.length || 0}
+                                                    showZero
+                                                    style={{ backgroundColor: '#52c41a' }}
+                                                />
+                                            </Descriptions.Item>
+                                            <Descriptions.Item label="Tồn kho">
+                                                <Text style={{
+                                                    color: (viewingProduct.stock || 0) === 0 ? '#ff4d4f' :
+                                                        (viewingProduct.stock || 0) < 20 ? '#faad14' : '#52c41a',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    {viewingProduct.stock || 0}
+                                                </Text>
+                                            </Descriptions.Item>
+                                            <Descriptions.Item label="Trạng thái">
+                                                <Tag color={viewingProduct.active ? 'green' : 'red'}>
+                                                    {viewingProduct.active ? 'Đang bán' : 'Ngừng bán'}
+                                                </Tag>
+                                            </Descriptions.Item>
+                                            {viewingProduct.createAt && (
+                                                <Descriptions.Item label="Ngày tạo">
+                                                    {new Date(viewingProduct.createAt).toLocaleDateString('vi-VN')}
+                                                </Descriptions.Item>
+                                            )}
+                                            {viewingProduct.updateAt && (
+                                                <Descriptions.Item label="Cập nhật lần cuối">
+                                                    {new Date(viewingProduct.updateAt).toLocaleDateString('vi-VN')}
+                                                </Descriptions.Item>
+                                            )}
+                                        </Descriptions>
+                                    </Col>
+                                </Row>
+
+                                {viewingProduct.description && (
+                                    <>
+                                        <Divider />
+                                        <div>
+                                            <Title level={4}>Mô tả sản phẩm</Title>
+                                            <Text>{viewingProduct.description}</Text>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Hiển thị danh sách biến thể */}
+                                {viewingProduct.productVariants && viewingProduct.productVariants.length > 0 && (
+                                    <>
+                                        <Divider />
+                                        <div>
+                                            <Title level={4}>Danh sách biến thể</Title>
+                                            <Table
+                                                dataSource={viewingProduct.productVariants}
+                                                rowKey="id"
+                                                pagination={false}
+                                                size="small"
+                                                columns={[
+                                                    {
+                                                        title: 'Màu sắc',
+                                                        dataIndex: 'color',
+                                                        key: 'color',
+                                                        render: (color: string) => (
+                                                            <Tag color="blue">{color}</Tag>
+                                                        )
+                                                    },
+                                                    {
+                                                        title: 'Kích thước',
+                                                        dataIndex: 'size',
+                                                        key: 'size',
+                                                        render: (size: string) => (
+                                                            <Tag color="green">{size}</Tag>
+                                                        )
+                                                    },
+                                                    {
+                                                        title: 'Giá',
+                                                        dataIndex: 'price',
+                                                        key: 'price',
+                                                        render: (price: number) => (
+                                                            <Text strong style={{ color: '#1890ff' }}>
+                                                                {price.toLocaleString('vi-VN')}₫
+                                                            </Text>
+                                                        )
+                                                    },
+                                                    {
+                                                        title: 'Số lượng',
+                                                        dataIndex: 'quantity',
+                                                        key: 'quantity',
+                                                        render: (quantity: number) => (
+                                                            <Text>{quantity}</Text>
+                                                        )
+                                                    }
+                                                ]}
                                             />
-                                        ))
-                                    ) : (
-                                        <Image
-                                            width="100%"
-                                            src={viewingProduct.image}
-                                            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
-                                            style={{ borderRadius: '8px' }}
-                                            preview={false}
-                                        />
-                                    )}
-                                </PreviewGroup>
-                                {viewingProduct.images && viewingProduct.images.length > 1 && (
-                                    <div style={{ marginTop: '8px', textAlign: 'center' }}>
-                                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                                            {viewingProduct.images.length} ảnh (Click để xem tất cả)
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </Modal>
+
+                    {/* Variant Management Modal */}
+                    <Modal
+                        title={`Quản lý biến thể - Product ID: ${currentProductId}`}
+                        open={isVariantModalVisible}
+                        onCancel={() => setIsVariantModalVisible(false)}
+                        footer={[
+                            <Button key="add" type="primary" onClick={handleAddVariant}>
+                                Thêm biến thể
+                            </Button>,
+                            <Button key="close" onClick={() => setIsVariantModalVisible(false)}>
+                                Đóng
+                            </Button>
+                        ]}
+                        width={900}
+                    >
+                        {variantsLoading ? (
+                            <LoadingSpinner tip="Đang tải danh sách biến thể..." />
+                        ) : (
+                            <>
+                                {editingVariants.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '40px' }}>
+                                        <Text type="secondary">
+                                            Chưa có biến thể nào. Nhấn "Thêm biến thể" để tạo mới.
                                         </Text>
                                     </div>
+                                ) : (
+                                    <Table
+                                        dataSource={editingVariants}
+                                        rowKey="id"
+                                        size="small"
+                                        pagination={false}
+                                        columns={[
+                                            {
+                                                title: 'Hình ảnh',
+                                                dataIndex: 'image',
+                                                width: 120,
+                                                render: (text, record, index) => {
+                                                    // Priority: variantFileLists first, then fallback to text (image URL from DB)
+                                                    let currentFileList: UploadFile[] = [];
+
+                                                    if (variantFileLists[record.id]) {
+                                                        currentFileList = variantFileLists[record.id];
+                                                    } else if (text) {
+                                                        currentFileList = [{
+                                                            uid: `${record.id}-initial`,
+                                                            name: `variant-${record.id}.jpg`,
+                                                            status: 'done',
+                                                            url: text,
+                                                            thumbUrl: text
+                                                        }];
+                                                    }
+
+                                                    return (
+                                                        <Upload
+                                                            key={`upload-${record.id}`}
+                                                            listType="picture-card"
+                                                            fileList={currentFileList}
+                                                            maxCount={1}
+                                                            beforeUpload={(file) => {
+                                                                const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+                                                                if (!isJpgOrPng) {
+                                                                    message.error('Chỉ upload file JPG/PNG!');
+                                                                    return Upload.LIST_IGNORE;
+                                                                }
+                                                                const isLt2M = file.size / 1024 / 1024 < 2;
+                                                                if (!isLt2M) {
+                                                                    message.error('Ảnh phải nhỏ hơn 2MB!');
+                                                                    return Upload.LIST_IGNORE;
+                                                                }
+                                                                return false;
+                                                            }}
+                                                            onChange={({ fileList: newFileList }) => {
+                                                                const updatedLists = { ...variantFileLists };
+                                                                if (newFileList.length > 0) {
+                                                                    updatedLists[record.id] = newFileList;
+                                                                    const file = newFileList[0];
+                                                                    if (file.originFileObj) {
+                                                                        const url = URL.createObjectURL(file.originFileObj);
+                                                                        handleUpdateVariant(index, 'image', url);
+                                                                    } else if (file.url) {
+                                                                        handleUpdateVariant(index, 'image', file.url);
+                                                                    }
+                                                                } else {
+                                                                    delete updatedLists[record.id];
+                                                                    handleUpdateVariant(index, 'image', '');
+                                                                }
+                                                                setVariantFileLists(updatedLists);
+                                                            }}
+                                                            onRemove={() => {
+                                                                handleUpdateVariant(index, 'image', '');
+                                                            }}
+                                                        >
+                                                            {currentFileList.length < 1 && <div>
+                                                                <PlusOutlined />
+                                                                <div style={{ marginTop: 8 }}>Upload</div>
+                                                            </div>}
+                                                        </Upload>
+                                                    );
+                                                },
+                                            },
+                                            {
+                                                title: 'Size',
+                                                dataIndex: 'size',
+                                                render: (text, _, index) => (
+                                                    <Input
+                                                        value={text}
+                                                        onChange={(e) => handleUpdateVariant(index, 'size', e.target.value)}
+                                                        placeholder="Size"
+                                                    />
+                                                ),
+                                            },
+                                            {
+                                                title: 'Màu',
+                                                dataIndex: 'color',
+                                                render: (text, _, index) => (
+                                                    <Input
+                                                        value={text}
+                                                        onChange={(e) => handleUpdateVariant(index, 'color', e.target.value)}
+                                                        placeholder="Color"
+                                                    />
+                                                ),
+                                            },
+                                            {
+                                                title: 'Giá',
+                                                dataIndex: 'price',
+                                                render: (text, _, index) => (
+                                                    <InputNumber
+                                                        value={text}
+                                                        onChange={(value) => handleUpdateVariant(index, 'price', value || 0)}
+                                                        placeholder="Price"
+                                                        min={0}
+                                                        style={{ width: '100%' }}
+                                                        formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                                    />
+                                                ),
+                                            },
+                                            {
+                                                title: 'Giảm giá',
+                                                dataIndex: 'discount',
+                                                render: (text, _, index) => (
+                                                    <InputNumber
+                                                        value={text}
+                                                        onChange={(value) => handleUpdateVariant(index, 'discount', value || 0)}
+                                                        placeholder="Discount"
+                                                        min={0}
+                                                        max={100}
+                                                        style={{ width: '100%' }}
+                                                        suffix="%"
+                                                    />
+                                                ),
+                                            },
+                                            {
+                                                title: 'Số lượng',
+                                                dataIndex: 'quantity',
+                                                render: (text, _, index) => (
+                                                    <InputNumber
+                                                        value={text}
+                                                        onChange={(value) => handleUpdateVariant(index, 'quantity', value || 0)}
+                                                        placeholder="Quantity"
+                                                        min={0}
+                                                        style={{ width: '100%' }}
+                                                    />
+                                                ),
+                                            },
+                                            {
+                                                title: 'Phụ phí',
+                                                dataIndex: 'additionalPrice',
+                                                render: (text, _, index) => (
+                                                    <InputNumber
+                                                        value={text}
+                                                        onChange={(value) => handleUpdateVariant(index, 'additionalPrice', value || 0)}
+                                                        placeholder="Additional Price"
+                                                        min={0}
+                                                        style={{ width: '100%' }}
+                                                        formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                                    />
+                                                ),
+                                            },
+                                            {
+                                                title: 'Trạng thái',
+                                                dataIndex: 'active',
+                                                width: 120,
+                                                render: (active) => (
+                                                    <Tag color={active !== false ? 'green' : 'red'}>
+                                                        {active !== false ? 'Đang bán' : 'Ngừng bán'}
+                                                    </Tag>
+                                                ),
+                                            },
+                                            {
+                                                title: 'Thao tác',
+                                                width: 200,
+                                                render: (_, record) => {
+                                                    // Show different actions based on active status
+                                                    if (record.active === false) {
+                                                        return (
+                                                            <Space>
+                                                                <Button
+                                                                    type="link"
+                                                                    icon={<ReloadOutlined />}
+                                                                    onClick={() => handleRestoreVariant(record.id)}
+                                                                    loading={savingVariantId === record.id}
+                                                                >
+                                                                    Khôi phục
+                                                                </Button>
+                                                            </Space>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <Space>
+                                                            <Button
+                                                                type="link"
+                                                                onClick={() => handleSaveVariant(record)}
+                                                                loading={savingVariantId === record.id}
+                                                            >
+                                                                Lưu
+                                                            </Button>
+                                                            <Popconfirm
+                                                                title="Bạn có chắc muốn vô hiệu hóa biến thể này?"
+                                                                onConfirm={() => handleDeleteVariant(record.id)}
+                                                                okText="Vô hiệu hóa"
+                                                                cancelText="Hủy"
+                                                                icon={<ExclamationCircleOutlined style={{ color: 'orange' }} />}
+                                                            >
+                                                                <Button type="link" danger>
+                                                                    Vô hiệu hóa
+                                                                </Button>
+                                                            </Popconfirm>
+                                                        </Space>
+                                                    );
+                                                },
+                                            },
+                                        ]}
+                                    />
                                 )}
-                            </Col>
-                            <Col span={16}>
-                                <Title level={3} style={{ marginBottom: '16px' }}>
-                                    {viewingProduct.name}
-                                </Title>
-                                
-                                <Descriptions column={1} size="small">
-                                    <Descriptions.Item label="ID">
-                                        <Text code>{viewingProduct.id}</Text>
-                                    </Descriptions.Item>
-                                    <Descriptions.Item label="Thương hiệu">
-                                        <Tag color="blue">{viewingProduct.brandName}</Tag>
-                                    </Descriptions.Item>
-                                    <Descriptions.Item label="Danh mục">
-                                        <Tag color="green">{viewingProduct.categoryName}</Tag>
-                                    </Descriptions.Item>
-                                    <Descriptions.Item label="Giá">
-                                        <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
-                                            {(viewingProduct.price || 0).toLocaleString()}đ
-                                        </Text>
-                                    </Descriptions.Item>
-                                    <Descriptions.Item label="Tồn kho">
-                                        <Text style={{ 
-                                            color: (viewingProduct.stock || 0) === 0 ? '#ff4d4f' : 
-                                                   (viewingProduct.stock || 0) < 20 ? '#faad14' : '#52c41a',
-                                            fontWeight: 'bold'
-                                        }}>
-                                            {viewingProduct.stock || 0}
-                                        </Text>
-                                    </Descriptions.Item>
-                                    <Descriptions.Item label="Trạng thái">
-                                        <Tag color={viewingProduct.active ? 'green' : 'red'}>
-                                            {viewingProduct.active ? 'Đang bán' : 'Ngừng bán'}
-                                        </Tag>
-                                    </Descriptions.Item>
-                                    {viewingProduct.createAt && (
-                                        <Descriptions.Item label="Ngày tạo">
-                                            {new Date(viewingProduct.createAt).toLocaleDateString('vi-VN')}
-                                        </Descriptions.Item>
-                                    )}
-                                    {viewingProduct.updateAt && (
-                                        <Descriptions.Item label="Cập nhật lần cuối">
-                                            {new Date(viewingProduct.updateAt).toLocaleDateString('vi-VN')}
-                                        </Descriptions.Item>
-                                    )}
-                                </Descriptions>
-                            </Col>
-                        </Row>
-                        
-                        {viewingProduct.description && (
-                            <>
-                                <Divider />
-                                <div>
-                                    <Title level={4}>Mô tả sản phẩm</Title>
-                                    <Text>{viewingProduct.description}</Text>
-                                </div>
                             </>
                         )}
-                    </div>
-                )}
-            </Modal>
-
-            {/* Variant Management Modal */}
-            <Modal
-                title={`Quản lý biến thể - Product ID: ${currentProductId}`}
-                open={isVariantModalVisible}
-                onCancel={() => setIsVariantModalVisible(false)}
-                footer={[
-                    <Button key="add" type="primary" onClick={handleAddVariant}>
-                        Thêm biến thể
-                    </Button>,
-                    <Button key="close" onClick={() => setIsVariantModalVisible(false)}>
-                        Đóng
-                    </Button>
-                ]}
-                width={900}
-            >
-                <Spin spinning={variantsLoading}>
-                    {editingVariants.length === 0 && !variantsLoading ? (
-                        <div style={{ textAlign: 'center', padding: '40px' }}>
-                            <Text type="secondary">
-                                Chưa có biến thể nào. Nhấn "Thêm biến thể" để tạo mới.
-                            </Text>
-                        </div>
-                    ) : (
-                        <Table
-                            dataSource={editingVariants}
-                            rowKey="id"
-                            size="small"
-                            pagination={false}
-                            columns={[
-                            {
-                                title: 'Hình ảnh',
-                                dataIndex: 'image',
-                                width: 120,
-                                render: (text, record, index) => {
-                                    const currentFileList = variantFileLists[record.id] || (text ? [{
-                                        uid: `${record.id}`,
-                                        name: `variant-${record.id}.jpg`,
-                                        status: 'done' as const,
-                                        url: text,
-                                    }] : []);
-                                    
-                                    return (
-                                        <Upload
-                                            listType="picture-card"
-                                            fileList={currentFileList}
-                                            maxCount={1}
-                                            beforeUpload={(file) => {
-                                                const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
-                                                if (!isJpgOrPng) {
-                                                    message.error('Chỉ upload file JPG/PNG!');
-                                                }
-                                                const isLt2M = file.size / 1024 / 1024 < 2;
-                                                if (!isLt2M) {
-                                                    message.error('Ảnh phải nhỏ hơn 2MB!');
-                                                }
-                                                return false;
-                                            }}
-                                            onChange={({ fileList: newFileList }) => {
-                                                const updatedLists = { ...variantFileLists };
-                                                if (newFileList.length > 0) {
-                                                    updatedLists[record.id] = newFileList;
-                                                    const file = newFileList[0];
-                                                    if (file.originFileObj) {
-                                                        const url = URL.createObjectURL(file.originFileObj);
-                                                        handleUpdateVariant(index, 'image', url);
-                                                    } else if (file.url) {
-                                                        handleUpdateVariant(index, 'image', file.url);
-                                                    }
-                                                } else {
-                                                    delete updatedLists[record.id];
-                                                    handleUpdateVariant(index, 'image', '');
-                                                }
-                                                setVariantFileLists(updatedLists);
-                                            }}
-                                            onRemove={() => {
-                                                handleUpdateVariant(index, 'image', '');
-                                            }}
-                                        >
-                                            {currentFileList.length < 1 && <div>
-                                                <PlusOutlined />
-                                                <div style={{ marginTop: 8 }}>Upload</div>
-                                            </div>}
-                                        </Upload>
-                                    );
-                                },
-                            },
-                            {
-                                title: 'Size',
-                                dataIndex: 'size',
-                                render: (text, _, index) => (
-                                    <Input
-                                        value={text}
-                                        onChange={(e) => handleUpdateVariant(index, 'size', e.target.value)}
-                                        placeholder="Size"
-                                    />
-                                ),
-                            },
-                            {
-                                title: 'Màu',
-                                dataIndex: 'color',
-                                render: (text, _, index) => (
-                                    <Input
-                                        value={text}
-                                        onChange={(e) => handleUpdateVariant(index, 'color', e.target.value)}
-                                        placeholder="Color"
-                                    />
-                                ),
-                            },
-                            {
-                                title: 'Giá',
-                                dataIndex: 'price',
-                                render: (text, _, index) => (
-                                    <InputNumber
-                                        value={text}
-                                        onChange={(value) => handleUpdateVariant(index, 'price', value || 0)}
-                                        placeholder="Price"
-                                        min={0}
-                                        style={{ width: '100%' }}
-                                        formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                    />
-                                ),
-                            },
-                            {
-                                title: 'Giảm giá',
-                                dataIndex: 'discount',
-                                render: (text, _, index) => (
-                                    <InputNumber
-                                        value={text}
-                                        onChange={(value) => handleUpdateVariant(index, 'discount', value || 0)}
-                                        placeholder="Discount"
-                                        min={0}
-                                        max={100}
-                                        style={{ width: '100%' }}
-                                        suffix="%"
-                                    />
-                                ),
-                            },
-                            {
-                                title: 'Số lượng',
-                                dataIndex: 'quantity',
-                                render: (text, _, index) => (
-                                    <InputNumber
-                                        value={text}
-                                        onChange={(value) => handleUpdateVariant(index, 'quantity', value || 0)}
-                                        placeholder="Quantity"
-                                        min={0}
-                                        style={{ width: '100%' }}
-                                    />
-                                ),
-                            },
-                            {
-                                title: 'Phụ phí',
-                                dataIndex: 'additionalPrice',
-                                render: (text, _, index) => (
-                                    <InputNumber
-                                        value={text}
-                                        onChange={(value) => handleUpdateVariant(index, 'additionalPrice', value || 0)}
-                                        placeholder="Additional Price"
-                                        min={0}
-                                        style={{ width: '100%' }}
-                                        formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                    />
-                                ),
-                            },
-                            {
-                                title: 'Thao tác',
-                                render: (_, record) => (
-                                    <Space>
-                                        <Button
-                                            type="link"
-                                            onClick={() => handleSaveVariant(record)}
-                                            loading={variantsLoading}
-                                        >
-                                            Lưu
-                                        </Button>
-                                        <Popconfirm
-                                            title="Bạn có chắc muốn xóa biến thể này?"
-                                            onConfirm={() => handleDeleteVariant(record.id)}
-                                            okText="Xóa"
-                                            cancelText="Hủy"
-                                        >
-                                            <Button type="link" danger>
-                                                Xóa
-                                            </Button>
-                                        </Popconfirm>
-                                    </Space>
-                                ),
-                            },
-                        ]}
-                    />
-                    )}
-                </Spin>
-            </Modal>
+                    </Modal>
 
                 </>
             )}
