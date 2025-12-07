@@ -126,6 +126,30 @@ class OrderService {
       return { success: false, message };
     }
   }
+
+  /**
+   * Hủy đơn hàng - Chỉ được phép hủy đơn ở trạng thái PENDING
+   * @param orderId ID của đơn hàng
+   * @param customerId ID của khách hàng
+   * @param cancelReason Lý do hủy đơn hàng
+   */
+  async cancelOrder(orderId: number, customerId: string, cancelReason: string) {
+    try {
+      const resp = await client.put<ApiResponse<string>>(
+        `/orders/${orderId}/cancel?customerId=${customerId}&cancelReason=${encodeURIComponent(cancelReason)}`
+      );
+      return {
+        success: true,
+        data: resp.data.result,
+        message: resp.data.message || 'Hủy đơn hàng thành công',
+      };
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        'Không thể hủy đơn hàng. Vui lòng thử lại sau';
+      return { success: false, message };
+    }
+  }
 }
 
 export const orderService = new OrderService();

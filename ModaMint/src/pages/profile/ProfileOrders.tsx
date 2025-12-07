@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/authContext';
 import { orderService, type OrderResponse } from '@/services/order';
+import { CancelOrderModal } from '@/components/common/CancelOrderModal';
+import { toast } from 'react-toastify';
 import styles from './style.module.css';
 
 export default function ProfileOrders() {
@@ -12,10 +14,14 @@ export default function ProfileOrders() {
     const [loading, setLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(Date.now());
     const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
+    const [cancelModal, setCancelModal] = useState<{ isOpen: boolean; order: OrderResponse | null }>({
+        isOpen: false,
+        order: null
+    });
 
     const fetchOrders = async () => {
         if (!user?.id) {
-            alert('Vui lòng đăng nhập để xem đơn hàng');
+            toast.error('Vui lòng đăng nhập để xem đơn hàng');
             return;
         }
 
@@ -26,10 +32,10 @@ export default function ProfileOrders() {
                 setOrders(result.data);
                 console.log('Orders loaded:', result.data.length);
             } else {
-                alert(result.message || 'Không thể tải danh sách đơn hàng');
+                toast.error(result.message || 'Không thể tải danh sách đơn hàng');
             }
         } catch (error) {
-            alert('Lỗi khi tải đơn hàng');
+            toast.error('Lỗi khi tải đơn hàng');
             console.error('Fetch orders error:', error);
         } finally {
             setLoading(false);
@@ -78,14 +84,39 @@ export default function ProfileOrders() {
 
             if (result.success && result.data) {
                 window.open(result.data.paymentUrl, '_blank');
-                alert('Đã tạo liên kết thanh toán mới');
+                toast.success('Đã tạo liên kết thanh toán mới');
             } else {
-                alert(result.message || 'Không thể tạo liên kết thanh toán');
+                toast.error(result.message || 'Không thể tạo liên kết thanh toán');
                 fetchOrders();
             }
         } catch (error) {
-            alert('Lỗi khi tạo liên kết thanh toán');
+            toast.error('Lỗi khi tạo liên kết thanh toán');
             console.error('Retry payment error:', error);
+        }
+    };
+
+    const handleCancelOrder = (order: OrderResponse) => {
+        setCancelModal({ isOpen: true, order });
+    };
+
+    const handleConfirmCancel = async (reason: string) => {
+        if (!cancelModal.order) return;
+
+        try {
+            const result = await orderService.cancelOrder(
+                cancelModal.order.id, 
+                user?.id || '', 
+                reason
+            );
+            if (result.success) {
+                toast.success('Đã hủy đơn hàng thành công');
+                fetchOrders();
+            } else {
+                toast.error(result.message || 'Không thể hủy đơn hàng');
+            }
+        } catch (error) {
+            toast.error('Lỗi khi hủy đơn hàng');
+            console.error('Cancel order error:', error);
         }
     };
 
@@ -248,6 +279,14 @@ export default function ProfileOrders() {
                                                         })()}
                                                     </button>
                                                 )}
+                                                {order.orderStatus === 'PENDING' && (
+                                                    <button
+                                                        onClick={() => handleCancelOrder(order)}
+                                                        className={`${styles.profile__action_btn} ${styles.profile__action_btn__danger}`}
+                                                    >
+                                                        Hủy đơn
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -257,6 +296,13 @@ export default function ProfileOrders() {
                     </table>
                 )}
             </div>
+
+            <CancelOrderModal
+                isOpen={cancelModal.isOpen}
+                onClose={() => setCancelModal({ isOpen: false, order: null })}
+                onConfirm={handleConfirmCancel}
+                orderCode={cancelModal.order?.orderCode || ''}
+            />
         </div>
     );
 }

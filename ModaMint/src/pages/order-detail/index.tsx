@@ -4,6 +4,8 @@ import { useParams, Link } from 'react-router-dom';
 import { orderService } from '@/services/order';
 import { reviewService } from '@/services/review';
 import { ProductReviewModal } from '@/components/detail/ProductReviewForm'; // ← Modal mới
+import { CancelOrderModal } from '@/components/common/CancelOrderModal';
+import { toast } from 'react-toastify';
 import type { OrderDetailResponse } from '@/services/order';
 import type { ReviewResponse } from '@/services/review';
 import { format } from 'date-fns';
@@ -17,6 +19,7 @@ const OrderDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [customerReviews, setCustomerReviews] = useState<Record<number, ReviewResponse | null>>({});
+  const [cancelModal, setCancelModal] = useState(false);
 
   const { user } = useAuth();
   const customerId = user?.id || '';
@@ -75,6 +78,31 @@ const OrderDetailPage: React.FC = () => {
   };
 
   const canReview = order?.orderStatus === 'DELIVERED';
+
+  const handleCancelOrder = () => {
+    setCancelModal(true);
+  };
+
+  const handleConfirmCancel = async (reason: string) => {
+    if (!order || !id) return;
+
+    try {
+      const result = await orderService.cancelOrder(Number(id), customerId, reason);
+      if (result.success) {
+        toast.success('Đã hủy đơn hàng thành công');
+        // Reload order data
+        const updatedOrder = await orderService.getOrderDetailById(Number(id));
+        if (updatedOrder.success && updatedOrder.data) {
+          setOrder(updatedOrder.data);
+        }
+      } else {
+        toast.error(result.message || 'Không thể hủy đơn hàng');
+      }
+    } catch (error) {
+      toast.error('Lỗi khi hủy đơn hàng');
+      console.error('Cancel order error:', error);
+    }
+  };
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('vi-VN').format(price) + 'đ';
@@ -234,11 +262,16 @@ const OrderDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Nút quay lại */}
+      {/* Nút quay lại và hủy đơn */}
       <div className={styles.actions}>
         <Link to="/profile/order" className={styles.back_btn}>
           Quay lại danh sách đơn hàng
         </Link>
+        {order.orderStatus === 'PENDING' && (
+          <button onClick={handleCancelOrder} className={styles.cancel_btn}>
+            Hủy đơn hàng
+          </button>
+        )}
       </div>
 
       {/* Modal đánh giá - chỉ render 1 lần duy nhất */}
@@ -250,6 +283,14 @@ const OrderDetailPage: React.FC = () => {
         orderItemId={modalState.orderItemId}
         existingReview={modalState.existingReview}
         onSuccess={() => handleReviewSuccess(modalState.orderItemId)}
+      />
+
+      {/* Modal hủy đơn */}
+      <CancelOrderModal
+        isOpen={cancelModal}
+        onClose={() => setCancelModal(false)}
+        onConfirm={handleConfirmCancel}
+        orderCode={order?.orderCode || ''}
       />
     </div>
   );
