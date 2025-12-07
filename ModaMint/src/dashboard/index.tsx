@@ -39,6 +39,7 @@ import VariantMatrix from './components/VariantMatrix';
 import OrderStatusChart from './components/OrderStatusChart';
 import CustomerAnalyticsTab from './components/CustomerAnalyticsTab';
 import PromotionAnalyticsTab from './components/PromotionAnalyticsTab';
+import LoadingSpinner from './components/LoadingSpinner';
 import './style.css';
 
 const { Title, Text } = Typography;
@@ -62,6 +63,7 @@ interface Product {
 const Dashboard: React.FC = () => {
     const location = useLocation();
     const [activeTab, setActiveTab] = useState('overview');
+    const [tabLoading, setTabLoading] = useState(false);
     const { products: apiProducts, loading: apiLoading, error: apiError, refetch } = useProducts();
     const [localProducts] = useState<Product[]>([]);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -91,13 +93,21 @@ const Dashboard: React.FC = () => {
     // Reset tab to overview when component mounts or route changes
     useEffect(() => {
         setActiveTab('overview');
+        setTabLoading(false);
     }, [location.pathname]);
 
     const handleTabChange = (key: string) => {
+        // Chuyển tab ngay lập tức
         setActiveTab(key);
-    };
 
-    const handleViewProduct = (product: Product) => {
+        // Hiển thị loading overlay
+        setTabLoading(true);
+
+        // Tắt loading sau 1 giây
+        setTimeout(() => {
+            setTabLoading(false);
+        }, 1000);
+    }; const handleViewProduct = (product: Product) => {
         setSelectedProduct(product);
         setIsViewModalVisible(true);
     };
@@ -311,268 +321,294 @@ const Dashboard: React.FC = () => {
         {
             key: 'overview',
             label: 'Tổng quan',
-            children: (
-                <div>
-                    {/* Statistics Cards */}
-                    <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-                        <Col xs={24} sm={12} lg={6}>
-                            <Card hoverable>
-                                <Statistic
-                                    title="Tổng sản phẩm"
-                                    value={totalProducts}
-                                    valueStyle={{ color: '#1890ff' }}
-                                    prefix={<ShoppingOutlined />}
-                                />
-                                <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
-                                    {activeProducts} sản phẩm hoạt động
-                                </Text>
-                            </Card>
-                        </Col>
-
-                        <Col xs={24} sm={12} lg={6}>
-                            <Card hoverable>
-                                <Statistic
-                                    title="Sản phẩm hoạt động"
-                                    value={activeProducts}
-                                    valueStyle={{ color: '#52c41a' }}
-                                    prefix={<UserOutlined />}
-                                />
-                                <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
-                                    {totalProducts > 0 ? Math.round((activeProducts / totalProducts) * 100) : 0}% tổng sản phẩm
-                                </Text>
-                            </Card>
-                        </Col>
-
-                        <Col xs={24} sm={12} lg={6}>
-                            <Card hoverable>
-                                <Statistic
-                                    title="Tổng giá trị kho"
-                                    value={totalValue}
-                                    precision={0}
-                                    valueStyle={{ color: '#722ed1' }}
-                                    prefix={<DollarOutlined />}
-                                    suffix="₫"
-                                    formatter={(value) =>
-                                        new Intl.NumberFormat('vi-VN').format(Number(value))
-                                    }
-                                />
-                                <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
-                                    Giá trị trung bình: {totalProducts > 0 ? new Intl.NumberFormat('vi-VN', {
-                                        style: 'currency',
-                                        currency: 'VND'
-                                    }).format(totalValue / totalProducts) : '0₫'}
-                                </Text>
-                            </Card>
-                        </Col>
-
-                        <Col xs={24} sm={12} lg={6}>
-                            <Card hoverable>
-                                <Statistic
-                                    title="Tỷ lệ hoạt động"
-                                    value={totalProducts > 0 ? Math.round((activeProducts / totalProducts) * 100) : 0}
-                                    precision={1}
-                                    valueStyle={{ color: '#faad14' }}
-                                    prefix={<RiseOutlined />}
-                                    suffix="%"
-                                />
-                                <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
-                                    {totalProducts - activeProducts} sản phẩm ngừng hoạt động
-                                </Text>
-                            </Card>
-                        </Col>
-                    </Row>
-
-                    {/* Popular Products Table */}
-                    <Card
-                        title="Top 5 sản phẩm phổ biến"
-                        style={{ marginBottom: '24px' }}
-                        extra={
-                            <Button
-                                onClick={() => setActiveTab('all-products')}
-                                className="btn-view-all"
-                            >
-                                Xem tất cả
-                            </Button>
-                        }
-                    >
-                        <Table
-                            columns={columns}
-                            dataSource={allProducts.slice(0, 5)}
-                            pagination={false}
-                            scroll={{ x: 800 }}
-                        />
-                    </Card>
-
-                    {/* Quick Actions */}
-                    <Row gutter={[16, 16]}>
-                        <Col xs={24} md={12}>
-                            <Card title="Hoạt động gần đây" size="small">
-                                <Space direction="vertical" style={{ width: '100%' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <Text>Đơn hàng #DH001 đã được xử lý</Text>
-                                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                                            5 phút trước
-                                        </Text>
-                                    </div>
-                                    <Divider style={{ margin: '8px 0' }} />
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <Text>Sản phẩm "Áo thun cotton" được thêm vào</Text>
-                                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                                            1 giờ trước
-                                        </Text>
-                                    </div>
-                                    <Divider style={{ margin: '8px 0' }} />
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <Text>Khách hàng mới đăng ký</Text>
-                                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                                            2 giờ trước
-                                        </Text>
-                                    </div>
-                                    <Divider style={{ margin: '8px 0' }} />
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <Text>Cập nhật giá sản phẩm "Giày sneaker"</Text>
-                                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                                            3 giờ trước
-                                        </Text>
-                                    </div>
-                                </Space>
-                            </Card>
-                        </Col>
-
-                        <Col xs={24} md={12}>
-                            <Card title="Thống kê nhanh" size="small">
-                                <Row gutter={16}>
-                                    <Col span={12}>
-                                        <Statistic
-                                            title="Tổng sản phẩm"
-                                            value={totalProducts}
-                                            valueStyle={{ fontSize: '20px', color: '#1890ff' }}
-                                        />
-                                    </Col>
-                                    <Col span={12}>
-                                        <Statistic
-                                            title="Danh mục"
-                                            value={new Set(allProducts.map(p => p.category)).size}
-                                            valueStyle={{ fontSize: '20px', color: '#722ed1' }}
-                                        />
-                                    </Col>
-                                    <Col span={12} style={{ marginTop: '16px' }}>
-                                        <Statistic
-                                            title="Hết hàng"
-                                            value={allProducts.filter(p => p.stock === 0).length}
-                                            valueStyle={{ fontSize: '20px', color: '#faad14' }}
-                                        />
-                                    </Col>
-                                    <Col span={12} style={{ marginTop: '16px' }}>
-                                        <Statistic
-                                            title="Hoạt động"
-                                            value={activeProducts}
-                                            valueStyle={{ fontSize: '20px', color: '#52c41a' }}
-                                        />
-                                    </Col>
-                                </Row>
-                            </Card>
-                        </Col>
-                    </Row>
-                </div>
-            )
         },
         {
             key: 'all-products',
             label: 'Tất cả sản phẩm',
-            children: (
-                <Card
-                    title={`Danh sách tất cả sản phẩm (${allProducts.length} sản phẩm)`}
-                    extra={
-                        <Button>Xuất Excel</Button>
-                    }
-                >
-                    <Table
-                        columns={columns}
-                        dataSource={allProducts}
-                        pagination={{
-                            pageSize: 8,
-                            showSizeChanger: true,
-                            showQuickJumper: true,
-                            showTotal: (total, range) =>
-                                `${range[0]}-${range[1]} của ${total} sản phẩm`,
-                        }}
-                        scroll={{ x: 800 }}
-                        rowClassName={(_, index) =>
-                            index % 2 === 0 ? 'table-row-light' : 'table-row-dark'
-                        }
-                    />
-                </Card>
-            )
         },
         {
             key: 'sales',
             label: 'Doanh số',
-            children: (
-                <SalesAnalytics
-                    dailySales={dailySales}
-                    monthlySales={monthlySales}
-                    loading={salesLoading}
-                    error={salesError}
-                />
-            )
         },
         {
             key: 'top-selling',
             label: 'Sản phẩm bán chạy',
-            children: (
-                <TopSellingProducts
-                    products={topProducts}
-                    loading={topProductsLoading}
-                    error={topProductsError}
-                />
-            )
         },
         {
             key: 'inventory',
             label: 'Tồn kho',
-            children: (
-                <InventoryAnalytics
-                    inventoryData={inventoryData}
-                    categoryData={categoryData}
-                    loading={inventoryLoading}
-                    error={inventoryError}
-                />
-            )
         },
         {
             key: 'variants',
             label: 'Biến thể',
-            children: (
-                <VariantMatrix
-                    matrixData={variantMatrix}
-                    loading={variantLoading}
-                    error={variantError}
-                />
-            )
         },
         {
             key: 'order-status',
             label: 'Trạng thái đơn hàng',
-            children: (
-                <OrderStatusChart
-                    statusData={orderStatus}
-                    loading={orderStatusLoading}
-                    error={orderStatusError}
-                />
-            )
         },
         {
             key: 'customers',
             label: 'Khách hàng',
-            children: <CustomerAnalyticsTab />
         },
         {
             key: 'promotions',
             label: 'Khuyến mãi',
-            children: <PromotionAnalyticsTab />
         }
     ];
+
+    // Render tab content based on activeTab
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'overview':
+                return (
+                    <div>
+                        {/* Statistics Cards */}
+                        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+                            <Col xs={24} sm={12} lg={6}>
+                                <Card hoverable>
+                                    <Statistic
+                                        title="Tổng sản phẩm"
+                                        value={totalProducts}
+                                        valueStyle={{ color: '#1890ff' }}
+                                        prefix={<ShoppingOutlined />}
+                                    />
+                                    <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                                        {activeProducts} sản phẩm hoạt động
+                                    </Text>
+                                </Card>
+                            </Col>
+
+                            <Col xs={24} sm={12} lg={6}>
+                                <Card hoverable>
+                                    <Statistic
+                                        title="Sản phẩm hoạt động"
+                                        value={activeProducts}
+                                        valueStyle={{ color: '#52c41a' }}
+                                        prefix={<UserOutlined />}
+                                    />
+                                    <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                                        {totalProducts > 0 ? Math.round((activeProducts / totalProducts) * 100) : 0}% tổng sản phẩm
+                                    </Text>
+                                </Card>
+                            </Col>
+
+                            <Col xs={24} sm={12} lg={6}>
+                                <Card hoverable>
+                                    <Statistic
+                                        title="Tổng giá trị kho"
+                                        value={totalValue}
+                                        precision={0}
+                                        valueStyle={{ color: '#722ed1' }}
+                                        prefix={<DollarOutlined />}
+                                        suffix="₫"
+                                        formatter={(value) =>
+                                            new Intl.NumberFormat('vi-VN').format(Number(value))
+                                        }
+                                    />
+                                    <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                                        Giá trị trung bình: {totalProducts > 0 ? new Intl.NumberFormat('vi-VN', {
+                                            style: 'currency',
+                                            currency: 'VND'
+                                        }).format(totalValue / totalProducts) : '0₫'}
+                                    </Text>
+                                </Card>
+                            </Col>
+
+                            <Col xs={24} sm={12} lg={6}>
+                                <Card hoverable>
+                                    <Statistic
+                                        title="Tỷ lệ hoạt động"
+                                        value={totalProducts > 0 ? Math.round((activeProducts / totalProducts) * 100) : 0}
+                                        precision={1}
+                                        valueStyle={{ color: '#faad14' }}
+                                        prefix={<RiseOutlined />}
+                                        suffix="%"
+                                    />
+                                    <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                                        {totalProducts - activeProducts} sản phẩm ngừng hoạt động
+                                    </Text>
+                                </Card>
+                            </Col>
+                        </Row>
+
+                        {/* Popular Products Table */}
+                        <Card
+                            title="Top 5 sản phẩm phổ biến"
+                            style={{ marginBottom: '24px' }}
+                            extra={
+                                <Button
+                                    onClick={() => handleTabChange('all-products')}
+                                    className="btn-view-all"
+                                >
+                                    Xem tất cả
+                                </Button>
+                            }
+                        >
+                            <Table
+                                columns={columns}
+                                dataSource={allProducts.slice(0, 5)}
+                                pagination={false}
+                                scroll={{ x: 800 }}
+                            />
+                        </Card>
+
+                        {/* Quick Actions */}
+                        <Row gutter={[16, 16]}>
+                            <Col xs={24} md={12}>
+                                <Card title="Hoạt động gần đây" size="small">
+                                    <Space direction="vertical" style={{ width: '100%' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Text>Đơn hàng #DH001 đã được xử lý</Text>
+                                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                                                5 phút trước
+                                            </Text>
+                                        </div>
+                                        <Divider style={{ margin: '8px 0' }} />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Text>Sản phẩm "Áo thun cotton" được thêm vào</Text>
+                                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                                                1 giờ trước
+                                            </Text>
+                                        </div>
+                                        <Divider style={{ margin: '8px 0' }} />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Text>Khách hàng mới đăng ký</Text>
+                                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                                                2 giờ trước
+                                            </Text>
+                                        </div>
+                                        <Divider style={{ margin: '8px 0' }} />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Text>Cập nhật giá sản phẩm "Giày sneaker"</Text>
+                                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                                                3 giờ trước
+                                            </Text>
+                                        </div>
+                                    </Space>
+                                </Card>
+                            </Col>
+
+                            <Col xs={24} md={12}>
+                                <Card title="Thống kê nhanh" size="small">
+                                    <Row gutter={16}>
+                                        <Col span={12}>
+                                            <Statistic
+                                                title="Tổng sản phẩm"
+                                                value={totalProducts}
+                                                valueStyle={{ fontSize: '20px', color: '#1890ff' }}
+                                            />
+                                        </Col>
+                                        <Col span={12}>
+                                            <Statistic
+                                                title="Danh mục"
+                                                value={new Set(allProducts.map(p => p.category)).size}
+                                                valueStyle={{ fontSize: '20px', color: '#722ed1' }}
+                                            />
+                                        </Col>
+                                        <Col span={12} style={{ marginTop: '16px' }}>
+                                            <Statistic
+                                                title="Hết hàng"
+                                                value={allProducts.filter(p => p.stock === 0).length}
+                                                valueStyle={{ fontSize: '20px', color: '#faad14' }}
+                                            />
+                                        </Col>
+                                        <Col span={12} style={{ marginTop: '16px' }}>
+                                            <Statistic
+                                                title="Hoạt động"
+                                                value={activeProducts}
+                                                valueStyle={{ fontSize: '20px', color: '#52c41a' }}
+                                            />
+                                        </Col>
+                                    </Row>
+                                </Card>
+                            </Col>
+                        </Row>
+                    </div>
+                );
+
+            case 'all-products':
+                return (
+                    <Card
+                        title={`Danh sách tất cả sản phẩm (${allProducts.length} sản phẩm)`}
+                        extra={
+                            <Button>Xuất Excel</Button>
+                        }
+                    >
+                        <Table
+                            columns={columns}
+                            dataSource={allProducts}
+                            pagination={{
+                                pageSize: 8,
+                                showSizeChanger: true,
+                                showQuickJumper: true,
+                                showTotal: (total, range) =>
+                                    `${range[0]}-${range[1]} của ${total} sản phẩm`,
+                            }}
+                            scroll={{ x: 800 }}
+                            rowClassName={(_, index) =>
+                                index % 2 === 0 ? 'table-row-light' : 'table-row-dark'
+                            }
+                        />
+                    </Card>
+                );
+
+            case 'sales':
+                return (
+                    <SalesAnalytics
+                        dailySales={dailySales}
+                        monthlySales={monthlySales}
+                        loading={salesLoading}
+                        error={salesError}
+                    />
+                );
+
+            case 'top-selling':
+                return (
+                    <TopSellingProducts
+                        products={topProducts}
+                        loading={topProductsLoading}
+                        error={topProductsError}
+                    />
+                );
+
+            case 'inventory':
+                return (
+                    <InventoryAnalytics
+                        inventoryData={inventoryData}
+                        categoryData={categoryData}
+                        loading={inventoryLoading}
+                        error={inventoryError}
+                    />
+                );
+
+            case 'variants':
+                return (
+                    <VariantMatrix
+                        matrixData={variantMatrix}
+                        loading={variantLoading}
+                        error={variantError}
+                    />
+                );
+
+            case 'order-status':
+                return (
+                    <OrderStatusChart
+                        statusData={orderStatus}
+                        loading={orderStatusLoading}
+                        error={orderStatusError}
+                    />
+                );
+
+            case 'customers':
+                return <CustomerAnalyticsTab />;
+
+            case 'promotions':
+                return <PromotionAnalyticsTab />;
+
+            default:
+                return null;
+        }
+    };
 
     return (
         <div>
@@ -613,17 +649,40 @@ const Dashboard: React.FC = () => {
 
             {/* Dashboard Content */}
             {!apiLoading && (
-                <Tabs
-                    activeKey={activeTab}
-                    onChange={handleTabChange}
-                    items={tabItems}
-                    size="large"
-                    tabBarStyle={{ marginBottom: '24px' }}
-                    tabBarGutter={32}
-                />
-            )}
+                <div style={{ position: 'relative' }}>
+                    {/* Tab Bar */}
+                    <Tabs
+                        activeKey={activeTab}
+                        onChange={handleTabChange}
+                        items={tabItems}
+                        size="large"
+                        tabBarStyle={{ marginBottom: '24px' }}
+                        tabBarGutter={32}
+                    />
 
-            <style>
+                    {/* Tab Content hoặc Loading */}
+                    {tabLoading ? (
+                        <div style={{
+                            minHeight: '500px',
+                            background: '#fff',
+                            borderRadius: '8px',
+                            padding: '24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <LoadingSpinner
+                                tip="Đang tải dữ liệu..."
+                                size="large"
+                            />
+                        </div>
+                    ) : (
+                        <div>
+                            {renderTabContent()}
+                        </div>
+                    )}
+                </div>
+            )}            <style>
                 {`
                     .table-row-light {
                         background-color: #fafafa;

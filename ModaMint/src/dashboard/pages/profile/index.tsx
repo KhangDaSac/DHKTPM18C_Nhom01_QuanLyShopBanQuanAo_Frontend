@@ -38,6 +38,7 @@ import dayjs from 'dayjs';
 import { authenticationService, type UserResponse } from '../../../services/authentication';
 import { userService } from '../../../services/user';
 import { toast } from 'react-toastify';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -178,9 +179,7 @@ const AdminProfile: React.FC = () => {
     // Hiển thị loading khi đang tải dữ liệu
     if (pageLoading) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-                <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} tip="Đang tải thông tin..." />
-            </div>
+            <LoadingSpinner size="large" tip="Đang tải thông tin..." />
         );
     }
 

@@ -7,6 +7,7 @@ import { amountPromotionService, type AmountPromotion } from '../../../services/
 import * as XLSX from 'xlsx';
 import './style.css';
 import '../../components/common-styles.css';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;

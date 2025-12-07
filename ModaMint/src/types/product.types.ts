@@ -19,6 +19,11 @@ export interface ProductVariant {
     size?: string;
     color?: string;
     price: number;
+    quantity?: number;
+    discount?: number;
+    additionalPrice?: number;
+    image?: string;
+    active?: boolean;
     createAt?: string;
 }
 

@@ -35,6 +35,7 @@ import '../../components/common-styles.css';
 import { customerService } from '../../../services/customer';
 import { addressService, type Province, type District, type Ward } from '../../../services/address';
 import { toast } from 'react-toastify';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
