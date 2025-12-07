@@ -52,11 +52,44 @@ export const usePromotionAnalytics = () => {
     const [topUsedError, setTopUsedError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchSummary();
-        fetchStatusSummary();
-        fetchTypeDistribution();
-        fetchUsageDaily();
-        fetchTopUsed();
+        // TEMPORARY: Disable API calls - endpoints not implemented yet
+        // TODO: Implement /api/promotions/* endpoints in backend or use /api/charts/promotions
+        // fetchSummary();
+        // fetchStatusSummary();
+        // fetchTypeDistribution();
+        // fetchUsageDaily();
+        // fetchTopUsed();
+
+        // Use mock data for now
+        setSummary({ total: 42, active: 12, scheduled: 5, expired: 25 });
+        setSummaryLoading(false);
+
+        setStatusSummary({ active: 12, scheduled: 5, expired: 21, disabled: 4 });
+        setStatusLoading(false);
+
+        setTypeDistribution({ percentage: 40, fixed: 25, freeShipping: 20, buyXgetY: 15 });
+        setTypeLoading(false);
+
+        const dates: string[] = [];
+        const usage: number[] = [];
+        const today = new Date();
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            dates.push(date.toISOString().split('T')[0]);
+            usage.push(Math.floor(Math.random() * 30) + 5);
+        }
+        setUsageDaily({ dates, usage });
+        setUsageLoading(false);
+
+        setTopUsed([
+            { code: 'SALE50', used: 120 },
+            { code: 'FREESHIP', used: 85 },
+            { code: 'SUMMER20', used: 68 },
+            { code: 'NEWCUST', used: 52 },
+            { code: 'FLASH10', used: 41 }
+        ]);
+        setTopUsedLoading(false);
     }, []);
 
     const fetchSummary = async () => {

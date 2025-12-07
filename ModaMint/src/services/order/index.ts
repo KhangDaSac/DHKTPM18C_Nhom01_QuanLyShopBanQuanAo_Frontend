@@ -46,16 +46,17 @@ export interface OrderResponse {
   customerId: string;
   totalAmount: number;
   subTotal: number;
+
   promotionId?: string;
   promotionValue?: number;
   orderStatus:
-    | 'PENDING'
-    | 'PREPARING'
-    | 'ARRIVED_AT_LOCATION'
-    | 'SHIPPED'
-    | 'DELIVERED'
-    | 'CANCELLED'
-    | 'RETURNED';
+  | 'PENDING'
+  | 'PREPARING'
+  | 'ARRIVED_AT_LOCATION'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'RETURNED';
   paymentMethod: 'COD' | 'BANK_TRANSFER' | 'E_WALLET';
   shippingAddressId?: number;
   phone: string;
@@ -65,6 +66,7 @@ export interface OrderResponse {
 
 export interface PaymentResponse {
   paymentUrl: string;
+
 }
 
 export interface PageResponse<T> {
@@ -73,10 +75,11 @@ export interface PageResponse<T> {
   totalPages: number;
   size: number;
   number: number;
+
 }
 
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1',
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
@@ -107,6 +110,7 @@ class OrderService {
       return { success: false, message: err?.message || 'Network error' };
     }
   }
+
 
   async getAllOrders() {
     try {
@@ -142,40 +146,18 @@ class OrderService {
     }
   }
 
+
   async getOrdersByCustomerId(customerId: string) {
     try {
       const resp = await client.get<ApiResponse<OrderResponse[]>>(`/orders/customer/${customerId}`);
       return { success: true, data: resp.data.result };
     } catch (err: any) {
+
       return { success: false, message: err?.message || 'Network error' };
     }
   }
 
-  async retryPayment(orderId: number) {
-    try {
-      const resp = await client.post<ApiResponse<PaymentResponse>>(
-        `/payment/retry-payment/${orderId}`
-      );
-      return { success: true, data: resp.data.result, message: resp.data.message };
-    } catch (err: any) {
-      const message = err.response?.data?.message || err?.message || 'Network error';
-      return { success: false, message };
-    }
-  }
 
-  async getOrderDetailById(id: number) {
-    try {
-      const resp = await client.get<ApiResponse<OrderDetailResponse>>(`/orders/detail/${id}`);
-      return {
-        success: true,
-        data: resp.data.result,
-        message: resp.data.message,
-      };
-    } catch (err: any) {
-      const message = err?.response?.data?.message || 'Không tìm thấy đơn hàng hoặc lỗi mạng';
-      return { success: false, message };
-    }
-  }
 
   async cancelOrder(orderId: number, customerId: string, cancelReason: string) {
     try {
@@ -210,9 +192,35 @@ class OrderService {
   async updateOrder(id: number, payload: OrderRequest) {
     try {
       const resp = await client.put<ApiResponse<OrderResponse>>(`/orders/${id}`, payload);
-    return { success: true, data: resp.data.result };
+      return { success: true, data: resp.data.result };
     } catch (err: any) {
       return { success: false, message: err?.message || 'Network error' };
+    }
+  }
+
+
+  async retryPayment(orderId: number) {
+    try {
+      const resp = await client.post<ApiResponse<PaymentResponse>>(`/payment/retry-payment/${orderId}`);
+      return { success: true, data: resp.data.result, message: resp.data.message };
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err?.message || 'Network error';
+      return { success: false, message: errorMessage };
+    }
+  }
+  async getOrderDetailById(id: number) {
+    try {
+      const resp = await client.get<ApiResponse<OrderDetailResponse>>(`/orders/detail/${id}`);
+      return {
+        success: true,
+        data: resp.data.result,
+        message: resp.data.message,
+      };
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        'Không tìm thấy đơn hàng hoặc lỗi mạng';
+      return { success: false, message };
     }
   }
 
