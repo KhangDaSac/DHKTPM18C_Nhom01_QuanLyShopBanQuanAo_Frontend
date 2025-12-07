@@ -49,7 +49,7 @@ const ProductList: React.FC = () => {
   const navigate = useNavigate();
   const [sort, setSort] = useState<string>('default');
   const [page, setPage] = useState<number>(1);
-  const [brand, setBrand] = useState<number | undefined>(undefined);
+  const [brands, setBrands] = useState<number[]>([]); // Thay đổi: từ single brand sang array of brands
   const [filters, setFilters] = useState<{ prices: string[]; colors: string[]; sizes: string[] }>({ 
     prices: [], 
     colors: [], 
@@ -82,8 +82,11 @@ const ProductList: React.FC = () => {
       // Build query parameters
       const params = new URLSearchParams();
       
-      if (brand) {
-        params.append('brandId', brand.toString());
+      // Handle multiple brands - thêm tất cả brandIds
+      if (brands.length > 0) {
+        brands.forEach(brandId => {
+          params.append('brandId', brandId.toString());
+        });
       }
       
       // Use urlCategoryId directly instead of state
@@ -91,17 +94,21 @@ const ProductList: React.FC = () => {
         params.append('categoryId', urlCategoryId);
       }
       
-      // Handle price ranges
+      // Handle price ranges - convert price range IDs to min/max values
       if (filters.prices.length > 0) {
         const priceRanges = filters.prices.map(p => PRICE_RANGES[p]);
-        const minPrice = Math.min(...priceRanges.map(r => r.min ?? 0));
-        const maxPrice = Math.max(...priceRanges.map(r => r.max ?? Number.MAX_SAFE_INTEGER));
+        const validRanges = priceRanges.filter(r => r);
         
-        if (minPrice > 0) {
+        if (validRanges.length > 0) {
+          // Get minimum of all mins and maximum of all maxes
+          const minPrice = Math.min(...validRanges.map(r => r.min ?? 0));
+          const maxPrice = Math.max(...validRanges.map(r => r.max ?? Number.MAX_SAFE_INTEGER));
+          
           params.append('minPrice', minPrice.toString());
-        }
-        if (maxPrice < Number.MAX_SAFE_INTEGER) {
-          params.append('maxPrice', maxPrice.toString());
+          
+          if (maxPrice < Number.MAX_SAFE_INTEGER) {
+            params.append('maxPrice', maxPrice.toString());
+          }
         }
       }
       
@@ -182,7 +189,7 @@ const ProductList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [brand, urlCategoryId, filters]);
+  }, [brands, urlCategoryId, filters]);
 
   // Handle add to cart
   const handleAddToCart = async (product: any) => {
@@ -244,10 +251,10 @@ const ProductList: React.FC = () => {
 
   // Fetch products when filters change
   useEffect(() => {
-    console.log('🔄 useEffect triggered - brand:', brand, 'urlCategoryId:', urlCategoryId, 'filters:', filters);
+    console.log('🔄 useEffect triggered - brands:', brands, 'urlCategoryId:', urlCategoryId, 'filters:', filters);
     fetchProducts();
     setPage(1); // Reset to page 1 when filters change
-  }, [brand, urlCategoryId, filters, fetchProducts]);
+  }, [brands, urlCategoryId, filters, fetchProducts]);
 
   // Client-side sorting only
   const sorted = useMemo(() => {
@@ -268,7 +275,7 @@ const ProductList: React.FC = () => {
 
   // Hàm reset toàn bộ filter
   const handleResetAllFilters = () => {
-    setBrand(undefined);
+    setBrands([]); // Reset brands array
     navigate(''); // Clear category from URL
     setFilters({ prices: [], colors: [], sizes: [] });
     setPage(1);
@@ -281,8 +288,8 @@ const ProductList: React.FC = () => {
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: 12 }}>
       <div style={{ marginBottom: 24 }}>
         <BrandCarousel 
-          onSelect={(id: number) => setBrand(id === 0 ? undefined : id)} 
-          selectedBrand={brand}
+          onSelect={(ids: number[]) => setBrands(ids)} 
+          selectedBrands={brands}
         />
       </div>
 
@@ -299,7 +306,7 @@ const ProductList: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div>Sắp xếp theo</div>
               <SortSelect value={sort} onChange={(v) => setSort(v)} />
-              <button
+              {/* <button
                 onClick={fetchProducts}
                 disabled={loading}
                 style={{
@@ -315,19 +322,19 @@ const ProductList: React.FC = () => {
                 title="Tải lại danh sách sản phẩm"
               >
                 {loading ? '⟳' : '↻'} 
-              </button>
+              </button> */}
             </div>
           </div>
 
           {/* Active Filters Display */}
-          {(brand || urlCategoryId || filters.prices.length > 0 || filters.colors.length > 0 || filters.sizes.length > 0) && (
+          {(brands.length > 0 || urlCategoryId || filters.prices.length > 0 || filters.colors.length > 0 || filters.sizes.length > 0) && (
             <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: '600', color: '#333' }}>Đang lọc theo:</span>
               
               {/* Reusable Filter Tag Component */}
               {[
                 urlCategoryId ? { label: 'Danh mục', onRemove: () => handleCategorySelect(undefined) } : null,
-                brand ? { label: 'Thương hiệu', onRemove: () => setBrand(undefined) } : null,
+                brands.length > 0 ? { label: `Thương hiệu (${brands.length})`, onRemove: () => setBrands([]) } : null,
                 filters.prices.length > 0 ? { label: `Giá (${filters.prices.length})`, onRemove: () => setFilters({ ...filters, prices: [] }) } : null,
                 filters.colors.length > 0 ? { label: `Màu (${filters.colors.length})`, onRemove: () => setFilters({ ...filters, colors: [] }) } : null,
                 filters.sizes.length > 0 ? { label: `Size (${filters.sizes.length})`, onRemove: () => setFilters({ ...filters, sizes: [] }) } : null
