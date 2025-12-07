@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styles from './style.module.css';
+import '../checkout/validation.css';
 import { FaFacebook, FaGoogle } from 'react-icons/fa';
 import { AiOutlineMail } from 'react-icons/ai';
 import { userService } from "@/services/user/index"
@@ -23,6 +24,16 @@ export default function Register() {
     const [registerMethod, setRegisterMethod] = useState<'email' | 'facebook' | 'google'>('email');
     const [isLoading, setIsLoading] = useState(false);
     const [showAdvancedFields, setShowAdvancedFields] = useState(false);
+    
+    // Validation errors
+    const [errors, setErrors] = useState<{
+        email?: string;
+        password?: string;
+        confirmPassword?: string;
+        phone?: string;
+        firstName?: string;
+        lastName?: string;
+    }>({});
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -193,10 +204,23 @@ export default function Register() {
                                 type="email"
                                 id="email"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={(e) => {
+                                    setEmail(e.target.value);
+                                    if (errors.email) {
+                                        setErrors(prev => ({ ...prev, email: undefined }));
+                                    }
+                                }}
+                                onBlur={() => {
+                                    const error = validateEmail(email);
+                                    setErrors(prev => ({ ...prev, email: error }));
+                                }}
+                                className={errors.email ? 'input-error' : ''}
                                 placeholder="Nhập email của bạn"
                                 required
                             />
+                            {errors.email && (
+                                <div className="error-message">{errors.email}</div>
+                            )}
                         </div>
                         <div className="form-row">
                             <div className="form-group">
@@ -205,11 +229,24 @@ export default function Register() {
                                     type="password"
                                     id="password"
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        if (errors.password) {
+                                            setErrors(prev => ({ ...prev, password: undefined }));
+                                        }
+                                    }}
+                                    onBlur={() => {
+                                        const error = validatePassword(password);
+                                        setErrors(prev => ({ ...prev, password: error }));
+                                    }}
+                                    className={errors.password ? 'input-error' : ''}
                                     placeholder="Nhập mật khẩu (ít nhất 8 ký tự)"
                                     minLength={8}
                                     required
                                 />
+                                {errors.password && (
+                                    <div className="error-message">{errors.password}</div>
+                                )}
                             </div>
                             <div className="form-group">
                                 <label htmlFor="confirmPassword">Xác nhận mật khẩu *</label>
@@ -217,11 +254,24 @@ export default function Register() {
                                     type="password"
                                     id="confirmPassword"
                                     value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    onChange={(e) => {
+                                        setConfirmPassword(e.target.value);
+                                        if (errors.confirmPassword) {
+                                            setErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                                        }
+                                    }}
+                                    onBlur={() => {
+                                        const error = validateConfirmPassword(confirmPassword);
+                                        setErrors(prev => ({ ...prev, confirmPassword: error }));
+                                    }}
+                                    className={errors.confirmPassword ? 'input-error' : ''}
                                     placeholder="Xác nhận lại mật khẩu"
                                     minLength={8}
                                     required
                                 />
+                                {errors.confirmPassword && (
+                                    <div className="error-message">{errors.confirmPassword}</div>
+                                )}
                             </div>
                         </div>
                         {/* Advanced Fields Toggle */}
@@ -256,9 +306,22 @@ export default function Register() {
                                             type="tel"
                                             id="phone"
                                             value={phone}
-                                            onChange={(e) => setPhone(e.target.value)}
+                                            onChange={(e) => {
+                                                setPhone(e.target.value);
+                                                if (errors.phone) {
+                                                    setErrors(prev => ({ ...prev, phone: undefined }));
+                                                }
+                                            }}
+                                            onBlur={() => {
+                                                const error = validatePhone(phone);
+                                                setErrors(prev => ({ ...prev, phone: error }));
+                                            }}
+                                            className={errors.phone ? 'input-error' : ''}
                                             placeholder="Nhập số điện thoại"
                                         />
+                                        {errors.phone && (
+                                            <div className="error-message">{errors.phone}</div>
+                                        )}
                                     </div>
                                     <div className="form-group">
                                         <label htmlFor="dob">Ngày sinh</label>

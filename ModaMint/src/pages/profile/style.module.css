@@ -184,6 +184,18 @@
     border-color: #F57C00;
 }
 
+.profile__action_btn__danger {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+    font-weight: 600;
+}
+
+.profile__action_btn__danger:hover {
+    background: #c82333;
+    border-color: #bd2130;
+}
+
 /* Loading State */
 .profile__loading {
     text-align: center;

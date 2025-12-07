@@ -14,6 +14,7 @@ import { productVariantService } from '@/services/productVariant';
 import { cartService } from '@/services/cart';
 import { useFavorites } from '@/contexts/favoritesContext';
 import { useAuth } from '@/contexts/authContext';
+import { useCart } from '@/hooks/useCart';
 import { toast } from 'react-toastify';
 
 // Lightbox Component (Đã refactor)
@@ -128,6 +129,7 @@ const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const favorites = useFavorites();
+  const { setCartFromBackend } = useCart();
 
   const [product, setProduct] = useState<ProductResponse | null>(null);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
@@ -271,18 +273,27 @@ const ProductDetailPage: React.FC = () => {
         }
       } else {
         // Guest user
+        const itemPrice = currentVariant.price || 0;
+        console.log('🛒 Adding to guest cart - Variant price:', itemPrice, 'Variant:', currentVariant);
+        
         cartService.addItemToGuestCart({
           variantId: currentVariant.id,
           productId: product?.id,
           productName: product?.name,
           image: currentVariant.image || product?.images?.[0],
           imageUrl: currentVariant.image || product?.images?.[0],
-          unitPrice: currentVariant.price,
-          price: currentVariant.price,
+          unitPrice: itemPrice,
+          price: itemPrice,
           quantity: quantity,
           color: currentVariant.color,
           size: currentVariant.size
         });
+        
+        // Sync guest cart to CartContext
+        const updatedGuestCart = cartService.getGuestCart();
+        console.log('🔄 Syncing guest cart to context:', updatedGuestCart);
+        setCartFromBackend(updatedGuestCart);
+        
         setAdded(true);
         toast.success('Đã thêm sản phẩm vào giỏ hàng!');
         setTimeout(() => setAdded(false), 1800);
@@ -307,23 +318,31 @@ const ProductDetailPage: React.FC = () => {
           toast.success('Đã thêm vào giỏ hàng, chuyển đến thanh toán...');
           navigate('/checkoutpage');
         } else {
-          console.error('Buy now add to cart failed', res?.message);
-          toast.error(res?.message || 'Không thể thêm sản phẩm để thanh toán ngay');
+          console.error('Buy now failed', res?.message);
+          toast.error(res?.message || 'Không thể thêm sản phẩm vào giỏ hàng');
         }
       } else {
         // Guest user
+        const itemPrice = currentVariant.price || 0;
+        console.log('🛒 Buy Now - Adding to guest cart - Variant price:', itemPrice);
+        
         cartService.addItemToGuestCart({
           variantId: currentVariant.id,
           productId: product?.id,
           productName: product?.name,
           image: currentVariant.image || product?.images?.[0],
           imageUrl: currentVariant.image || product?.images?.[0],
-          unitPrice: currentVariant.price,
-          price: currentVariant.price,
+          unitPrice: itemPrice,
+          price: itemPrice,
           quantity: quantity,
           color: currentVariant.color,
           size: currentVariant.size
         });
+        
+        // Sync guest cart to CartContext
+        const updatedGuestCart = cartService.getGuestCart();
+        setCartFromBackend(updatedGuestCart);
+        
         toast.success('Đã thêm vào giỏ hàng, chuyển đến thanh toán...');
         navigate('/checkoutpage');
       }
