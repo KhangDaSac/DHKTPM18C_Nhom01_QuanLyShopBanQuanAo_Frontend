@@ -38,10 +38,17 @@ const PRICE_RANGES: Record<string, { min?: number; max?: number }> = {
 // Color name to hex mapping
 const COLOR_NAME_MAP: Record<string, string> = {
   '#ffffff': 'Trắng',
-  '#0000ff': 'Xanh',
+  '#0000ff': 'Xanh dương',
   '#000000': 'Đen',
-  '#ff0000': 'Đỏ'
+  '#ff0000': 'Đỏ',
+  '#00ff00': 'Xanh lá',
+  '#ffa500': 'Cam',
+  '#800080': 'Tím',
+  '#808080': 'Xám',
+  '#ffc0cb': 'Hồng',
+  '#a52a2a': 'Nâu',
 };
+
 
 const PAGE_SIZE = 12;
 

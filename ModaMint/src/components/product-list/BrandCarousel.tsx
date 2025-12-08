@@ -31,7 +31,7 @@ const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrands = [] }) => {
             data.result.map((b: any) => ({
               id: b.id,
               name: b.name,
-              logo: b.logo || 'https://via.placeholder.com/130',
+              logo: b.image || 'https://via.placeholder.com/130',
             }))
           );
         } else {
@@ -47,7 +47,7 @@ const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrands = [] }) => {
 
   const handleBrandClick = (brandId: number) => {
     let newSelectedIds: number[];
-    
+
     if (selectedIds.includes(brandId)) {
       // Nếu brand đã được chọn thì bỏ chọn
       newSelectedIds = selectedIds.filter(id => id !== brandId);
@@ -55,7 +55,7 @@ const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrands = [] }) => {
       // Thêm brand vào danh sách chọn
       newSelectedIds = [...selectedIds, brandId];
     }
-    
+
     setSelectedIds(newSelectedIds);
     onSelect?.(newSelectedIds);
   };
@@ -134,7 +134,10 @@ const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrands = [] }) => {
                 width: 130,
                 height: 130,
                 borderRadius: '50%',
-                backgroundColor: '#fff4f2',
+                backgroundColor: '#fff',
+                borderWidth: 0.1,
+                borderStyle: 'solid',
+                borderColor: '#ffdede',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -142,10 +145,10 @@ const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrands = [] }) => {
                 overflow: 'hidden',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
-                boxShadow: selectedIds.includes(brand.id) 
-                  ? '0 4px 12px rgba(0,0,0,0.3)' 
+                boxShadow: selectedIds.includes(brand.id)
+                  ? '0 4px 12px rgba(0,0,0,0.3)'
                   : 'none',
-               
+
               }}
               onMouseEnter={(e) => {
                 if (!selectedIds.includes(brand.id)) {
