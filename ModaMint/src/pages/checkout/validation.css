@@ -10,16 +10,19 @@
     box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
 }
 
-.error_message {
-    color: #ff4d4f;
-    font-size: 13px;
+.error_message,
+.error-message {
+    color: #e74c3c;
+    font-size: 12px;
     margin-top: 4px;
     display: flex;
     align-items: center;
     gap: 4px;
+    font-weight: 500;
 }
 
-.error_message::before {
+.error_message::before,
+.error-message::before {
     content: "⚠";
     font-size: 14px;
 }
@@ -30,12 +33,14 @@
         opacity: 0;
         transform: translateY(-5px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
-.error_message {
+.error_message,
+.error-message {
     animation: slideDown 0.2s ease-out;
 }

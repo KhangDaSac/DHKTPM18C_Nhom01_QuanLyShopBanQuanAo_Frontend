@@ -138,7 +138,7 @@ class AnalyticsService {
     async getVariantMatrix(): Promise<VariantMatrixData[]> {
         try {
             const response = await apiClient.get<ApiResponse<VariantMatrixData[]>>(
-                `/api/charts/variants/matrix`
+                `/product-variants/matrix`
             );
             if (response.data.code === 1000) {
                 return response.data.result;

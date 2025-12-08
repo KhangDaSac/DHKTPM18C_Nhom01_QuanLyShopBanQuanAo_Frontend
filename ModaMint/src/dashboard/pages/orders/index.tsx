@@ -14,7 +14,6 @@ import {
     Col,
     Statistic,
     Typography,
-    Popconfirm,
     Descriptions,
     Steps,
     Timeline,
@@ -34,9 +33,7 @@ import {
     TruckOutlined,
     DollarOutlined,
     CheckCircleOutlined,
-    CloseCircleOutlined,
     ClockCircleOutlined,
-    UserOutlined,
     DownloadOutlined,
     PlusOutlined,
     SearchOutlined,
@@ -52,7 +49,8 @@ import * as XLSX from 'xlsx';
 import './style.css';
 import '../../components/common-styles.css';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { orderService, type OrderResponse } from '../../../services/order';
+import { orderService, type OrderResponse, type OrderDetailResponse } from '../../../services/order';
+import { customerService } from '../../../services/customer';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -79,7 +77,7 @@ interface OrderItem {
 interface Order {
     id: number;
     orderNumber: string;
-    customerId: number;
+    customerId: string;
     customerName: string;
     customerEmail: string;
     customerPhone: string;
@@ -104,6 +102,7 @@ interface Order {
     updatedAt: string;
     deliveredAt?: string;
     trackingNumber?: string;
+    orderStatusHistories?: { id: number; orderStatus: string; message?: string; createdAt: string; actor?: string }[];
 }
 
 
@@ -132,35 +131,128 @@ const Orders: React.FC = () => {
         setLoading(true);
         try {
             const result = await orderService.getAllOrders();
+            console.log('📦 Orders fetched:', result);
+
             if (result.success && result.data) {
-                // Map backend data to frontend Order interface
-                const mappedOrders: Order[] = result.data.map((order: OrderResponse) => ({
-                    id: order.id,
-                    orderNumber: order.orderCode,
-                    customerId: parseInt(order.customerId) || 0,
-                    customerName: 'N/A', // Backend không có field này
-                    customerEmail: 'N/A',
-                    customerPhone: order.phone,
-                    status: mapBackendStatus(order.orderStatus),
-                    paymentStatus: 'pending', // Backend không có field này, tạm set pending
-                    paymentMethod: mapPaymentMethod(order.paymentMethod),
-                    shippingAddress: {
-                        fullName: 'N/A',
-                        phone: order.phone,
-                        address: 'N/A',
-                        ward: 'N/A',
-                        district: 'N/A',
-                        province: 'N/A'
-                    },
-                    items: [], // Backend không trả về items trong list
-                    subtotal: order.totalAmount,
-                    shippingFee: 0,
-                    discount: order.promotionValue || 0,
-                    total: order.subTotal,
-                    createdAt: new Date(order.createAt).toLocaleString('vi-VN'),
-                    updatedAt: new Date(order.updateAt).toLocaleString('vi-VN')
-                }));
-                setOrders(mappedOrders);
+                // Fetch additional data for each order (customer name and order items)
+                const ordersWithDetails = await Promise.all(
+                    result.data.map(async (order: OrderResponse) => {
+                        console.log('🔍 Processing order:', order.orderCode, 'Customer ID:', order.customerId);
+
+                        // Fetch customer info (lấy trực tiếp name, email, phone từ customer table)
+                        let customerName = 'N/A';
+                        let customerEmail = 'N/A';
+                        let shippingAddress = {
+                            fullName: 'N/A',
+                            phone: order.phone,
+                            address: 'N/A',
+                            ward: 'N/A',
+                            district: 'N/A',
+                            province: 'N/A'
+                        };
+
+                        try {
+                            const customerResult = await customerService.getCustomerById(order.customerId);
+                            console.log('👤 Customer result for', order.customerId, ':', customerResult);
+
+                            if (customerResult.success && customerResult.data) {
+                                const customer = customerResult.data;
+
+                                console.log('📊 Customer data structure:', customer);
+                                console.log('📊 Customer.name:', customer.name);
+                                console.log('📊 Customer.user:', customer.user);
+
+                                // Thử nhiều cách lấy tên khách hàng
+                                // 1. Từ field name (nếu backend trả về)
+                                // 2. Từ user.firstName + lastName
+                                // 3. Từ user.username
+                                customerName = customer.name ||
+                                    (customer.user ? `${customer.user.firstName || ''} ${customer.user.lastName || ''}`.trim() : '') ||
+                                    customer.user?.username ||
+                                    'N/A';
+
+                                customerEmail = customer.email || customer.user?.email || 'N/A';
+                                console.log('✅ Customer name found:', customerName);
+                                console.log('✅ Customer email found:', customerEmail);
+
+                                // Lấy shipping address từ customer's addresses nếu có shippingAddressId
+                                if (order.shippingAddressId && customer.addresses && customer.addresses.length > 0) {
+                                    const address = customer.addresses.find(addr => addr.id === order.shippingAddressId);
+                                    if (address) {
+                                        shippingAddress = {
+                                            fullName: customerName,
+                                            phone: customer.phone || order.phone,
+                                            address: address.addressDetail || 'N/A',
+                                            ward: address.ward || 'N/A',
+                                            district: 'N/A', // Backend không có field district
+                                            province: address.city || 'N/A'
+                                        };
+                                        console.log('✅ Shipping address found:', shippingAddress);
+                                    }
+                                } else {
+                                    // Nếu không có shippingAddressId, dùng thông tin customer
+                                    shippingAddress.fullName = customerName;
+                                    shippingAddress.phone = customer.phone || order.phone;
+                                }
+                            } else {
+                                console.warn('⚠️ Customer not found or error:', customerResult.message);
+                            }
+                        } catch (error) {
+                            console.error('❌ Error fetching customer:', error);
+                        }
+
+                        // Fetch order details (items)
+                        let orderItems: OrderItem[] = [];
+                        try {
+                            const detailResult = await orderService.getOrderDetailById(order.id);
+                            console.log('📋 Order details for', order.orderCode, ':', detailResult);
+
+                            if (detailResult.success && detailResult.data) {
+                                orderItems = detailResult.data.orderItems.map(item => ({
+                                    id: item.id,
+                                    productId: item.productId,
+                                    productName: item.productVariantName,
+                                    productImage: item.productVariantImage,
+                                    sku: `${item.productVariantId}`,
+                                    price: item.unitPrice,
+                                    quantity: item.quantity,
+                                    subtotal: item.lineTotal,
+                                    variant: {
+                                        color: item.color,
+                                        size: item.size
+                                    }
+                                }));
+                                console.log('✅ Order items found:', orderItems.length, 'items');
+                            } else {
+                                console.warn('⚠️ Order details not found:', detailResult.message);
+                            }
+                        } catch (error) {
+                            console.error('❌ Error fetching order details:', error);
+                        }
+
+                        return {
+                            id: order.id,
+                            orderNumber: order.orderCode,
+                            customerId: order.customerId || '',
+                            customerName: customerName,
+                            customerEmail: customerEmail,
+                            customerPhone: order.phone,
+                            status: mapBackendStatus(order.orderStatus),
+                            paymentStatus: mapBackendPaymentStatus(order.paymentStatus),
+                            paymentMethod: mapPaymentMethod(order.paymentMethod),
+                            shippingAddress: shippingAddress,
+                            items: orderItems,
+                            subtotal: order.totalAmount,
+                            shippingFee: 0,
+                            discount: order.promotionValue || 0,
+                            total: order.subTotal,
+                            createdAt: new Date(order.createAt).toLocaleString('vi-VN'),
+                            updatedAt: new Date(order.updateAt).toLocaleString('vi-VN')
+                        } as Order;
+                    })
+                );
+
+                setOrders(ordersWithDetails);
             } else {
                 message.error(result.message || 'Không thể tải danh sách đơn hàng');
             }
@@ -176,6 +268,7 @@ const Orders: React.FC = () => {
     const mapBackendStatus = (status: string): Order['status'] => {
         const statusMap: Record<string, Order['status']> = {
             'PENDING': 'pending',
+            'CONFIRMED': 'confirmed',
             'PREPARING': 'processing',
             'ARRIVED_AT_LOCATION': 'processing',
             'SHIPPED': 'shipping',
@@ -194,6 +287,18 @@ const Orders: React.FC = () => {
             'E_WALLET': 'e_wallet'
         };
         return methodMap[method] || 'cash';
+    };
+
+    // Map backend paymentStatus to frontend small set
+    const mapBackendPaymentStatus = (status?: string): Order['paymentStatus'] => {
+        if (!status) return 'pending';
+        const map: Record<string, Order['paymentStatus']> = {
+            'PENDING': 'pending',
+            'PAID': 'paid',
+            'FAILED': 'failed',
+            'REFUNDED': 'refunded'
+        };
+        return map[status] || 'pending';
     };
 
     // Inject CSS để fix table spacing
@@ -280,8 +385,8 @@ const Orders: React.FC = () => {
 
     const getPaymentMethodText = (method: string) => {
         const methods = {
-            cash: 'Tiền mặt',
-            bank_transfer: 'Chuyển khoản',
+            cash: 'Thanh toán khi nhận hàng',
+            bank_transfer: 'Chuyển khoản ngân hàng',
             credit_card: 'Thẻ tín dụng',
             e_wallet: 'Ví điện tử'
         };
@@ -320,16 +425,13 @@ const Orders: React.FC = () => {
             key: 'customer',
             width: 200,
             render: (record: Order) => (
-                <div className="table-cell-container left">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Avatar icon={<UserOutlined />} size="small" />
-                        <div>
-                            <div style={{ fontWeight: 'bold' }}>
-                                {record.customerName}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#666' }}>
-                                {record.customerPhone}
-                            </div>
+                <div className="table-cell-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontWeight: 'bold' }}>
+                            {record.customerName}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>
+                            {record.customerPhone}
                         </div>
                     </div>
                 </div>
@@ -388,19 +490,28 @@ const Orders: React.FC = () => {
             key: 'paymentStatus',
             width: 130,
             align: 'center' as const,
-            render: (paymentStatus: string, record: Order) => {
+            render: (paymentStatus: string) => {
                 const config = getPaymentStatusConfig(paymentStatus);
                 return (
                     <div className="table-cell-container">
-                        <div>
-                            <Tag color={config.color}>{config.text}</Tag>
-                            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
-                                {getPaymentMethodText(record.paymentMethod)}
-                            </div>
-                        </div>
+                        <Tag color={config.color}>{config.text}</Tag>
                     </div>
                 );
             },
+        },
+        {
+            title: 'Phương thức thanh toán',
+            dataIndex: 'paymentMethod',
+            key: 'paymentMethod',
+            width: 160,
+            align: 'center' as const,
+            render: (paymentMethod: string) => (
+                <div className="table-cell-container">
+                    <div style={{ fontWeight: 500, color: '#333' }}>
+                        {getPaymentMethodText(paymentMethod)}
+                    </div>
+                </div>
+            ),
         },
         {
             title: 'Thao tác',
@@ -427,29 +538,79 @@ const Orders: React.FC = () => {
                         onClick={() => handlePrintInvoice(record)}
                         title="In hóa đơn"
                     />
-                    {record.status !== 'cancelled' && record.status !== 'delivered' && (
-                        <Popconfirm
-                            title="Bạn có chắc muốn hủy đơn hàng này?"
-                            onConfirm={() => handleCancelOrder(record.id)}
-                            okText="Hủy đơn"
-                            cancelText="Không"
-                        >
-                            <Button
-                                type="text"
-                                danger
-                                icon={<CloseCircleOutlined />}
-                                title="Hủy đơn"
-                            />
-                        </Popconfirm>
-                    )}
+                    {/* Cancel button removed as requested */}
                 </Space>
             ),
         },
     ];
 
-    const handleView = (order: Order) => {
-        setViewingOrder(order);
-        setIsViewModalVisible(true);
+    const handleView = async (order: Order) => {
+        setLoading(true);
+        try {
+            // Fetch fresh order detail (includes history)
+            const detail = await orderService.getOrderDetailById(order.id);
+            if (detail.success && detail.data) {
+                const data = detail.data;
+                const mappedItems: OrderItem[] = (data.orderItems || []).map(item => ({
+                    id: item.id,
+                    productId: item.productId,
+                    productName: item.productVariantName,
+                    productImage: item.productVariantImage,
+                    sku: `${item.productVariantId}`,
+                    price: item.unitPrice,
+                    quantity: item.quantity,
+                    subtotal: item.lineTotal,
+                    variant: { color: item.color, size: item.size }
+                }));
+
+                console.log('Detail API response:', data);
+
+                const normalizeTime = (t: any) => {
+                    if (!t) return '';
+                    if (typeof t === 'string') return t;
+                    // Handle JS Date-like serialized object or Java Time fields
+                    // e.g. { year: 2025, monthValue: 12, dayOfMonth: 8, hour: 14, minute: 6, second: 59 }
+                    if (typeof t === 'object') {
+                        const year = t.year || t.getFullYear?.();
+                        const month = (t.monthValue || t.month || (t.getMonth ? t.getMonth() + 1 : undefined)) - 1;
+                        const day = t.dayOfMonth || t.day || (t.getDate ? t.getDate() : undefined);
+                        const hour = t.hour ?? t.getHours?.() ?? 0;
+                        const minute = t.minute ?? t.getMinutes?.() ?? 0;
+                        const second = t.second ?? t.getSeconds?.() ?? 0;
+                        if (year && typeof month === 'number' && day) {
+                            return new Date(year, month, day, hour, minute, second).toISOString();
+                        }
+                    }
+                    // fallback: try to stringify
+                    try { return String(t); } catch (e) { return '' }
+                };
+
+                const histories = (data.orderStatusHistories || []).map(h => ({
+                    id: h.id,
+                    orderStatus: h.orderStatus,
+                    message: h.message,
+                    createdAt: normalizeTime(h.createdAt),
+                    actor: h.actor
+                }));
+
+                setViewingOrder({
+                    ...order,
+                    items: mappedItems,
+                    createdAt: new Date(data.createAt).toLocaleString('vi-VN'),
+                    updatedAt: new Date(data.updateAt).toLocaleString('vi-VN'),
+                    orderStatusHistories: histories,
+                    paymentStatus: data.paymentStatus ? mapBackendPaymentStatus(data.paymentStatus) : (order.paymentStatus || 'pending')
+                });
+                setIsViewModalVisible(true);
+            } else {
+                message.error(detail.message || 'Không thể tải chi tiết đơn hàng');
+            }
+        } catch (e) {
+            console.error('Error loading order detail:', e);
+            message.error('Lỗi khi tải chi tiết đơn hàng');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleEdit = (order: Order) => {
@@ -468,19 +629,51 @@ const Orders: React.FC = () => {
 
         setLoading(true);
         try {
-            const updatedOrder = {
-                ...editingOrder,
-                ...values,
-                updatedAt: new Date().toISOString().split('T')[0],
-                deliveredAt: values.status === 'delivered' && editingOrder.status !== 'delivered'
-                    ? new Date().toISOString().split('T')[0]
-                    : editingOrder.deliveredAt
+            // Build payload expected by backend OrderRequest
+            const payload = {
+                orderCode: editingOrder.orderNumber,
+                customerId: String(editingOrder.customerId || ''),
+                totalAmount: editingOrder.total || editingOrder.subtotal || 0,
+                subTotal: editingOrder.subtotal || editingOrder.total || 0,
+                promotionId: null,
+                promotionValue: editingOrder.discount || 0,
+                orderStatus: mapFrontendStatusToBackend(values.status || editingOrder.status),
+                paymentMethod: mapFrontendPaymentToBackend(values.paymentStatus || editingOrder.paymentMethod),
+                shippingAddressId: undefined,
+                phone: editingOrder.customerPhone || values.phone || ''
             };
 
-            setOrders(orders.map(o => o.id === editingOrder.id ? updatedOrder : o));
-            message.success('Đã cập nhật đơn hàng thành công!');
-            setIsEditModalVisible(false);
-            form.resetFields();
+            const resp = await orderService.updateOrder(editingOrder.id, payload as any);
+            if (resp.success) {
+                message.success('Đã cập nhật đơn hàng thành công!');
+                // Refresh list and viewing detail so history/status are up-to-date
+                await fetchOrders();
+                if (viewingOrder && viewingOrder.id === editingOrder.id) {
+                    const detail = await orderService.getOrderDetailById(editingOrder.id);
+                    if (detail.success && detail.data) {
+                        // Update viewingOrder items and timestamps
+                        setViewingOrder(prev => prev ? ({
+                            ...prev,
+                            items: detail.data.orderItems.map(item => ({
+                                id: item.id,
+                                productId: item.productId,
+                                productName: item.productVariantName,
+                                productImage: item.productVariantImage,
+                                sku: `${item.productVariantId}`,
+                                price: item.unitPrice,
+                                quantity: item.quantity,
+                                subtotal: item.lineTotal,
+                                variant: { color: item.color, size: item.size }
+                            })),
+                            updatedAt: new Date(detail.data.updateAt).toLocaleString('vi-VN')
+                        }) : null);
+                    }
+                }
+                setIsEditModalVisible(false);
+                form.resetFields();
+            } else {
+                message.error(resp.message || 'Cập nhật thất bại');
+            }
         } catch (error) {
             message.error('Có lỗi xảy ra!');
         } finally {
@@ -488,15 +681,31 @@ const Orders: React.FC = () => {
         }
     };
 
-    const handleCancelOrder = (id: number) => {
-        setOrders(orders.map(o => o.id === id ? {
-            ...o,
-            status: 'cancelled' as const,
-            paymentStatus: o.paymentStatus === 'paid' ? 'refunded' as const : o.paymentStatus,
-            updatedAt: new Date().toISOString().split('T')[0]
-        } : o));
-        message.success('Đã hủy đơn hàng!');
+    // Map frontend status back to backend enum string
+    const mapFrontendStatusToBackend = (status: string) => {
+        const map: Record<string, string> = {
+            pending: 'PENDING',
+            confirmed: 'CONFIRMED',
+            processing: 'PREPARING',
+            shipping: 'SHIPPED',
+            delivered: 'DELIVERED',
+            cancelled: 'CANCELLED',
+            returned: 'RETURNED'
+        };
+        return map[status] || 'PENDING';
     };
+
+    const mapFrontendPaymentToBackend = (method: string) => {
+        const map: Record<string, string> = {
+            cash: 'CASH_ON_DELIVERY',
+            bank_transfer: 'BANK_TRANSFER',
+            credit_card: 'BANK_TRANSFER',
+            e_wallet: 'E_WALLET'
+        };
+        return map[method] || 'CASH_ON_DELIVERY';
+    };
+
+    // Cancel order flow removed (UI no longer provides cancel button)
 
     const handlePrintInvoice = (order: Order) => {
         // Logic in hóa đơn
@@ -555,6 +764,69 @@ const Orders: React.FC = () => {
                     />
                 ))}
             </Steps>
+        );
+    };
+
+    // Render detailed history timeline (uses order.orderStatusHistories if available)
+    const renderHistoryTimeline = (order: Order) => {
+        if (!order) return null;
+
+        // Build base created event
+        const createdAt = order.createdAt;
+
+        // Map backend history entries (if any)
+        const histories = order.orderStatusHistories || [];
+
+        // Build unified events array
+        const events: { key: string | number; title: string; time: string; color?: string }[] = [];
+
+        // Created event
+        events.push({ key: 'created', title: 'Đơn hàng được tạo', time: createdAt, color: 'blue' });
+
+        // Add history entries
+        histories.forEach(h => {
+            const backendStatus = h.orderStatus;
+            const frontendStatus = mapBackendStatus(backendStatus);
+            const actorText = (h as any).actor ? ` · bởi ${(h as any).actor}` : '';
+            const title = (h.message || getStatusConfig(frontendStatus).text) + actorText;
+            const time = typeof h.createdAt === 'string' ? h.createdAt : String(h.createdAt);
+            const color = backendStatus === 'DELIVERED' ? 'green' : (backendStatus === 'CANCELLED' ? 'red' : 'blue');
+            events.push({ key: h.id, title, time, color });
+        });
+
+        // Fallbacks: if deliveredAt exists but no DELIVERED history, add it
+        const hasDelivered = histories.some(h => h.orderStatus === 'DELIVERED');
+        if (order.deliveredAt && !hasDelivered) {
+            events.push({ key: 'delivered_fallback', title: 'Đã giao hàng thành công', time: order.deliveredAt, color: 'green' });
+        }
+
+        // If current order status is cancelled and no CANCELLED history, add fallback
+        const hasCancelled = histories.some(h => h.orderStatus === 'CANCELLED');
+        if (order.status === 'cancelled' && !hasCancelled) {
+            const now = new Date().toLocaleString('vi-VN');
+            events.push({ key: 'cancelled_fallback', title: 'Đơn hàng bị hủy', time: now, color: 'red' });
+        }
+
+        // Sort by time (attempt to parse ISO or fallback to string order)
+        events.sort((a, b) => {
+            const ta = new Date(a.time).getTime();
+            const tb = new Date(b.time).getTime();
+            return (isNaN(ta) ? 0 : ta) - (isNaN(tb) ? 0 : tb);
+        });
+
+        return (
+            <div style={{ marginTop: '24px' }}>
+                <Timeline>
+                    {events.map(ev => (
+                        <Timeline.Item key={String(ev.key)} color={ev.color || 'blue'}>
+                            <div>
+                                <div style={{ fontWeight: 'bold' }}>{ev.title}</div>
+                                <div style={{ fontSize: '12px', color: '#666' }}>{new Date(ev.time).toLocaleString('vi-VN')}</div>
+                            </div>
+                        </Timeline.Item>
+                    ))}
+                </Timeline>
+            </div>
         );
     };
 
@@ -948,33 +1220,7 @@ const Orders: React.FC = () => {
                         <TabPane tab="Lịch sử" key="3">
                             <div className="order-timeline">
                                 {renderOrderTimeline(viewingOrder)}
-
-                                <div style={{ marginTop: '24px' }}>
-                                    <Timeline>
-                                        <Timeline.Item color="blue">
-                                            <div>
-                                                <div style={{ fontWeight: 'bold' }}>Đơn hàng được tạo</div>
-                                                <div style={{ fontSize: '12px', color: '#666' }}>{viewingOrder.createdAt}</div>
-                                            </div>
-                                        </Timeline.Item>
-                                        {viewingOrder.status !== 'pending' && (
-                                            <Timeline.Item color="green">
-                                                <div>
-                                                    <div style={{ fontWeight: 'bold' }}>Cập nhật trạng thái</div>
-                                                    <div style={{ fontSize: '12px', color: '#666' }}>{viewingOrder.updatedAt}</div>
-                                                </div>
-                                            </Timeline.Item>
-                                        )}
-                                        {viewingOrder.deliveredAt && (
-                                            <Timeline.Item color="green">
-                                                <div>
-                                                    <div style={{ fontWeight: 'bold' }}>Đã giao hàng thành công</div>
-                                                    <div style={{ fontSize: '12px', color: '#666' }}>{viewingOrder.deliveredAt}</div>
-                                                </div>
-                                            </Timeline.Item>
-                                        )}
-                                    </Timeline>
-                                </div>
+                                {renderHistoryTimeline(viewingOrder)}
                             </div>
                         </TabPane>
                     </Tabs>

@@ -104,8 +104,8 @@ export default function ProfileOrders() {
 
         try {
             const result = await orderService.cancelOrder(
-                cancelModal.order.id, 
-                user?.id || '', 
+                cancelModal.order.id,
+                user?.id || '',
                 reason
             );
             if (result.success) {
@@ -122,6 +122,7 @@ export default function ProfileOrders() {
 
     const getStatusConfig = (status: string) => {
         const config: Record<string, { color: string; text: string }> = {
+            CONFIRMED: { color: '#9E9E9E', text: 'Đã xác nhận' },
             PENDING: { color: '#FF9800', text: 'Chờ xác nhận' },
             PREPARING: { color: '#2196F3', text: 'Đang chuẩn bị' },
             ARRIVED_AT_LOCATION: { color: '#00BCD4', text: 'Đã đến khu vực' },
@@ -162,6 +163,7 @@ export default function ProfileOrders() {
     const statusFilters = [
         { key: 'ALL', label: 'Tất cả' },
         { key: 'PENDING', label: 'Chờ xác nhận' },
+        { key: 'CONFIRMED', label: 'Đã xác nhận' },
         { key: 'PREPARING', label: 'Đang chuẩn bị' },
         { key: 'SHIPPED', label: 'Đang giao' },
         { key: 'DELIVERED', label: 'Đã giao' },
@@ -211,7 +213,7 @@ export default function ProfileOrders() {
                         </button>
                     );
                 })}
-                                <button
+                <button
                     onClick={fetchOrders}
                     className={styles.profile__refresh_btn}
                 >

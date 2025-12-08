@@ -26,11 +26,19 @@ export interface OrderDetailResponse {
   promotionValue: number;
   orderStatus: string;
   paymentMethod: string;
+  paymentStatus?: string;
   shippingAddressId: number;
   phone: string;
   createAt: string;
   updateAt: string;
   orderItems: OrderItemResponse[];
+  orderStatusHistories?: {
+    id: number;
+    orderStatus: string;
+    message?: string;
+    createdAt: string;
+    actor?: string;
+  }[];
 }
 
 export interface OrderRequest {
@@ -62,6 +70,7 @@ export interface OrderResponse {
   phone: string;
   createAt: string;
   updateAt: string;
+  paymentStatus?: string;
 }
 
 export interface PaymentResponse {

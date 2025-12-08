@@ -48,6 +48,7 @@
   font-weight: 600;
   z-index: 2;
 }
+
 .heart_icon {
   position: absolute;
   top: 12px;
@@ -167,7 +168,7 @@
   min-height: 42px;
 }
 
-.product_name{
+.product_name {
   font-size: 16px;
   font-weight: 500;
   font-style: italic;
@@ -180,6 +181,14 @@
 /* Price Section */
 .price_section {
   margin-bottom: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Hide price section when hovering over card */
+.product_card:hover .price_section {
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
 }
 
 /* Stock Bar - Always visible */
