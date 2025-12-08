@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 
 type Props = {
-  onSelect?: (id: number) => void;
-  selectedBrand?: number | null; // Thêm prop để nhận brand đang chọn
+  onSelect?: (ids: number[]) => void;
+  selectedBrands?: number[]; // Thay đổi: nhận array of brand IDs
 };
 
 interface Brand {
@@ -11,15 +11,15 @@ interface Brand {
   logo: string;
 }
 
-const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrand }) => {
+const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrands = [] }) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(selectedBrand || null);
+  const [selectedIds, setSelectedIds] = useState<number[]>(selectedBrands);
 
-  // Đồng bộ selectedId với selectedBrand từ parent
+  // Đồng bộ selectedIds với selectedBrands từ parent
   useEffect(() => {
-    setSelectedId(selectedBrand || null);
-  }, [selectedBrand]);
+    setSelectedIds(selectedBrands || []);
+  }, [selectedBrands]);
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -31,7 +31,7 @@ const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrand }) => {
             data.result.map((b: any) => ({
               id: b.id,
               name: b.name,
-              logo: b.logo || 'https://via.placeholder.com/130',
+              logo: b.image || 'https://via.placeholder.com/130',
             }))
           );
         } else {
@@ -46,15 +46,18 @@ const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrand }) => {
   }, []);
 
   const handleBrandClick = (brandId: number) => {
-    if (selectedId === brandId) {
-      // Nếu click lại brand đang chọn thì bỏ chọn
-      setSelectedId(null);
-      onSelect?.(0); // Gửi 0 hoặc undefined để biết là bỏ chọn
+    let newSelectedIds: number[];
+
+    if (selectedIds.includes(brandId)) {
+      // Nếu brand đã được chọn thì bỏ chọn
+      newSelectedIds = selectedIds.filter(id => id !== brandId);
     } else {
-      // Chọn brand mới
-      setSelectedId(brandId);
-      onSelect?.(brandId);
+      // Thêm brand vào danh sách chọn
+      newSelectedIds = [...selectedIds, brandId];
     }
+
+    setSelectedIds(newSelectedIds);
+    onSelect?.(newSelectedIds);
   };
 
   const itemWidth = 130;
@@ -128,10 +131,13 @@ const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrand }) => {
             <div
               onClick={() => handleBrandClick(brand.id)}
               style={{
-                width: 130, // Tăng kích thước khi chọn
+                width: 130,
                 height: 130,
                 borderRadius: '50%',
-                backgroundColor: '#fff4f2',
+                backgroundColor: '#fff',
+                borderWidth: 0.1,
+                borderStyle: 'solid',
+                borderColor: '#ffdede',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -139,19 +145,19 @@ const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrand }) => {
                 overflow: 'hidden',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
-                boxShadow: selectedId === brand.id 
-                  ? '0 4px 12px rgba(0,0,0,0.3)' 
+                boxShadow: selectedIds.includes(brand.id)
+                  ? '0 4px 12px rgba(0,0,0,0.3)'
                   : 'none',
-               
+
               }}
               onMouseEnter={(e) => {
-                if (selectedId !== brand.id) {
+                if (!selectedIds.includes(brand.id)) {
                   e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
                   e.currentTarget.style.transform = 'scale(1.05)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (selectedId !== brand.id) {
+                if (!selectedIds.includes(brand.id)) {
                   e.currentTarget.style.boxShadow = 'none';
                   e.currentTarget.style.transform = 'scale(1)';
                 }
@@ -161,7 +167,7 @@ const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrand }) => {
                 src={brand.logo}
                 alt={brand.name}
                 style={{
-                  width: selectedId === brand.id ? '85%' : '80%',
+                  width: selectedIds.includes(brand.id) ? '85%' : '80%',
                   height: 'auto',
                   objectFit: 'contain',
                   transition: 'all 0.3s ease',
@@ -172,22 +178,22 @@ const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrand }) => {
               onClick={() => handleBrandClick(brand.id)}
               style={{
                 border: '1px solid #ffdede',
-                background: selectedId === brand.id ? '#000' : '#fff',
+                background: selectedIds.includes(brand.id) ? '#000' : '#fff',
                 borderRadius: 20,
                 padding: '6px 12px',
                 fontSize: 13,
                 fontWeight: 600,
-                color: selectedId === brand.id ? '#fff' : '#333',
+                color: selectedIds.includes(brand.id) ? '#fff' : '#333',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
               onMouseEnter={(e) => {
-                if (selectedId !== brand.id) {
+                if (!selectedIds.includes(brand.id)) {
                   e.currentTarget.style.backgroundColor = '#fff2f1';
                 }
               }}
               onMouseLeave={(e) => {
-                if (selectedId !== brand.id) {
+                if (!selectedIds.includes(brand.id)) {
                   e.currentTarget.style.backgroundColor = '#fff';
                 }
               }}

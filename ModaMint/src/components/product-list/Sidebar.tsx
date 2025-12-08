@@ -65,6 +65,12 @@ const Sidebar: React.FC<Props> = ({ onCategory, filtersSelected, onFiltersChange
           'Xanh': '#0000ff',
           'Đen': '#000000',
           'Đỏ': '#ff0000',
+          'Xanh lá': '#00ff00',
+          'Cam': '#ffa500',
+          'Tím': '#800080',
+          'Xám': '#808080',
+          'Hồng': '#ffc0cb',
+          'Nâu': '#a52a2a',
         };
         const hexColors = topColors.map((name: string) => colorMap[name] || '#cccccc');
         setColors(hexColors);
