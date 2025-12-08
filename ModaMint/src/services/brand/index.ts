@@ -17,6 +17,8 @@ export interface BrandResponse {
     isActive?: boolean;
     createAt?: string;
     updateAt?: string;
+
+    productCount: number;
 }
 
 class BrandService {

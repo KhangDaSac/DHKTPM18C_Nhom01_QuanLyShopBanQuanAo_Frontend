@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import styles from './styles.module.css';
 import { uploadImageToCloudinary } from '@/services/review/upImage';
 import { reviewService, type ReviewResponse } from '@/services/review';
+import { toast } from 'react-toastify';
 
 interface ProductReviewModalProps {
   isOpen: boolean;
@@ -94,15 +95,15 @@ export const ProductReviewModal: React.FC<ProductReviewModalProps> = ({
         : await reviewService.createReview(reviewData);
 
       if (result.success) {
-        alert(existingReview ? 'Cập nhật thành công!' : 'Gửi đánh giá thành công!');
+        toast(existingReview ? 'Cập nhật thành công!' : 'Gửi đánh giá thành công!');
         onSuccess();
         onClose();
       } else {
-        alert(result.message || 'Thao tác thất bại');
+        toast(result.message || 'Thao tác thất bại');
       }
     } catch (error) {
       console.error(error);
-      alert('Có lỗi xảy ra');
+      toast('Có lỗi xảy ra');
     } finally {
       setSubmitting(false);
       setUploadingImages(false);
@@ -115,7 +116,7 @@ export const ProductReviewModal: React.FC<ProductReviewModalProps> = ({
     const newFiles = Array.from(files);
     const total = formImages.length + newFiles.length + existingImageUrls.length;
     if (total > 5) {
-      alert('Tối đa 5 ảnh');
+      toast('Tối đa 5 ảnh');
       return;
     }
     const previews = newFiles.map(f => URL.createObjectURL(f));

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import styles from './style.module.css';
-import { FaFacebook, FaGoogle } from 'react-icons/fa';
+import { FaFacebook, FaGoogle, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { AiOutlineMail } from 'react-icons/ai';
 import { toast } from 'react-toastify';
 import { authenticationService } from '@/services/authentication';
@@ -14,6 +14,11 @@ export default function Login() {
     const [rememberMe, setRememberMe] = useState(false);
     const [loginMethod, setLoginMethod] = useState<'username' | 'facebook' | 'google'>('username');
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [errors, setErrors] = useState<{
+        username?: string;
+        password?: string;
+    }>({});
     const navigate = useNavigate();
     const location = useLocation();
     const { login } = useAuth();
@@ -21,12 +26,58 @@ export default function Login() {
     // Lấy trang trước đó từ state (nếu có) - không dùng nữa vì redirect theo role
     const from = (location.state as any)?.from?.pathname;
 
+    // Load thông tin đăng nhập từ cookie khi component mount
+    useEffect(() => {
+        const savedUsername = getCookie('rememberedUsername');
+        const savedPassword = getCookie('rememberedPassword');
+
+        if (savedUsername && savedPassword) {
+            setUsername(savedUsername);
+            setPassword(savedPassword);
+            setRememberMe(true);
+        }
+    }, []);
+
+    // Helper functions cho cookie
+    const setCookie = (name: string, value: string, days: number) => {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+        document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Strict`;
+    };
+
+    const getCookie = (name: string): string | null => {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    };
+
+    const deleteCookie = (name: string) => {
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+    };
+
+    // Validation functions
+    const validateUsername = (value: string): string | undefined => {
+        if (!value.trim()) return 'Vui lòng nhập tên đăng nhập hoặc email';
+        return undefined;
+    };
+
+    const validatePassword = (value: string): string | undefined => {
+        if (!value) return 'Vui lòng nhập mật khẩu';
+        if (value.length < 8) return 'Mật khẩu phải có ít nhất 8 ký tự';
+        return undefined;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         // Validation
         if (!username.trim()) {
-            toast.error('Vui lòng nhập tên đăng nhập!');
+            toast.error('Vui lòng nhập tên đăng nhập hoặc email!');
             return;
         }
 
@@ -79,7 +130,7 @@ export default function Login() {
                             const { getUserInfoFromToken } = await import('@/utils/apiAuthUtils');
                             const tokenInfo = getUserInfoFromToken(result.data.accessToken);
                             console.log('🔍 Token info:', tokenInfo);
-                            
+
                             userData = {
                                 id: tokenInfo?.id || 'unknown-id',
                                 username: tokenInfo?.username || username,
@@ -97,7 +148,7 @@ export default function Login() {
                         const { getUserInfoFromToken } = await import('@/utils/apiAuthUtils');
                         const tokenInfo = getUserInfoFromToken(result.data.accessToken);
                         console.log('🔍 Token info (from catch):', tokenInfo);
-                        
+
                         userData = {
                             id: tokenInfo?.id || 'unknown-id',
                             username: tokenInfo?.username || username,
@@ -116,10 +167,20 @@ export default function Login() {
                         refreshToken: result.data.refreshToken
                     }, userData);
 
+                    // Lưu thông tin đăng nhập nếu người dùng check "Ghi nhớ đăng nhập"
+                    if (rememberMe) {
+                        setCookie('rememberedUsername', username.trim(), 30); // Lưu 30 ngày
+                        setCookie('rememberedPassword', password, 30);
+                    } else {
+                        // Xóa cookie nếu người dùng không check
+                        deleteCookie('rememberedUsername');
+                        deleteCookie('rememberedPassword');
+                    }
+
                     // Lấy roles từ token để redirect đúng trang
                     const roles = getRolesFromToken(result.data.accessToken);
                     const isAdmin = roles.includes('ADMIN');
-                    
+
                     // Redirect dựa trên role
                     setTimeout(() => {
                         if (isAdmin) {
@@ -149,18 +210,18 @@ export default function Login() {
 
         toast.info('Chức năng đăng nhập Facebook đang được phát triển!');
 
-        
+
         // TODO: Implement Facebook OAuth login
         // window.location.href = 'https://www.facebook.com/v13.0/dialog/oauth?...'
     };
 
     const handleGoogleLogin = () => {
         setLoginMethod('google');
-        
+
         // Lấy thông tin từ client_secret file
         const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
         const redirectUri = encodeURIComponent('http://localhost:5173/auth/google');
-        
+
         // Tạo URL OAuth2 để gọi Google authorization
         const googleAuthUrl = `https://accounts.google.com/o/oauth2/auth?` +
             `client_id=${clientId}&` +
@@ -169,7 +230,7 @@ export default function Login() {
             `scope=email profile openid&` +
             `access_type=offline&` +
             `prompt=select_account`;
-        
+
         // Redirect đến Google để hiển thị màn hình chọn account
         window.location.href = googleAuthUrl;
     };
@@ -187,14 +248,7 @@ export default function Login() {
                         onClick={() => setLoginMethod('username')}
                     >
                         <AiOutlineMail className={styles['login__option-icon']} />
-                        <span>Username</span>
-                    </div>
-                    <div
-                        className={`${styles.login__option} ${loginMethod === 'facebook' ? styles['login__option--active'] : ''}`}
-                        onClick={() => setLoginMethod('facebook')}
-                    >
-                        <FaFacebook className={styles['login__option-icon']} />
-                        <span>Facebook</span>
+                        <span>Tên đăng nhập hoặc Email</span>
                     </div>
                     <div
                         className={`${styles.login__option} ${loginMethod === 'google' ? styles['login__option--active'] : ''}`}
@@ -208,30 +262,63 @@ export default function Login() {
                 {loginMethod === 'username' && (
                     <form className={styles.login__form} onSubmit={handleSubmit}>
                         <div className={styles['login__form-group']}>
-                            <label htmlFor="username" className={styles.login__label}>Username</label>
+                            <label htmlFor="username" className={styles.login__label}>Tên đăng nhập hoặc Email</label>
                             <input
                                 type="text"
                                 id="username"
                                 value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Nhập username của bạn"
+                                onChange={(e) => {
+                                    setUsername(e.target.value);
+                                    // Xóa lỗi khi người dùng bắt đầu nhập
+                                    if (errors.username) {
+                                        setErrors({ ...errors, username: undefined });
+                                    }
+                                }}
+                                onBlur={() => {
+                                    const error = validateUsername(username);
+                                    setErrors({ ...errors, username: error });
+                                }}
+                                placeholder="Nhập tên đăng nhập hoặc email của bạn"
                                 disabled={isLoading}
-                                required
-                                className={styles.login__input}
+                                className={`${styles.login__input} ${errors.username ? styles['login__input--error'] : ''}`}
                             />
+                            {errors.username && (
+                                <span className={styles['error-message']}>{errors.username}</span>
+                            )}
                         </div>
                         <div className={styles['login__form-group']}>
                             <label htmlFor="password" className={styles.login__label}>Mật khẩu</label>
-                            <input
-                                type="password"
-                                id="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Nhập mật khẩu của bạn"
-                                disabled={isLoading}
-                                required
-                                className={styles.login__input}
-                            />
+                            <div className={styles.passwordInputWrapper}>
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    id="password"
+                                    value={password}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        // Xóa lỗi khi người dùng bắt đầu nhập
+                                        if (errors.password) {
+                                            setErrors({ ...errors, password: undefined });
+                                        }
+                                    }}
+                                    onBlur={() => {
+                                        const error = validatePassword(password);
+                                        setErrors({ ...errors, password: error });
+                                    }}
+                                    placeholder="Nhập mật khẩu của bạn"
+                                    disabled={isLoading}
+                                    className={`${styles.login__input} ${errors.password ? styles['login__input--error'] : ''}`}
+                                />
+                                <button
+                                    type="button"
+                                    className={styles.passwordToggle}
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                </button>
+                            </div>
+                            {errors.password && (
+                                <span className={styles['error-message']}>{errors.password}</span>
+                            )}
                         </div>
                         <div className={styles['login__form-options']}>
                             <div className={styles.login__remember}>
@@ -254,7 +341,7 @@ export default function Login() {
                             className={styles.login__button}
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập với Username'}
+                            {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
                         </button>
                     </form>
                 )}

@@ -62,7 +62,7 @@ export const ProductImgCard = ({ imageUrl, alt = "Product", productId }: Product
         <div className={styles.overlay}>
           <div className={styles.icon_container}>
             <button className={styles.icon_btn} aria-label={isFavorite ? 'Remove from wishlist' : 'Add to wishlist'} onClick={toggleFavorite}>
-              <Heart fill={isFavorite ? '#FF6347' : undefined} color={isFavorite ? '#FF6347' : undefined} />
+              <Heart fill={isFavorite ? '#FF3914' : '#FF765C'} color={isFavorite ? '#FF3914' : '#fff'} />
             </button>
           </div>
         </div>

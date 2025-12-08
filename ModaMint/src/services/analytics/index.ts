@@ -55,7 +55,7 @@ class AnalyticsService {
     async getDailySales(days: number = 30): Promise<DailySalesData[]> {
         try {
             const response = await apiClient.get<ApiResponse<DailySalesData[]>>(
-                `/orders/stats/daily?days=${days}`
+                `/api/charts/orders/stats/daily?days=${days}`
             );
             if (response.data.code === 1000) {
                 return response.data.result;
@@ -71,7 +71,7 @@ class AnalyticsService {
     async getMonthlySales(months: number = 12): Promise<MonthlySalesData[]> {
         try {
             const response = await apiClient.get<ApiResponse<MonthlySalesData[]>>(
-                `/orders/stats/monthly?months=${months}`
+                `/api/charts/orders/stats/monthly?months=${months}`
             );
             if (response.data.code === 1000) {
                 return response.data.result;
@@ -88,7 +88,7 @@ class AnalyticsService {
     async getTopSellingProducts(limit: number = 10): Promise<TopSellingProduct[]> {
         try {
             const response = await apiClient.get<ApiResponse<TopSellingProduct[]>>(
-                `/products/top-selling?limit=${limit}`
+                `/api/charts/products/top-selling?limit=${limit}`
             );
             if (response.data.code === 1000) {
                 return response.data.result;
@@ -105,7 +105,7 @@ class AnalyticsService {
     async getInventoryData(): Promise<InventoryData[]> {
         try {
             const response = await apiClient.get<ApiResponse<InventoryData[]>>(
-                `/products/inventory`
+                `/api/charts/products/inventory`
             );
             if (response.data.code === 1000) {
                 return response.data.result;
@@ -121,7 +121,7 @@ class AnalyticsService {
     async getInventoryByCategory(): Promise<InventoryCategoryData[]> {
         try {
             const response = await apiClient.get<ApiResponse<InventoryCategoryData[]>>(
-                `/products/inventory/by-category`
+                `/api/charts/products/inventory/by-category`
             );
             if (response.data.code === 1000) {
                 return response.data.result;
@@ -138,7 +138,7 @@ class AnalyticsService {
     async getVariantMatrix(): Promise<VariantMatrixData[]> {
         try {
             const response = await apiClient.get<ApiResponse<VariantMatrixData[]>>(
-                `/variants/matrix`
+                `/product-variants/matrix`
             );
             if (response.data.code === 1000) {
                 return response.data.result;
@@ -155,7 +155,7 @@ class AnalyticsService {
     async getOrderStatusSummary(): Promise<OrderStatusSummary[]> {
         try {
             const response = await apiClient.get<ApiResponse<OrderStatusSummary[]>>(
-                `/orders/status-summary`
+                `/api/charts/orders/status-summary`
             );
             if (response.data.code === 1000) {
                 return response.data.result;

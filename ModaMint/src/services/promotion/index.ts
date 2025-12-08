@@ -87,6 +87,24 @@ export const percentagePromotionService = {
         return response.data.result;
     },
 
+    // Get active percentage promotions
+    getActive: async (): Promise<PercentagePromotion[]> => {
+        const response = await promotionApiClient.get<ApiResponse<PercentagePromotion[]>>('/percentage-promotions/active');
+        return response.data.result;
+    },
+
+    // Get not started percentage promotions
+    getNotStarted: async (): Promise<PercentagePromotion[]> => {
+        const response = await promotionApiClient.get<ApiResponse<PercentagePromotion[]>>('/percentage-promotions/not-started');
+        return response.data.result;
+    },
+
+    // Get expired percentage promotions
+    getExpired: async (): Promise<PercentagePromotion[]> => {
+        const response = await promotionApiClient.get<ApiResponse<PercentagePromotion[]>>('/percentage-promotions/expired');
+        return response.data.result;
+    },
+
     // Get percentage promotion by id
     getById: async (id: number): Promise<PercentagePromotion> => {
         const response = await promotionApiClient.get<ApiResponse<PercentagePromotion>>(`/percentage-promotions/${id}`);
@@ -109,12 +127,6 @@ export const percentagePromotionService = {
     delete: async (id: number): Promise<void> => {
         await promotionApiClient.delete(`/percentage-promotions/${id}`);
     },
-
-    // Get active percentage promotions
-    getActive: async (): Promise<PercentagePromotion[]> => {
-        const response = await promotionApiClient.get<ApiResponse<PercentagePromotion[]>>('/percentage-promotions/active');
-        return response.data.result;
-    },
 };
 
 // Amount Promotion Services
@@ -122,6 +134,24 @@ export const amountPromotionService = {
     // Get all amount promotions
     getAll: async (): Promise<AmountPromotion[]> => {
         const response = await promotionApiClient.get<ApiResponse<AmountPromotion[]>>('/amount-promotions');
+        return response.data.result;
+    },
+
+    // Get active amount promotions
+    getActive: async (): Promise<AmountPromotion[]> => {
+        const response = await promotionApiClient.get<ApiResponse<AmountPromotion[]>>('/amount-promotions/active');
+        return response.data.result;
+    },
+
+    // Get not started amount promotions
+    getNotStarted: async (): Promise<AmountPromotion[]> => {
+        const response = await promotionApiClient.get<ApiResponse<AmountPromotion[]>>('/amount-promotions/not-started');
+        return response.data.result;
+    },
+
+    // Get expired amount promotions
+    getExpired: async (): Promise<AmountPromotion[]> => {
+        const response = await promotionApiClient.get<ApiResponse<AmountPromotion[]>>('/amount-promotions/expired');
         return response.data.result;
     },
 
@@ -146,11 +176,5 @@ export const amountPromotionService = {
     // Delete amount promotion
     delete: async (id: number): Promise<void> => {
         await promotionApiClient.delete(`/amount-promotions/${id}`);
-    },
-
-    // Get active amount promotions
-    getActive: async (): Promise<AmountPromotion[]> => {
-        const response = await promotionApiClient.get<ApiResponse<AmountPromotion[]>>('/amount-promotions/active');
-        return response.data.result;
     },
 };

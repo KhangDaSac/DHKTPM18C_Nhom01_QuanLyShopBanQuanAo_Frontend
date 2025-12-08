@@ -3,6 +3,7 @@ import { ProductCard } from '@/components/product';
 import Sidebar from '@/components/product-list/Sidebar';
 import Pagination from '@/components/product-list/Pagination';
 import SortSelect from '@/components/product-list/SortSelect';
+import FilterBreadcrumb from '@/components/product-list/FilterBreadcrumb';
 import axios from 'axios';
 import { cartService } from '@/services/cart';
 import { toast } from 'react-toastify';
@@ -57,11 +58,12 @@ const ProductList: React.FC = () => {
   const navigate = useNavigate();
   const [sort, setSort] = useState<string>('default');
   const [page, setPage] = useState<number>(1);
-  const [brands, setBrands] = useState<number[]>([]); // Thay đổi: từ single brand sang array of brands
-  const [filters, setFilters] = useState<{ prices: string[]; colors: string[]; sizes: string[] }>({ 
-    prices: [], 
-    colors: [], 
-    sizes: [] 
+
+  const [brand, setBrand] = useState<number | undefined>(undefined);
+  const [filters, setFilters] = useState<{ prices: string[]; colors: string[]; sizes: string[] }>({
+    prices: [],
+    colors: [],
+    sizes: []
   });
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -70,8 +72,10 @@ const ProductList: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const { setCartFromBackend } = useCart();
 
-  // Get categoryId directly from URL - don't need intermediate state
+  // Read all query params from URL
   const urlCategoryId = searchParams.get('categoryId');
+  const urlBrandId = searchParams.get('brandId');
+  const urlGender = searchParams.get('gender');
 
   // Callback để handle category click từ Sidebar
   const handleCategorySelect = useCallback((catId: string | undefined) => {
@@ -90,18 +94,26 @@ const ProductList: React.FC = () => {
 
       // Build query parameters
       const params = new URLSearchParams();
+
       
       // Handle multiple brands - thêm tất cả brandIds
       if (brands.length > 0) {
         brands.forEach(brandId => {
           params.append('brandId', brandId.toString());
         });
+
+      // Brand filter from URL or state
+      const brandIdToUse = urlBrandId ? parseInt(urlBrandId) : brand;
+      if (brandIdToUse) {
+        params.append('brandId', brandIdToUse.toString());
+
       }
-      
-      // Use urlCategoryId directly instead of state
+
+      // Category filter from URL
       if (urlCategoryId) {
         params.append('categoryId', urlCategoryId);
       }
+
       
       // Handle price ranges - convert price range IDs to min/max values
       if (filters.prices.length > 0) {
@@ -113,6 +125,16 @@ const ProductList: React.FC = () => {
           const minPrice = Math.min(...validRanges.map(r => r.min ?? 0));
           const maxPrice = Math.max(...validRanges.map(r => r.max ?? Number.MAX_SAFE_INTEGER));
           
+
+
+      // Handle price ranges
+      if (filters.prices.length > 0) {
+        const priceRanges = filters.prices.map(p => PRICE_RANGES[p]);
+        const minPrice = Math.min(...priceRanges.map(r => r.min ?? 0));
+        const maxPrice = Math.max(...priceRanges.map(r => r.max ?? Number.MAX_SAFE_INTEGER));
+
+        if (minPrice > 0) {
+
           params.append('minPrice', minPrice.toString());
           
           if (maxPrice < Number.MAX_SAFE_INTEGER) {
@@ -120,7 +142,7 @@ const ProductList: React.FC = () => {
           }
         }
       }
-      
+
       // Handle colors - convert hex to color names
       if (filters.colors.length > 0) {
         filters.colors.forEach(hex => {
@@ -130,7 +152,7 @@ const ProductList: React.FC = () => {
           }
         });
       }
-      
+
       // Handle sizes
       if (filters.sizes.length > 0) {
         filters.sizes.forEach(size => {
@@ -138,12 +160,12 @@ const ProductList: React.FC = () => {
         });
       }
 
-      const endpoint = params.toString() 
+      const endpoint = params.toString()
         ? `http://localhost:8080/api/v1/products/filter?${params.toString()}`
         : 'http://localhost:8080/api/v1/products';
 
       console.log('🔍 Fetching with filters:', endpoint);
-      
+
       const res = await axios.get<{ code: number; result: any[]; message: string }>(endpoint);
 
       console.log('📦 API Response:', res.data);
@@ -171,7 +193,7 @@ const ProductList: React.FC = () => {
         const basePrice = variantPrice ?? p.price ?? 0;
         const originalPriceNum = basePrice;
         let currentPriceNum = basePrice;
-        
+
         if (variantDiscount && variantDiscount > 0 && basePrice > 0) {
           currentPriceNum = Math.round(basePrice * (1 - variantDiscount / 100));
         }
@@ -190,7 +212,7 @@ const ProductList: React.FC = () => {
           variantId: variantId
         };
       });
-      
+
       setProducts(mappedProducts);
     } catch (error) {
       console.error('❌ Error fetching products:', error);
@@ -198,7 +220,9 @@ const ProductList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [brands, urlCategoryId, filters]);
+
+  }, [brand, urlCategoryId, urlBrandId, filters]);
+
 
   // Handle add to cart
   const handleAddToCart = async (product: any) => {
@@ -265,12 +289,12 @@ const ProductList: React.FC = () => {
           color: product.color,
           size: product.size
         });
-        
+
         // Sync guest cart to CartContext
         const updatedGuestCart = cartService.getGuestCart();
         console.log('🔄 [ProductList] Syncing guest cart to context:', updatedGuestCart);
         setCartFromBackend(updatedGuestCart);
-        
+
         toast.success('Đã thêm sản phẩm vào giỏ hàng!');
         const event = new CustomEvent('cartUpdated', {
           detail: { timestamp: Date.now() }
@@ -320,11 +344,16 @@ const ProductList: React.FC = () => {
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: 12 }}>
       <div style={{ marginBottom: 24 }}>
-        <BrandCarousel 
-          onSelect={(ids: number[]) => setBrands(ids)} 
-          selectedBrands={brands}
+
+        <BrandCarousel
+          onSelect={(id: number) => setBrand(id === 0 ? undefined : id)}
+          selectedBrand={brand}
+
         />
       </div>
+
+      {/* Filter Breadcrumb - Show active filters */}
+      <FilterBreadcrumb />
 
       <div style={{ display: 'flex' }}>
         <main style={{ flex: 3, paddingRight: 20 }}>
@@ -356,6 +385,7 @@ const ProductList: React.FC = () => {
               >
                 {loading ? '⟳' : '↻'} 
               </button> */}
+
             </div>
           </div>
 
@@ -363,7 +393,7 @@ const ProductList: React.FC = () => {
           {(brands.length > 0 || urlCategoryId || filters.prices.length > 0 || filters.colors.length > 0 || filters.sizes.length > 0) && (
             <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: '600', color: '#333' }}>Đang lọc theo:</span>
-              
+
               {/* Reusable Filter Tag Component */}
               {[
                 urlCategoryId ? { label: 'Danh mục', onRemove: () => handleCategorySelect(undefined) } : null,
@@ -372,7 +402,7 @@ const ProductList: React.FC = () => {
                 filters.colors.length > 0 ? { label: `Màu (${filters.colors.length})`, onRemove: () => setFilters({ ...filters, colors: [] }) } : null,
                 filters.sizes.length > 0 ? { label: `Size (${filters.sizes.length})`, onRemove: () => setFilters({ ...filters, sizes: [] }) } : null
               ].filter((f): f is { label: string; onRemove: () => void } => f !== null).map((filter, idx) => (
-                <div 
+                <div
                   key={idx}
                   style={{
                     display: 'inline-flex',
@@ -472,7 +502,7 @@ const ProductList: React.FC = () => {
                       hoverImage: p.hoverImage || p.image || '',
                       variantId: p.variantId
                     };
-                    
+
                     return (
                       <ProductCard
                         key={p.id}

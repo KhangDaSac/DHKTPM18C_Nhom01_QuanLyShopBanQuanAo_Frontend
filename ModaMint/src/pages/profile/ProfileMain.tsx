@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/authContext';
 import { useNavigate } from 'react-router-dom';
 import { authenticationService } from '@/services/authentication';
+import { userService } from '@/services/user';
+import type { UpdateUserRequest } from '@/services/user';
+import { imageUploadService } from '@/services/imageUpload';
 import {
     Card,
     Form,
@@ -14,7 +17,8 @@ import {
     Avatar,
     message,
     Upload,
-    Spin
+    Spin,
+    DatePicker
 } from 'antd';
 import {
     UserOutlined,
@@ -27,6 +31,7 @@ import {
     ShoppingCartOutlined,
     CameraOutlined
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -46,7 +51,7 @@ export default function ProfileMain() {
             navigate('/login');
             return;
         }
-        
+
         fetchUserData();
     }, [isAuthenticated, navigate]);
 
@@ -55,7 +60,7 @@ export default function ProfileMain() {
             // Debug: Kiểm tra token
             const authDataStr = localStorage.getItem("authData");
             console.log('🔍 Auth data:', authDataStr);
-            
+
             if (!authDataStr) {
                 message.error('Chưa đăng nhập');
                 navigate('/login');
@@ -64,10 +69,16 @@ export default function ProfileMain() {
 
             const result = await authenticationService.getCurrentUser();
             console.log('📦 API Response:', result);
-            
+
             if (result.success && result.data) {
                 setUserData(result.data);
-                form.setFieldsValue(result.data);
+
+                // Format date for form (yyyy-MM-dd)
+                const formValues = {
+                    ...result.data,
+                    dob: result.data.dob ? dayjs(result.data.dob) : null
+                };
+                form.setFieldsValue(formValues);
                 setAvatarUrl(result.data.image || '');
             } else {
                 message.error(result.message || 'Không thể tải thông tin người dùng');
@@ -88,25 +99,36 @@ export default function ProfileMain() {
         try {
             if (userData) {
                 const values = form.getFieldsValue();
-                const updatedUserData = { 
-                    ...userData, 
-                    ...values,
-                    image: avatarUrl
+
+                // Format date to yyyy-MM-dd for backend
+                const updateData: UpdateUserRequest = {
+                    email: values.email,
+                    phone: values.phone,
+                    firstName: values.firstName,
+                    lastName: values.lastName,
+                    dob: values.dob ? dayjs(values.dob).format('YYYY-MM-DD') : undefined,
+                    image: avatarUrl || undefined
                 };
-                
-                // Cập nhật lên server
-                const updateResult = await authenticationService.updateUserProfile(updatedUserData);
-                
+
+                console.log('📤 Updating user:', userData.id, updateData);
+
+                // Cập nhật lên server qua /users/{userId}
+                const updateResult = await userService.updateUser(userData.id, updateData);
+
                 if (updateResult.success && updateResult.data) {
                     setUserData(updateResult.data);
                     updateUser(updateResult.data);
                     message.success('Cập nhật thông tin thành công!');
                     setIsEditing(false);
+
+                    // Re-fetch to get latest data
+                    await fetchUserData();
                 } else {
                     message.error(updateResult.message || 'Cập nhật thông tin thất bại!');
                 }
             }
         } catch (error) {
+            console.error('❌ Update error:', error);
             message.error('Cập nhật thông tin thất bại!');
         } finally {
             setLoading(false);
@@ -116,32 +138,41 @@ export default function ProfileMain() {
     const handleCancel = () => {
         setIsEditing(false);
         if (userData) {
-            form.setFieldsValue(userData);
+            const formValues = {
+                ...userData,
+                dob: userData.dob ? dayjs(userData.dob) : null
+            };
+            form.setFieldsValue(formValues);
             setAvatarUrl(userData.image || '');
         }
     };
 
     const handleAvatarChange = async (info: any) => {
         if (info.file.status === 'uploading') {
-            message.loading('Đang upload hình ảnh...', 0);
+            message.loading({ content: 'Đang upload hình ảnh...', key: 'upload', duration: 0 });
             return;
         }
 
         if (info.file.status === 'done') {
             try {
-                // Upload lên Cloudinary
-                const uploadResult = await authenticationService.uploadImage(info.file.originFileObj);
-                
+                const file = info.file.originFileObj;
+
+                // Upload lên Cloudinary qua backend API /images/upload
+                const uploadResult = await imageUploadService.uploadImage(file);
+
+                message.destroy('upload');
+
                 if (uploadResult.success && uploadResult.imageUrl) {
                     setAvatarUrl(uploadResult.imageUrl);
-                    
-                    // Cập nhật hình ảnh lên server
+
+                    // Tự động cập nhật ảnh lên server
                     if (userData) {
-                        const updateResult = await authenticationService.updateUserProfile({
-                            ...userData,
+                        const updateData: UpdateUserRequest = {
                             image: uploadResult.imageUrl
-                        });
-                        
+                        };
+
+                        const updateResult = await userService.updateUser(userData.id, updateData);
+
                         if (updateResult.success && updateResult.data) {
                             setUserData(updateResult.data);
                             updateUser(updateResult.data);
@@ -154,12 +185,14 @@ export default function ProfileMain() {
                     message.error(uploadResult.message || 'Lỗi khi upload hình ảnh');
                 }
             } catch (error) {
+                message.destroy('upload');
                 console.error('Upload error:', error);
                 message.error('Lỗi khi upload hình ảnh');
             }
         }
 
         if (info.file.status === 'error') {
+            message.destroy('upload');
             message.error('Lỗi khi upload hình ảnh');
         }
     };
@@ -167,16 +200,24 @@ export default function ProfileMain() {
     const uploadProps = {
         name: 'avatar',
         showUploadList: false,
+        customRequest: ({ file, onSuccess }: any) => {
+            // Fake upload to trigger onChange
+            setTimeout(() => {
+                onSuccess('ok');
+            }, 0);
+        },
         beforeUpload: (file: any) => {
-            const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
-            if (!isJpgOrPng) {
-                message.error('Chỉ được upload file JPG/PNG!');
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                message.error('Chỉ được upload file JPG, PNG, GIF, WEBP!');
+                return Upload.LIST_IGNORE;
             }
-            const isLt2M = file.size / 1024 / 1024 < 2;
-            if (!isLt2M) {
-                message.error('Ảnh phải nhỏ hơn 2MB!');
+            const isLt10M = file.size / 1024 / 1024 < 10;
+            if (!isLt10M) {
+                message.error('Ảnh phải nhỏ hơn 10MB!');
+                return Upload.LIST_IGNORE;
             }
-            return isJpgOrPng && isLt2M;
+            return true;
         },
         onChange: handleAvatarChange,
     };
@@ -197,8 +238,8 @@ export default function ProfileMain() {
             {/* Avatar Section */}
             <div style={{ textAlign: 'center', marginBottom: '32px' }}>
                 <div style={{ position: 'relative', display: 'inline-block' }}>
-                    <Avatar 
-                        size={120} 
+                    <Avatar
+                        size={120}
                         src={avatarUrl}
                         icon={<UserOutlined />}
                         style={{ border: '4px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
@@ -229,12 +270,12 @@ export default function ProfileMain() {
             </div>
 
             {/* Personal Information Form */}
-            <Card 
-                title="Thông tin cá nhân" 
+            <Card
+                title="Thông tin cá nhân"
                 extra={
                     !isEditing ? (
-                        <Button 
-                            type="primary" 
+                        <Button
+                            type="primary"
                             icon={<EditOutlined />}
                             onClick={() => setIsEditing(true)}
                         >
@@ -265,8 +306,8 @@ export default function ProfileMain() {
                                 label="Tên đăng nhập"
                                 name="username"
                             >
-                                <Input 
-                                    placeholder="Tên đăng nhập" 
+                                <Input
+                                    placeholder="Tên đăng nhập"
                                     disabled={true}
                                     prefix={<UserOutlined />}
                                 />
@@ -276,16 +317,16 @@ export default function ProfileMain() {
                             <Form.Item
                                 label="Email"
                                 name="email"
-                                rules={[
-                                    { required: true, message: 'Vui lòng nhập email!' },
-                                    { type: 'email', message: 'Email không hợp lệ!' }
-                                ]}
                             >
-                                <Input prefix={<MailOutlined />} placeholder="Nhập email của bạn" />
+                                <Input
+                                    prefix={<MailOutlined />}
+                                    placeholder="Nhập email của bạn"
+                                    disabled={true}
+                                />
                             </Form.Item>
                         </Col>
                     </Row>
-                    
+
                     <Row gutter={24}>
                         <Col xs={24} md={12}>
                             <Form.Item
@@ -325,7 +366,11 @@ export default function ProfileMain() {
                                 label="Ngày sinh"
                                 name="dob"
                             >
-                                <Input prefix={<CalendarOutlined />} placeholder="DD/MM/YYYY" />
+                                <DatePicker
+                                    style={{ width: '100%' }}
+                                    format="YYYY-MM-DD"
+                                    placeholder="Chọn ngày sinh"
+                                />
                             </Form.Item>
                         </Col>
                     </Row>
@@ -336,8 +381,8 @@ export default function ProfileMain() {
             <Card title="Thao tác nhanh">
                 <Row gutter={16}>
                     <Col xs={24} sm={8}>
-                        <Button 
-                            block 
+                        <Button
+                            block
                             icon={<EnvironmentOutlined />}
                             onClick={() => navigate('/profile/address')}
                             size="large"
@@ -346,8 +391,8 @@ export default function ProfileMain() {
                         </Button>
                     </Col>
                     <Col xs={24} sm={8}>
-                        <Button 
-                            block 
+                        <Button
+                            block
                             icon={<ShoppingCartOutlined />}
                             onClick={() => navigate('/profile/order')}
                             size="large"
@@ -356,8 +401,8 @@ export default function ProfileMain() {
                         </Button>
                     </Col>
                     <Col xs={24} sm={8}>
-                        <Button 
-                            block 
+                        <Button
+                            block
                             icon={<LockOutlined />}
                             onClick={() => navigate('/profile/changepassword')}
                             size="large"
