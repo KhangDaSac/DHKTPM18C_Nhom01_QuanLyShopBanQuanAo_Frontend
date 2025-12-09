@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import styles from './styles.module.css';
+import styles from './styles2.module.css';
 import { Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { ProductResponse, ProductVariant } from '@/services/product';
@@ -24,7 +24,7 @@ export interface ProductCardProps {
   onButtonClick?: (product: ProductResponse) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({
+export const ProductCard2: React.FC<ProductCardProps> = ({
   product,
   buttonText = 'Xem chi tiết',
   onButtonClick,
@@ -44,15 +44,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const images = product.images && product.images.length > 0 ? product.images : [''];
   const hasMultipleImages = images.length > 1;
 
-
-
-  // Tính giá thấp nhất từ variants
-  const minPrice = product.productVariants && product.productVariants.length > 0
-    ? Math.min(...product.productVariants.map(v => v.price || 0))
-    : 0;
-
-  // Tính % còn lại dựa trên quantity
-
+  // Tính % còn lại dựa trên quantity (giữ nguyên)
   const remaining = product.quantity ?? 0;
   const maxDisplay = 200;
   const percentage = remaining > 0 ? (remaining / maxDisplay) * 100 : 0;
@@ -149,7 +141,7 @@ useEffect(() => {
     >
       <div className={styles.product_image}>
         <img src={images[currentImageIndex]} alt={product.name} />
-
+        
         <button
           className={`${styles.heart_icon} ${isHovered ? styles.visible : ''}`}
           aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
@@ -198,9 +190,7 @@ useEffect(() => {
             {images.map((_, index) => (
               <div
                 key={index}
-
-                className={`${styles.indicator_dot} ${index === currentImageIndex ? styles.active : ''
-                  }`}
+                className={`${styles.indicator_dot} ${index === currentImageIndex ? styles.active : ''}`}
               />
             ))}
           </div>
@@ -209,7 +199,7 @@ useEffect(() => {
 
       <div className={styles.product_details}>
         <div className={styles.user_info}>
-          <span>{product.name}</span>
+          <span className={styles.product_name}>{product.name}</span>
         </div>
 
         <div className={styles.price_section}>
@@ -229,7 +219,13 @@ useEffect(() => {
           )}
 
           <div className={styles.price}>
-            <span className={styles.current_price}>{formatVND(minPrice)}</span>
+            <span className={styles.current_price}>
+              {loadingPrice
+                ? 'Đang tải...'
+                : lowestPrice !== null
+                ? formatVND(lowestPrice)
+                : 'Liên hệ'}
+            </span>
           </div>
         </div>
 

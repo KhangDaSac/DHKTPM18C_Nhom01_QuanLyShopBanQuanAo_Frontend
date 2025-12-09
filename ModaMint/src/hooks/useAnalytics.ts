@@ -103,11 +103,11 @@ export const useAnalytics = () => {
     };
 
     // Fetch order status
-    const fetchOrderStatus = async () => {
+    const fetchOrderStatus = async (grouped: boolean = true) => {
         setOrderStatusLoading(true);
         setOrderStatusError(null);
         try {
-            const data = await analyticsService.getOrderStatusSummary();
+            const data = await analyticsService.getOrderStatusSummary(grouped);
             setOrderStatus(data);
         } catch (error) {
             setOrderStatusError(error instanceof Error ? error.message : 'Failed to fetch order status');
@@ -122,7 +122,8 @@ export const useAnalytics = () => {
         fetchTopProducts();
         fetchInventoryData();
         fetchVariantMatrix();
-        fetchOrderStatus();
+        // default grouped view
+        fetchOrderStatus(true);
     }, []);
 
     return {
@@ -156,6 +157,7 @@ export const useAnalytics = () => {
         orderStatus,
         orderStatusLoading,
         orderStatusError,
-        refetchOrderStatus: fetchOrderStatus
+        refetchOrderStatus: fetchOrderStatus,
+        refetchOrderStatusWithOption: (grouped: boolean) => fetchOrderStatus(grouped)
     };
 };

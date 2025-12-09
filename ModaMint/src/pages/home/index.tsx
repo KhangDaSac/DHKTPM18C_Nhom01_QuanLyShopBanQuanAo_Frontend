@@ -43,16 +43,16 @@ interface Benefit {
 
 export default function Home() {
   const benefits: Benefit[] = [
-    { id: 1, title: 'Giao hàng toàn quốc', description: 'Thanh toán khi nhận hàng', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760243357/icon_policy_1_m83jer.png' },
-    { id: 2, title: 'Miễn phí đổi trả', description: 'Trong vòng 30 ngày', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760243357/icon_policy_1_m83jer.png' },
+    { id: 1, title: 'Giao hàng toàn quốc', description: 'Thanh toán khi nhận hàng', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1765116041/icon_policy_3_znpuhy.webp' },
+    { id: 2, title: 'Miễn phí đổi trả', description: 'Trong vòng 30 ngày', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1765116041/icon_policy_2_emzmwo.webp' },
     { id: 3, title: 'Hỗ trợ 24/7', description: 'Tư vấn mọi lúc', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760243357/icon_policy_1_m83jer.png' },
-    { id: 4, title: 'Ưu đãi thành viên', description: 'Giảm giá đặc biệt', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1760243357/icon_policy_1_m83jer.png' },
+    { id: 4, title: 'Ưu đãi thành viên', description: 'Giảm giá đặc biệt', image: 'https://res.cloudinary.com/dkokkltme/image/upload/v1765116041/icon_policy_2_emzmwo.webp' },
   ];
 
 
   const TTABS_TODAY = [
     'Hàng mới về',
-    'Giá tốt nhất',
+    'Hàng mới cập nhật',
     'Còn ít hàng',
     'Còn nhiều hàng'
   ];
@@ -126,9 +126,7 @@ export default function Home() {
           setBestSellingProducts(products);
           setOutstandingProducts(products.slice(0, 8));
         }
-        if (brandsRes.success) {
-          setTopBrands(brandsRes.data || []);
-        }
+          setTopBrands(brandsRes.result);
         if (latestReviewsRes.success) {
           setReviews(latestReviewsRes.data || []);
         } else {

@@ -140,6 +140,17 @@ const VariantMatrix: React.FC<VariantMatrixProps> = ({
         return <Alert message="Lỗi" description={error} type="error" showIcon />;
     }
 
+    // Guard: if no matrix data, show friendly placeholder instead of rendering chart
+    if (!Array.isArray(matrixData) || matrixData.length === 0) {
+        return (
+            <Card bordered={false}>
+                <div style={{ padding: 40, textAlign: 'center', color: '#999' }}>
+                    Không có dữ liệu biến thể để hiển thị.
+                </div>
+            </Card>
+        );
+    }
+
     return (
         <Card bordered={false}>
             <ReactApexChart

@@ -3,7 +3,8 @@
   padding: 28px;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
     Arial;
-  background: #f6f7f8; /* match cart page background */
+  background: #f6f7f8;
+  /* match cart page background */
   min-height: calc(100vh - 40px);
   box-sizing: border-box;
 }
@@ -11,11 +12,18 @@
 /* breadcrumb */
 .breadcrumb {
   color: #66676b;
-  margin-bottom: 18px;
+  margin: 0 auto 18px;
   font-size: 14px;
+  max-width: 1200px;
+  /* align with .container width */
+  padding: 0 22px;
+  /* match container padding so breadcrumb text lines up */
+  box-sizing: border-box;
 }
+
 .current {
-  color: #ff6c52; /* accent */
+  color: #ff6c52;
+  /* accent */
 }
 
 /* container to align with main layout */
@@ -36,7 +44,8 @@
   padding: 0;
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 products per row */
+  grid-template-columns: repeat(4, 1fr);
+  /* 4 products per row */
   gap: 24px;
 }
 
@@ -56,9 +65,11 @@
   padding: 12px;
   box-shadow: 0 4px 18px rgba(18, 18, 18, 0.03);
 }
+
 .image {
   width: 100%;
-  height: 240px; /* shorter to fit 4-per-row */
+  height: 240px;
+  /* shorter to fit 4-per-row */
   object-fit: cover;
   display: block;
   border-radius: 10px;
@@ -94,11 +105,13 @@
   align-items: center;
   gap: 12px;
 }
+
 .smallThumbs {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .smallImg {
   width: 32px;
   height: 32px;
@@ -107,6 +120,7 @@
   border: 2px solid #fff;
   box-shadow: 0 2px 6px rgba(16, 24, 40, 0.06);
 }
+
 .colorDot {
   width: 28px;
   height: 28px;
@@ -140,11 +154,13 @@
   gap: 12px;
   background: transparent;
 }
+
 .price {
   color: #ff6c52;
   font-weight: 700;
   font-size: 18px;
 }
+
 .original {
   color: #9b9b9b;
   text-decoration: line-through;
@@ -165,6 +181,7 @@
   transition: all 0.18s ease;
   box-shadow: none;
 }
+
 .addBtn:hover {
   background: rgba(0, 0, 0, 0.06);
   color: #6b7280;
@@ -213,6 +230,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
   }
+
   .image {
     height: 280px;
   }
@@ -223,9 +241,12 @@
     grid-template-columns: 1fr;
     gap: 18px;
   }
+
   .image {
-    height: 420px; /* keep tall images on mobile */
+    height: 420px;
+    /* keep tall images on mobile */
   }
+
   .pageWrap {
     padding: 18px;
   }

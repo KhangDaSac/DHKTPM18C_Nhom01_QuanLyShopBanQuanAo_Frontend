@@ -35,12 +35,12 @@ const CheckoutPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [loadingData, setLoadingData] = useState(true);
     const [showAddressInput, setShowAddressInput] = useState(false);
-    
+
     // States for guest checkout
     const [isGuest, setIsGuest] = useState(!user);
     const [guestName, setGuestName] = useState('');
     const [guestEmail, setGuestEmail] = useState('');
-    
+
     // Validation errors
     const [errors, setErrors] = useState<{
         guestName?: string;
@@ -98,7 +98,7 @@ const CheckoutPage: React.FC = () => {
     };
 
     const cartItems = cart?.items || [];
-    
+
     // Tính subtotal từ từng item để đảm bảo chính xác
     const subtotal = cartItems.reduce((sum, item) => {
         const itemPrice = (item.unitPrice ?? (item as any).price) ?? 0;
@@ -106,16 +106,16 @@ const CheckoutPage: React.FC = () => {
         const itemTotal = (item.totalPrice ?? (item as any).totalPrice) ?? (itemPrice * itemQty);
         return sum + itemTotal;
     }, 0);
-    
+
     const shippingFee = cart?.shipping || 30000;
-    
+
     // Tính giảm giá
     const discountAmount = selectedPromotion
         ? (selectedPromotion.type === 'PERCENTAGE'
             ? (subtotal * (selectedPromotion.discountPercent || 0) / 100)
             : (selectedPromotion.discountAmount || 0))
         : 0;
-    
+
     // Tổng tiền cuối cùng
     const totalAmount = subtotal + shippingFee - discountAmount;
 
@@ -292,17 +292,17 @@ const CheckoutPage: React.FC = () => {
                 return;
             }
         }
-        
+
         if (!phone.trim()) {
             toast.error('Vui lòng nhập số điện thoại');
             return;
         }
-        
+
         if (!selectedAddressId && !showAddressInput) {
             toast.error('Vui lòng chọn địa chỉ giao hàng hoặc nhập địa chỉ mới');
             return;
         }
-        
+
         if (showAddressInput || isGuest) {
             if (!selectedProvince || !selectedDistrict || !selectedWard || !addressDetail.trim()) {
                 toast.error('Vui lòng điền đầy đủ thông tin địa chỉ');
@@ -353,13 +353,13 @@ const CheckoutPage: React.FC = () => {
                 phone: phone.trim(),
                 note: note.trim(),
             };
-            
+
             // Add guest info to request if guest checkout
             if (isGuest) {
                 (request as any).guestName = guestName.trim();
                 (request as any).guestEmail = guestEmail.trim();
                 (request as any).isGuest = true;
-                
+
                 // Add guest cart items from localStorage
                 const guestCart = cartService.getGuestCart();
                 if (guestCart && guestCart.items) {
@@ -369,7 +369,7 @@ const CheckoutPage: React.FC = () => {
                         unitPrice: item.unitPrice || (item as any).price
                     }));
                 }
-                
+
                 // Add guest address info directly to request (backend will create address)
                 (request as any).city = province?.name || '';
                 (request as any).district = district?.name || '';
@@ -387,11 +387,11 @@ const CheckoutPage: React.FC = () => {
             console.log('Is Guest:', isGuest);
             console.log('Customer ID:', customerIdToUse);
             console.log('Request:', JSON.stringify(request, null, 2));
-            
+
             const response = await processCheckout(request);
             console.log('=== CHECKOUT RESPONSE ===');
             console.log('Response:', JSON.stringify(response, null, 2));
-            
+
             // Show success message with email info for guests
             if (isGuest) {
                 toast.success(`Đơn hàng đã được tạo thành công! Thông tin đơn hàng sẽ được gửi đến ${guestEmail}`);
@@ -412,7 +412,7 @@ const CheckoutPage: React.FC = () => {
                     await cartService.clearCart();
                 }
                 // Always navigate to order success page (not login)
-                navigate(`/order-success/${response.orderId}`, { 
+                navigate(`/order-success/${response.orderId}`, {
                     state: { orderData: response },
                     replace: true // Replace history to prevent back button issues
                 });
@@ -478,8 +478,8 @@ const CheckoutPage: React.FC = () => {
                             {isGuest && (
                                 <div style={{ marginBottom: '12px', padding: '8px 12px', backgroundColor: '#e6f7ff', borderRadius: '4px', border: '1px solid #91d5ff' }}>
                                     <p style={{ margin: 0, fontSize: '14px', color: '#0050b3' }}>
-                                        💡 Bạn đang mua hàng với tư cách khách vãng lai. 
-                                        <button 
+                                        💡 Bạn đang mua hàng với tư cách khách vãng lai.
+                                        <button
                                             onClick={() => navigate('/login')}
                                             style={{ marginLeft: '8px', color: '#1890ff', background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer' }}
                                         >

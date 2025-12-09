@@ -41,6 +41,9 @@ export interface UserResponse {
 
 export interface CustomerResponse {
     customerId: string;  // ID của customer từ backend
+    name?: string;       // Tên khách hàng từ bảng customers (backend cần trả về)
+    email?: string;      // Email khách hàng (backend cần trả về)
+    phone?: string;      // Số điện thoại khách hàng (backend cần trả về)
     user: UserResponse;
     addresses?: AddressResponse[];
     cart?: CartResponse;
@@ -144,23 +147,30 @@ class CustomerService {
     // Lấy customer theo ID
     async getCustomerById(userId: string): Promise<{ success: boolean; data?: CustomerResponse; message?: string }> {
         try {
+            console.log('🔍 Fetching customer by ID:', userId);
             const response = await customerApiClient.get<ApiResponse<CustomerResponse>>(`/customers/${userId}`);
 
             const apiResponse = response.data;
+            console.log('📡 Customer API response:', apiResponse);
 
             if (apiResponse.code !== 2000) {
+                console.warn('⚠️ Customer API returned non-success code:', apiResponse.code);
                 return {
                     success: false,
                     message: apiResponse.message || 'Không tìm thấy khách hàng',
                 };
             }
 
+            console.log('✅ Customer data received:', apiResponse.result);
             return {
                 success: true,
                 data: apiResponse.result,
             };
         } catch (error) {
+            console.error('❌ Error in getCustomerById:', error);
             if (axios.isAxiosError(error)) {
+                console.error('📡 Axios error response:', error.response?.data);
+                console.error('📡 Axios error status:', error.response?.status);
                 const errorResponse = error.response?.data as ApiResponse<any>;
                 return {
                     success: false,

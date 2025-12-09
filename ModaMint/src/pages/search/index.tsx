@@ -47,15 +47,58 @@ const SearchPage: React.FC = () => {
       if (res.success && res.data) {
         // Calculate pagination
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const toNumber = (v: any) => {
+          if (v == null) return null;
+          const n = Number(String(v).replace(/[^0-9.-]+/g, ''));
+          return Number.isFinite(n) ? n : null;
+        };
+
         const allProducts = res.data.map((item: any) => {
+          // If product has variants, use the lowest variant current price for display
+          let variantCurrentPrices: number[] = [];
+          let variantOriginalPrices: number[] = [];
+          if (Array.isArray(item.productVariants) && item.productVariants.length > 0) {
+            item.productVariants.forEach((v: any) => {
+              const vCurrent = toNumber(v.currentPrice ?? v.price ?? v.listPrice ?? v.salePrice ?? null);
+              const vOriginal = toNumber(v.originalPrice ?? v.listPrice ?? null);
+              if (vCurrent != null) variantCurrentPrices.push(vCurrent);
+              if (vOriginal != null) variantOriginalPrices.push(vOriginal);
+            });
+          }
+
+          const fallbackCurrent = toNumber(item.currentPrice ?? item.price ?? item.listPrice ?? null) ?? 0;
+          const currentPrice = variantCurrentPrices.length > 0 ? Math.min(...variantCurrentPrices) : fallbackCurrent;
+
+          // For original price, try to find corresponding variant original for the chosen current price
+          let originalPrice: number | null = null;
+          if (variantCurrentPrices.length > 0) {
+            // attempt to find a variant whose currentPrice matches the chosen currentPrice
+            const match = (item.productVariants || []).find((v: any) => {
+              const vCur = toNumber(v.currentPrice ?? v.price ?? v.listPrice ?? null);
+              return vCur === currentPrice;
+            });
+            if (match) {
+              originalPrice = toNumber(match.originalPrice ?? match.listPrice ?? null) ?? null;
+            }
+            // fallback: if no match, use min of variantOriginalPrices if available
+            if (originalPrice == null && variantOriginalPrices.length > 0) {
+              originalPrice = Math.min(...variantOriginalPrices);
+            }
+          }
+          if (originalPrice == null) {
+            originalPrice = toNumber(item.originalPrice ?? item.listPrice ?? null) ?? null;
+          }
+
+          const discount = (originalPrice && currentPrice && originalPrice > currentPrice) ? `${Math.round((1 - currentPrice / originalPrice) * 100)}%` : undefined;
+
           return {
             id: item.id,
             name: item.name,
-            price: item.currentPrice || item.price || 0,
-            originalPrice: item.originalPrice || item.price || 0,
-            currentPrice: item.currentPrice || item.price || 0,
+            price: currentPrice,
+            originalPrice: originalPrice ?? currentPrice,
+            currentPrice: currentPrice,
             image: item.images?.[0] || item.image || '/default-product.png',
-            discount: item.originalPrice && item.currentPrice ? `${Math.round((1 - item.currentPrice / item.originalPrice) * 100)}%` : undefined,
+            discount,
             variantId: item.variantId || item.id,
           };
         });

@@ -4,6 +4,7 @@
   right: 2.4rem;
   z-index: 50;
 }
+
 .modamint-chatbox-toggle {
   background: linear-gradient(135deg, #ff6347 60%, #ff9582 100%);
   color: #fff;
@@ -11,21 +12,23 @@
   border-radius: 50%;
   width: 62px;
   height: 62px;
-  box-shadow: 0 6px 20px rgba(255,99,71,0.18);
+  box-shadow: 0 6px 20px rgba(255, 99, 71, 0.18);
   font-size: 1.9rem;
   cursor: pointer;
   transition: box-shadow 0.18s, transform 0.12s;
 }
+
 .modamint-chatbox-toggle:hover {
-  box-shadow: 0 12px 36px rgba(255,99,71,0.28);
+  box-shadow: 0 12px 36px rgba(255, 99, 71, 0.28);
   transform: translateY(-2px);
 }
+
 .modamint-chatbox-window {
   width: 380px;
   max-width: 94vw;
   background: #fff8f6;
   border-radius: 0.9rem;
-  box-shadow: 0 10px 28px rgba(133,63,52,0.08);
+  box-shadow: 0 10px 28px rgba(133, 63, 52, 0.08);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -39,9 +42,17 @@
   justify-content: space-between;
 }
 
-.modamint-chatbox-title { flex: 1; text-align: center; font-weight: 700 }
+.modamint-chatbox-title {
+  flex: 1;
+  text-align: center;
+  font-weight: 700
+}
 
-.modamint-chatbox-controls { display: flex; gap: 6px; margin-left: 8px }
+.modamint-chatbox-controls {
+  display: flex;
+  gap: 6px;
+  margin-left: 8px
+}
 
 .modamint-chatbox-control {
   background: transparent;
@@ -53,26 +64,39 @@
   opacity: 0.95;
 }
 
-.modamint-chatbox-control.close { opacity: 0.9 }
+.modamint-chatbox-control.close {
+  opacity: 0.9
+}
 
 /* Maximized state */
 .modamint-chatbox.maximized {
   bottom: 1.2rem;
   right: 1.2rem;
 }
+
 .modamint-chatbox.maximized .modamint-chatbox-window {
   width: calc(100vw - 2.4rem);
   max-width: calc(100vw - 2.4rem);
   height: calc(100vh - 3.2rem);
   border-radius: 0.6rem;
 }
+
 .modamint-chatbox.maximized .modamint-chatbox-messages {
   max-height: calc(100vh - 220px);
 }
+
 @keyframes chatbox-fadein {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
+
 .modamint-chatbox-header {
   background: linear-gradient(135deg, #ff6347 80%, #ff9582 100%);
   color: #fff;
@@ -137,6 +161,7 @@
 .ws-status .disconnected {
   color: #fbbf24;
 }
+
 .modamint-chatbox-messages {
   flex: 1;
   padding: 1rem 0.95rem;
@@ -171,11 +196,13 @@
 
 .modamint-chatbox-row.bot,
 .modamint-chatbox-row.ai,
-.modamint-chatbox-row.staff { 
-  justify-content: flex-start; 
+.modamint-chatbox-row.staff {
+  justify-content: flex-start;
 }
 
-.modamint-chatbox-row.user { justify-content: flex-end; }
+.modamint-chatbox-row.user {
+  justify-content: flex-end;
+}
 
 .modamint-chatbox-avatar {
   width: 32px;
@@ -187,12 +214,12 @@
   font-size: 0.95rem;
   margin: 0 8px;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.modamint-chatbox-avatar.user { 
-  background: linear-gradient(135deg,#ff6347,#ff9582); 
-  color: #fff 
+.modamint-chatbox-avatar.user {
+  background: linear-gradient(135deg, #ff6347, #ff9582);
+  color: #fff
 }
 
 .modamint-chatbox-msg {
@@ -225,7 +252,7 @@
   word-break: break-word;
   font-size: 0.95rem;
   line-height: 1.45;
-  box-shadow: 0 3px 10px rgba(255,99,71,0.04);
+  box-shadow: 0 3px 10px rgba(255, 99, 71, 0.04);
 }
 
 .modamint-chatbox-row.bot .modamint-chatbox-bubble,
@@ -242,7 +269,7 @@
 }
 
 .modamint-chatbox-row.user .modamint-chatbox-bubble {
-  background: linear-gradient(135deg,#ff6347,#ff7f50);
+  background: linear-gradient(135deg, #ff6347, #ff7f50);
   color: #fff;
   border-bottom-right-radius: 6px;
 }
@@ -271,21 +298,27 @@
 }
 
 @keyframes loading-dot {
-  0%, 60%, 100% {
+
+  0%,
+  60%,
+  100% {
     transform: translateY(0);
     opacity: 0.5;
   }
+
   30% {
     transform: translateY(-10px);
     opacity: 1;
   }
 }
+
 .modamint-chatbox-input {
   display: flex;
   border-top: 1px solid #ffd2c9;
   background: #fff;
   align-items: center;
 }
+
 .modamint-chatbox-input input {
   flex: 1;
   border: none;
@@ -299,6 +332,7 @@
   background: transparent;
   font-family: inherit;
 }
+
 .modamint-chatbox-input button {
   background: #ff6347;
   color: #fff;
@@ -328,6 +362,392 @@
 
 /* Responsive tweak: keep large but usable on small screens */
 @media (max-width: 480px) {
-  .modamint-chatbox-window { width: 92vw; right: 4vw; }
-  .modamint-chatbox-toggle { width: 56px; height: 56px; font-size: 1.6rem }
+  .modamint-chatbox-window {
+    width: 92vw;
+    right: 4vw;
+  }
+
+  .modamint-chatbox-toggle {
+    width: 56px;
+    height: 56px;
+    font-size: 1.6rem
+  }
+}
+
+.modamint-chatbox {
+  position: fixed;
+  bottom: 2.4rem;
+  right: 2.4rem;
+  z-index: 100;
+}
+
+.modamint-chatbox-toggle {
+  background: linear-gradient(135deg, #ff6347 60%, #ff9582 100%);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 62px;
+  height: 62px;
+  box-shadow: 0 6px 20px rgba(255, 99, 71, 0.18);
+  font-size: 1.9rem;
+  cursor: pointer;
+  transition: box-shadow 0.18s, transform 0.12s;
+}
+
+.modamint-chatbox-toggle:hover {
+  box-shadow: 0 12px 36px rgba(255, 99, 71, 0.28);
+  transform: translateY(-2px);
+}
+
+.modamint-chatbox-window {
+  width: 400px;
+  max-width: 94vw;
+  background: #fff8f6;
+  border-radius: 0.9rem;
+  box-shadow: 0 10px 28px rgba(133, 63, 52, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.6rem;
+  animation: chatbox-fadein 0.2s;
+}
+
+.modamint-chatbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modamint-chatbox-title {
+  flex: 1;
+  text-align: center;
+  font-weight: 700
+}
+
+.modamint-chatbox-controls {
+  display: flex;
+  gap: 6px;
+  margin-left: 8px
+}
+
+.modamint-chatbox-control {
+  background: transparent;
+  border: none;
+  color: #fff;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  opacity: 0.95;
+}
+
+.modamint-chatbox-control.close {
+  opacity: 0.9
+}
+
+/* Maximized state */
+.modamint-chatbox.maximized {
+  bottom: 1.2rem;
+  right: 1.2rem;
+}
+
+.modamint-chatbox.maximized .modamint-chatbox-window {
+  width: calc(100vw - 2.4rem);
+  max-width: calc(100vw - 2.4rem);
+  height: calc(100vh - 3.2rem);
+  border-radius: 0.6rem;
+}
+
+.modamint-chatbox.maximized .modamint-chatbox-messages {
+  max-height: calc(100vh - 220px);
+}
+
+@keyframes chatbox-fadein {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modamint-chatbox-header {
+  background: linear-gradient(135deg, #ff6347 80%, #ff9582 100%);
+  color: #fff;
+  padding: 0.9rem 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.6px;
+  font-size: 0.98rem;
+  font-family: inherit;
+}
+
+.modamint-chatbox-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.modamint-chatbox-mode-switch {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.mode-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.mode-btn.active {
+  background: #fff;
+  color: #ff6347;
+  border-color: #fff;
+  font-weight: 600;
+}
+
+.mode-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ws-status {
+  font-size: 0.75rem;
+  margin-top: 2px;
+  opacity: 0.9;
+}
+
+.ws-status .connected {
+  color: #4ade80;
+}
+
+.ws-status .disconnected {
+  color: #fbbf24;
+}
+
+.modamint-chatbox-messages {
+  flex: 1;
+  padding: 1rem 0.95rem;
+  overflow-y: auto;
+  background: #fff8f6;
+  min-height: 180px;
+  max-height: 380px;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #8a2a0f;
+}
+
+.empty-state p {
+  margin: 0.5rem 0;
+}
+
+.empty-state .hint {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.modamint-chatbox-row {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 0.6rem;
+}
+
+.modamint-chatbox-row.bot,
+.modamint-chatbox-row.ai,
+.modamint-chatbox-row.staff {
+  justify-content: flex-start;
+}
+
+.modamint-chatbox-row.user {
+  justify-content: flex-end;
+}
+
+.modamint-chatbox-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  margin: 0 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.modamint-chatbox-avatar.user {
+  background: linear-gradient(135deg, #ff6347, #ff9582);
+  color: #fff
+}
+
+.modamint-chatbox-msg {
+  max-width: 74%;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.sender-name {
+  font-weight: 600;
+  color: #8a2a0f;
+}
+
+.timestamp {
+  font-size: 0.7rem;
+  color: #999;
+}
+
+.modamint-chatbox-bubble {
+  display: inline-block;
+  padding: 0.6rem 0.95rem;
+  border-radius: 14px;
+  word-break: break-word;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  box-shadow: 0 3px 10px rgba(255, 99, 71, 0.04);
+  white-space: pre-wrap;
+
+}
+
+.modamint-chatbox-row.bot .modamint-chatbox-bubble,
+.modamint-chatbox-row.ai .modamint-chatbox-bubble,
+.modamint-chatbox-row.staff .modamint-chatbox-bubble {
+  background: #ffefe9;
+  color: #8a2a0f;
+  border-bottom-left-radius: 6px;
+}
+
+.modamint-chatbox-row.staff .modamint-chatbox-bubble {
+  background: #e0f2fe;
+  color: #0c4a6e;
+}
+
+.modamint-chatbox-row.user .modamint-chatbox-bubble {
+  background: linear-gradient(135deg, #ff6347, #ff7f50);
+  color: #fff;
+  border-bottom-right-radius: 6px;
+}
+
+/* Loading animation */
+.modamint-chatbox-bubble.loading {
+  display: flex;
+  gap: 4px;
+  padding: 0.6rem 1.2rem;
+}
+
+.modamint-chatbox-bubble.loading .dot {
+  width: 8px;
+  height: 8px;
+  background: #ff6347;
+  border-radius: 50%;
+  animation: loading-dot 1.4s infinite;
+}
+
+.modamint-chatbox-bubble.loading .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.modamint-chatbox-bubble.loading .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes loading-dot {
+
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+
+  30% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+}
+
+.modamint-chatbox-input {
+  display: flex;
+  border-top: 1px solid #ffd2c9;
+  background: #fff;
+  align-items: center;
+}
+
+.modamint-chatbox-input input {
+  flex: 1;
+  border: none;
+  padding: 0.8rem 1rem;
+  font-size: 1.02rem;
+  line-height: 1.45;
+  box-sizing: border-box;
+  min-height: 40px;
+  height: auto;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+}
+
+.modamint-chatbox-input button {
+  background: #ff6347;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.4rem;
+  font-weight: 700;
+  border-radius: 0 0 1rem 0;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.08s;
+  font-size: 1.2rem;
+}
+
+.modamint-chatbox-input button:hover:not(:disabled) {
+  background: #e94a29;
+  transform: translateY(-1px);
+}
+
+.modamint-chatbox-input button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modamint-chatbox-input input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive tweak: keep large but usable on small screens */
+@media (max-width: 480px) {
+  .modamint-chatbox-window {
+    width: 92vw;
+    right: 4vw;
+  }
+
+  .modamint-chatbox-toggle {
+    width: 56px;
+    height: 56px;
+    font-size: 1.6rem
+  }
 }

@@ -84,10 +84,12 @@ const PromotionUsageLineChart: React.FC<PromotionUsageLineChartProps> = ({ data,
                 style: {
                     fontSize: '11px'
                 },
+                // Expect ISO yyyy-mm-dd strings; avoid `new Date()` to prevent timezone shifts
                 formatter: (value: string) => {
                     if (!value) return '';
-                    const date = new Date(value);
-                    return `${date.getDate()}/${date.getMonth() + 1}`;
+                    const parts = String(value).split('-');
+                    if (parts.length >= 3) return `${Number(parts[2])}/${Number(parts[1])}`;
+                    return value;
                 }
             }
         },
@@ -108,9 +110,15 @@ const PromotionUsageLineChart: React.FC<PromotionUsageLineChartProps> = ({ data,
         },
         tooltip: {
             x: {
-                formatter: (value: number) => {
-                    const date = new Date(data.dates[value - 1]);
-                    return date.toLocaleDateString('vi-VN');
+                formatter: (value: number, opts?: any) => {
+                    const index = opts?.dataPointIndex;
+                    if (index !== undefined && data && Array.isArray(data.dates) && data.dates[index]) {
+                        const iso = String(data.dates[index]);
+                        const parts = iso.split('-');
+                        if (parts.length >= 3) return `${Number(parts[2])}/${Number(parts[1])}/${parts[0]}`;
+                        return iso;
+                    }
+                    return String(value);
                 }
             },
             y: {

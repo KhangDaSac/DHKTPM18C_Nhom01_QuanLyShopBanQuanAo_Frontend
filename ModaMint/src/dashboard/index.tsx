@@ -87,8 +87,11 @@ const Dashboard: React.FC = () => {
         variantError,
         orderStatus,
         orderStatusLoading,
-        orderStatusError
+        orderStatusError,
+        refetchOrderStatus
     } = useAnalytics();
+
+
 
     // Reset tab to overview when component mounts or route changes
     useEffect(() => {

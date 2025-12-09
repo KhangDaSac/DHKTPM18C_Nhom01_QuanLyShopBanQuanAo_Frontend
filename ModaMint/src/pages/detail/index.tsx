@@ -275,7 +275,7 @@ const ProductDetailPage: React.FC = () => {
         // Guest user
         const itemPrice = currentVariant.price || 0;
         console.log('🛒 Adding to guest cart - Variant price:', itemPrice, 'Variant:', currentVariant);
-        
+
         cartService.addItemToGuestCart({
           variantId: currentVariant.id,
           productId: product?.id,
@@ -288,12 +288,12 @@ const ProductDetailPage: React.FC = () => {
           color: currentVariant.color,
           size: currentVariant.size
         });
-        
+
         // Sync guest cart to CartContext
         const updatedGuestCart = cartService.getGuestCart();
         console.log('🔄 Syncing guest cart to context:', updatedGuestCart);
         setCartFromBackend(updatedGuestCart);
-        
+
         setAdded(true);
         toast.success('Đã thêm sản phẩm vào giỏ hàng!');
         setTimeout(() => setAdded(false), 1800);
@@ -325,7 +325,7 @@ const ProductDetailPage: React.FC = () => {
         // Guest user
         const itemPrice = currentVariant.price || 0;
         console.log('🛒 Buy Now - Adding to guest cart - Variant price:', itemPrice);
-        
+
         cartService.addItemToGuestCart({
           variantId: currentVariant.id,
           productId: product?.id,
@@ -338,11 +338,11 @@ const ProductDetailPage: React.FC = () => {
           color: currentVariant.color,
           size: currentVariant.size
         });
-        
+
         // Sync guest cart to CartContext
         const updatedGuestCart = cartService.getGuestCart();
         setCartFromBackend(updatedGuestCart);
-        
+
         toast.success('Đã thêm vào giỏ hàng, chuyển đến thanh toán...');
         navigate('/checkoutpage');
       }
@@ -414,9 +414,8 @@ const ProductDetailPage: React.FC = () => {
                   src={img}
                   alt={`Thumb ${idx + 1}`}
                   onClick={() => setCurrentImageIndex(idx)}
-                  className={`${styles.product_images_thumbnail} ${
-                    currentImageIndex === idx ? styles.product_images_thumbnail_active : ''
-                  }`}
+                  className={`${styles.product_images_thumbnail} ${currentImageIndex === idx ? styles.product_images_thumbnail_active : ''
+                    }`}
                 />
               ))}
             </div>
@@ -530,9 +529,8 @@ const ProductDetailPage: React.FC = () => {
                     key={color}
                     onClick={() => handleColorSelect(color)}
                     disabled={!hasStock}
-                    className={`${styles.product_info_size_button} ${
-                      selectedColor === color ? styles.product_info_size_button_active : ''
-                    }`}
+                    className={`${styles.product_info_size_button} ${selectedColor === color ? styles.product_info_size_button_active : ''
+                      }`}
                     style={{
                       opacity: !hasStock ? 0.4 : 1,
                       cursor: !hasStock ? 'not-allowed' : 'pointer',
@@ -562,9 +560,8 @@ const ProductDetailPage: React.FC = () => {
                     key={size}
                     onClick={() => setSelectedSize(size)}
                     disabled={isDisabled}
-                    className={`${styles.product_info_size_button} ${
-                      selectedSize === size ? styles.product_info_size_button_active : ''
-                    }`}
+                    className={`${styles.product_info_size_button} ${selectedSize === size ? styles.product_info_size_button_active : ''
+                      }`}
                     style={{
                       opacity: isDisabled ? 0.4 : 1,
                       cursor: isDisabled ? 'not-allowed' : 'pointer',
@@ -696,7 +693,7 @@ const ProductDetailPage: React.FC = () => {
         </div>
       </div>
 
-      <ProductTabs productId={product.id}/>
+      <ProductTabs productId={product.id} />
 
       {showSizeModal && <SizeChart onClose={() => setShowSizeModal(false)} />}
 

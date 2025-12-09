@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import styles from './styles.module.css';
 import type { ProductResponse } from '@/services/product';
-import { ProductCard } from './item-components/ProductCardHome';
+import { ProductCard2 } from './item-components/ProductCardHome2';
 
 interface SuggestionTodayProps {
   products: ProductResponse[];
@@ -24,6 +24,7 @@ const SuggestionToday: React.FC<SuggestionTodayProps> = ({
   const [activeTab, setActiveTab] = useState(tabs[0]);
 
   const filteredProducts = useMemo(() => {
+    console.log('Trang hơm ne', products);
     const activeProducts = products.filter(p => p.active);
     const now = Date.now();
     const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000; // 7 ngày trước
@@ -42,19 +43,22 @@ const SuggestionToday: React.FC<SuggestionTodayProps> = ({
           });
           break;
 
-        case 'Giá tốt nhất':
-          result = activeProducts.filter(p => p.price <= 500_000);
+        case 'Hàng mới cập nhật':
+          result = activeProducts.filter(p => {
+            const createdAt = new Date(p.updateAt || 0).getTime();
+            return createdAt >= sevenDaysAgo;
+          });
           break;
 
         case 'Còn ít hàng':
           result = activeProducts.filter(p =>
-            p.quantity !== undefined && p.quantity > 0 && p.quantity <= 10
+            p.quantity !== undefined && p.quantity > 0 && p.quantity <= 20
           );
           break;
 
         case 'Còn nhiều hàng':
           result = activeProducts.filter(p =>
-            p.quantity !== undefined && p.quantity >= 50
+            p.quantity !== undefined && p.quantity >= 21
           );
           break;
 
@@ -90,7 +94,7 @@ const SuggestionToday: React.FC<SuggestionTodayProps> = ({
       <div className={styles.suggestion_today__product_grid}>
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
-            <ProductCard
+            <ProductCard2
               key={product.id}
               product={product}
               buttonText="Xem chi tiết"

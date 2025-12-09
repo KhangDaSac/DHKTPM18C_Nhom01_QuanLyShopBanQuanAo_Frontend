@@ -18,21 +18,22 @@ export interface CreateUserRequest {
     username: string;   // min 3 ký tự
     email: string;
     password: string;   // min 8 ký tự  
-    phone?: string;
+    phone?: string;     // Backend requires 10-11 digits if provided
     firstName: string;
     lastName: string;
     dob?: string;       // yyyy-MM-dd format
-    roles?: string[];   // Backend expects roles array
+    image?: string;     // Cloudinary URL
+    // roles is managed by backend, don't send it
 }
 
 // Interface cho UpdateUserRequest (giống UserUpdateRequest backend)
 export interface UpdateUserRequest {
     email?: string;
-    password?: string;
     phone?: string;
     firstName?: string;
     lastName?: string;
     dob?: string;
+    image?: string; // Cloudinary image URL
 }
 
 // Interface cho API Response
