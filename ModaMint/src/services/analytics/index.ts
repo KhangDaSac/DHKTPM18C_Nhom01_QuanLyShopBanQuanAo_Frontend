@@ -87,11 +87,27 @@ class AnalyticsService {
     // Top Selling Products
     async getTopSellingProducts(limit: number = 10): Promise<TopSellingProduct[]> {
         try {
-            const response = await apiClient.get<ApiResponse<TopSellingProduct[]>>(
+            const response = await apiClient.get<ApiResponse<any[]>>(
                 `/api/charts/products/top-selling?limit=${limit}`
             );
+            // Debug: log full response to help diagnose missing data
+            console.debug('getTopSellingProducts - raw response:', response.data);
             if (response.data.code === 1000) {
-                return response.data.result;
+                // Backend may return fields with different names (e.g. productName, qtySold, revenue)
+                // Normalize the response into the frontend TopSellingProduct shape.
+                // Support several possible payload shapes (result, data, nested result)
+                let raw: any[] = [];
+                if (Array.isArray(response.data.result)) raw = response.data.result;
+                else if (Array.isArray((response.data as any).data)) raw = (response.data as any).data;
+                else if (response.data.result && Array.isArray((response.data.result as any).result)) raw = (response.data.result as any).result;
+                else raw = response.data.result ?? [];
+                const normalized: TopSellingProduct[] = raw.map((item: any, index: number) => ({
+                    productId: (item.productId ?? item.id ?? 0) as number,
+                    productName: (item.productName ?? item.product_name ?? item.name ?? `Sản phẩm ${index + 1}`) as string,
+                    totalSold: (item.totalSold ?? item.qtySold ?? item.qty ?? 0) as number,
+                    revenue: (item.revenue ?? item.revenueAmount ?? item.totalRevenue ?? 0) as number
+                }));
+                return normalized;
             }
             throw new Error(response.data.message || 'Failed to fetch top selling products');
         } catch (error) {
