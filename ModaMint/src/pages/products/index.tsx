@@ -95,18 +95,10 @@ const ProductList: React.FC = () => {
       // Build query parameters
       const params = new URLSearchParams();
 
-      
-      // Handle multiple brands - thêm tất cả brandIds
-      if (brands.length > 0) {
-        brands.forEach(brandId => {
-          params.append('brandId', brandId.toString());
-        });
-
       // Brand filter from URL or state
       const brandIdToUse = urlBrandId ? parseInt(urlBrandId) : brand;
       if (brandIdToUse) {
         params.append('brandId', brandIdToUse.toString());
-
       }
 
       // Category filter from URL
@@ -114,29 +106,17 @@ const ProductList: React.FC = () => {
         params.append('categoryId', urlCategoryId);
       }
 
-      
       // Handle price ranges - convert price range IDs to min/max values
       if (filters.prices.length > 0) {
         const priceRanges = filters.prices.map(p => PRICE_RANGES[p]);
         const validRanges = priceRanges.filter(r => r);
-        
+
         if (validRanges.length > 0) {
-          // Get minimum of all mins and maximum of all maxes
           const minPrice = Math.min(...validRanges.map(r => r.min ?? 0));
           const maxPrice = Math.max(...validRanges.map(r => r.max ?? Number.MAX_SAFE_INTEGER));
-          
-
-
-      // Handle price ranges
-      if (filters.prices.length > 0) {
-        const priceRanges = filters.prices.map(p => PRICE_RANGES[p]);
-        const minPrice = Math.min(...priceRanges.map(r => r.min ?? 0));
-        const maxPrice = Math.max(...priceRanges.map(r => r.max ?? Number.MAX_SAFE_INTEGER));
-
-        if (minPrice > 0) {
 
           params.append('minPrice', minPrice.toString());
-          
+
           if (maxPrice < Number.MAX_SAFE_INTEGER) {
             params.append('maxPrice', maxPrice.toString());
           }
@@ -191,12 +171,16 @@ const ProductList: React.FC = () => {
         }
 
         const basePrice = variantPrice ?? p.price ?? 0;
-        const originalPriceNum = basePrice;
+        let originalPriceNum = basePrice;
         let currentPriceNum = basePrice;
 
         if (variantDiscount && variantDiscount > 0 && basePrice > 0) {
           currentPriceNum = Math.round(basePrice * (1 - variantDiscount / 100));
         }
+
+        // Keep original numbers as returned from backend (no scaling).
+        // If the backend returns prices in VND (e.g. 259000), use them directly.
+        // Permanent fix should be done server-side if needed.
 
         return {
           id: p.id,
@@ -220,7 +204,6 @@ const ProductList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-
   }, [brand, urlCategoryId, urlBrandId, filters]);
 
 
@@ -308,10 +291,10 @@ const ProductList: React.FC = () => {
 
   // Fetch products when filters change
   useEffect(() => {
-    console.log('🔄 useEffect triggered - brands:', brands, 'urlCategoryId:', urlCategoryId, 'filters:', filters);
+    console.log('🔄 useEffect triggered - brand:', brand, 'urlCategoryId:', urlCategoryId, 'filters:', filters);
     fetchProducts();
     setPage(1); // Reset to page 1 when filters change
-  }, [brands, urlCategoryId, filters, fetchProducts]);
+  }, [brand, urlCategoryId, urlBrandId, filters, fetchProducts]);
 
   // Client-side sorting only
   const sorted = useMemo(() => {
@@ -332,7 +315,7 @@ const ProductList: React.FC = () => {
 
   // Hàm reset toàn bộ filter
   const handleResetAllFilters = () => {
-    setBrands([]); // Reset brands array
+    setBrand(undefined); // Reset brand
     navigate(''); // Clear category from URL
     setFilters({ prices: [], colors: [], sizes: [] });
     setPage(1);
@@ -344,11 +327,9 @@ const ProductList: React.FC = () => {
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: 12 }}>
       <div style={{ marginBottom: 24 }}>
-
         <BrandCarousel
           onSelect={(id: number) => setBrand(id === 0 ? undefined : id)}
           selectedBrand={brand}
-
         />
       </div>
 
@@ -390,14 +371,14 @@ const ProductList: React.FC = () => {
           </div>
 
           {/* Active Filters Display */}
-          {(brands.length > 0 || urlCategoryId || filters.prices.length > 0 || filters.colors.length > 0 || filters.sizes.length > 0) && (
+          {(brand || urlCategoryId || filters.prices.length > 0 || filters.colors.length > 0 || filters.sizes.length > 0) && (
             <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: '600', color: '#333' }}>Đang lọc theo:</span>
 
               {/* Reusable Filter Tag Component */}
               {[
                 urlCategoryId ? { label: 'Danh mục', onRemove: () => handleCategorySelect(undefined) } : null,
-                brands.length > 0 ? { label: `Thương hiệu (${brands.length})`, onRemove: () => setBrands([]) } : null,
+                brand ? { label: `Thương hiệu`, onRemove: () => setBrand(undefined) } : null,
                 filters.prices.length > 0 ? { label: `Giá (${filters.prices.length})`, onRemove: () => setFilters({ ...filters, prices: [] }) } : null,
                 filters.colors.length > 0 ? { label: `Màu (${filters.colors.length})`, onRemove: () => setFilters({ ...filters, colors: [] }) } : null,
                 filters.sizes.length > 0 ? { label: `Size (${filters.sizes.length})`, onRemove: () => setFilters({ ...filters, sizes: [] }) } : null
@@ -495,8 +476,9 @@ const ProductList: React.FC = () => {
 
                     const productCardData = {
                       ...p,
-                      originalPrice: formatPrice(originalPriceNum),
-                      currentPrice: formatPrice(currentPriceNum),
+                      // pass numeric prices to ProductCard and let it format/display them
+                      originalPrice: originalPriceNum,
+                      currentPrice: currentPriceNum,
                       discount: discount,
                       image: p.image || '',
                       hoverImage: p.hoverImage || p.image || '',

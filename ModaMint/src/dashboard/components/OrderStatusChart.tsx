@@ -17,8 +17,10 @@ const OrderStatusChart: React.FC<OrderStatusChartProps> = ({
     error
 }) => {
     const totalOrders = statusData.reduce((sum, s) => sum + s.count, 0);
-    const completedOrders = statusData.find(s => s.status === 'Hoàn thành')?.count || 0;
-    const cancelledOrders = statusData.find(s => s.status === 'Đã hủy')?.count || 0;
+    const completedOrders = (statusData.find(s => ['Hoàn thành', 'DELIVERED', 'DELIVERED'].includes(s.status))?.count) || 0;
+    const cancelledOrders = (statusData.find(s => ['Đã hủy', 'CANCELLED', 'CANCELLED'].includes(s.status))?.count) || 0;
+    // Prepare orders (PREPARING enum) - support both raw and localized labels
+    const preparingOrders = (statusData.find(s => ['Đang xử lý', 'PREPARING', 'Preparing', 'Chuẩn bị giao'].includes(s.status))?.count) || 0;
 
     const chartOptions: ApexOptions = {
         chart: {
@@ -93,10 +95,13 @@ const OrderStatusChart: React.FC<OrderStatusChartProps> = ({
         return <Alert message="Lỗi" description={error} type="error" showIcon />;
     }
 
+    // Guard: do not render ApexChart when there's no data to avoid react-apexcharts runtime errors
+    const hasChartData = Array.isArray(chartSeries) && chartSeries.length > 0 && Array.isArray(chartOptions.labels) && chartOptions.labels.length > 0;
+
     return (
         <div>
             <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-                <Col xs={24} sm={8}>
+                <Col xs={24} sm={6} lg={6}>
                     <Card>
                         <Statistic
                             title="Tổng đơn hàng"
@@ -106,7 +111,7 @@ const OrderStatusChart: React.FC<OrderStatusChartProps> = ({
                         />
                     </Card>
                 </Col>
-                <Col xs={24} sm={8}>
+                <Col xs={24} sm={6} lg={6}>
                     <Card>
                         <Statistic
                             title="Đơn hoàn thành"
@@ -116,7 +121,7 @@ const OrderStatusChart: React.FC<OrderStatusChartProps> = ({
                         />
                     </Card>
                 </Col>
-                <Col xs={24} sm={8}>
+                <Col xs={24} sm={6} lg={6}>
                     <Card>
                         <Statistic
                             title="Đơn đã hủy"
@@ -126,14 +131,30 @@ const OrderStatusChart: React.FC<OrderStatusChartProps> = ({
                         />
                     </Card>
                 </Col>
+                <Col xs={24} sm={6} lg={6}>
+                    <Card>
+                        <Statistic
+                            title="Đơn chuẩn bị giao"
+                            value={preparingOrders}
+                            prefix={<ClockCircleOutlined />}
+                            valueStyle={{ color: '#faad14' }}
+                        />
+                    </Card>
+                </Col>
             </Row>
             <Card title="Phân bổ trạng thái đơn hàng" bordered={false}>
-                <ReactApexChart
-                    options={chartOptions}
-                    series={chartSeries}
-                    type="pie"
-                    height={450}
-                />
+                {hasChartData ? (
+                    <ReactApexChart
+                        options={chartOptions}
+                        series={chartSeries}
+                        type="pie"
+                        height={450}
+                    />
+                ) : (
+                    <div style={{ padding: 40, textAlign: 'center', color: '#999' }}>
+                        Không có dữ liệu trạng thái đơn hàng để hiển thị.
+                    </div>
+                )}
             </Card>
         </div>
     );

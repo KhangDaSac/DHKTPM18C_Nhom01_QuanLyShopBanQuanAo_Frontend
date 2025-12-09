@@ -124,8 +124,10 @@ class OrderService {
   async getAllOrders() {
     try {
       const resp = await client.get<ApiResponse<OrderResponse[]>>('/orders');
+      console.debug('orderService.getAllOrders - raw resp:', resp.data);
       return { success: true, data: resp.data.result };
     } catch (err: any) {
+      console.error('orderService.getAllOrders error:', err);
       return { success: false, message: err?.message || 'Network error', data: [] };
     }
   }

@@ -3,7 +3,6 @@ import { Card, Statistic, Row, Col, Typography } from 'antd';
 import { UserOutlined, UserAddOutlined, UserSwitchOutlined, UserDeleteOutlined } from '@ant-design/icons';
 import { useCustomerAnalytics } from '../hooks/useCustomerAnalytics';
 import CustomerNewDailyChart from './CustomerNewDailyChart';
-import CustomerSegmentationDonut from './CustomerSegmentationDonut';
 import CustomerTopSpendersChart from './CustomerTopSpendersChart';
 
 const { Text } = Typography;
@@ -85,20 +84,13 @@ const CustomerAnalyticsTab: React.FC = () => {
                 </Col>
             </Row>
 
-            {/* Charts Row 1: Line Chart & Donut Chart */}
+            {/* Charts Row 1: Line Chart (Khách mới 30 ngày) */}
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-                <Col xs={24} lg={12}>
+                <Col xs={24} lg={24}>
                     <CustomerNewDailyChart
                         data={newCustomersDaily}
                         loading={newCustomersLoading}
                         error={newCustomersError}
-                    />
-                </Col>
-                <Col xs={24} lg={12}>
-                    <CustomerSegmentationDonut
-                        data={segmentation}
-                        loading={segmentationLoading}
-                        error={segmentationError}
                     />
                 </Col>
             </Row>

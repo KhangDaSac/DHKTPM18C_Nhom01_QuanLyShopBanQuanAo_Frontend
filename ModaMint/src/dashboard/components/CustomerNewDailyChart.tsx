@@ -76,9 +76,13 @@ const CustomerNewDailyChart: React.FC<CustomerNewDailyChartProps> = ({ data, loa
             labels: {
                 rotate: -45,
                 rotateAlways: false,
+                // Avoid using `new Date(string)` to prevent timezone shifts across browsers.
+                // Expect `value` in ISO YYYY-MM-DD and format by splitting the string.
                 formatter: (value: string) => {
-                    const date = new Date(value);
-                    return `${date.getDate()}/${date.getMonth() + 1}`;
+                    if (!value) return '';
+                    const parts = String(value).split('-');
+                    if (parts.length >= 3) return `${Number(parts[2])}/${Number(parts[1])}`;
+                    return value;
                 },
             },
             title: {
@@ -102,10 +106,12 @@ const CustomerNewDailyChart: React.FC<CustomerNewDailyChartProps> = ({ data, loa
                 formatter: (value: number, opts?: any) => {
                     const index = opts?.dataPointIndex;
                     if (index !== undefined && data.dates[index]) {
-                        const date = new Date(data.dates[index]);
-                        return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+                        const iso = String(data.dates[index]);
+                        const parts = iso.split('-');
+                        if (parts.length >= 3) return `${Number(parts[2])}/${Number(parts[1])}/${parts[0]}`;
+                        return iso;
                     }
-                    return value.toString();
+                    return String(value);
                 },
             },
             y: {

@@ -96,14 +96,9 @@ export const API_ENDPOINTS = {
 
     // ==================== CHAT ====================
     CHAT: {
-        GET_CONVERSATION: (userId: string) => `/chat/conversation/${userId}`,
-        GET_HISTORY: (conversationId: number) => `/chat/history/${conversationId}`,
-        SEND_MESSAGE_AI: `/chat/sendMessage/ai`, // POST - Send message to AI
-        WEBSOCKET_ENDPOINT: '/ws', // WebSocket connection endpoint (not used for AI)
-        WEBSOCKET_SEND_AI: '/app/sendMessage/ai', // STOMP destination for AI
-        WEBSOCKET_SEND_SHOP: '/app/sendMessage/shop', // STOMP destination for Shop
-        WEBSOCKET_TOPIC_AI: '/topic/messages/ai', // STOMP subscription for AI
-        WEBSOCKET_TOPIC_SHOP: '/topic/messages/shop', // STOMP subscription for Shop
+        BASE: '/chat',
+        CHAT: () => '/chat/chat-ai',
+        HISTORY: () => '/chat/chat-ai/history'
     },
 } as const;
 

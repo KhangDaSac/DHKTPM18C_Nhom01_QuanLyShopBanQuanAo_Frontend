@@ -11,14 +11,19 @@ interface Brand {
   logo: string;
 }
 
-const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrands = [] }) => {
+const BrandCarousel: React.FC<Props> = ({ onSelect, selectedBrands }) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [selectedIds, setSelectedIds] = useState<number[]>(selectedBrands);
+  // Initialize selectedIds from prop if provided, otherwise empty array.
+  const [selectedIds, setSelectedIds] = useState<number[]>(() => Array.isArray(selectedBrands) ? selectedBrands! : []);
 
   // Đồng bộ selectedIds với selectedBrands từ parent
   useEffect(() => {
-    setSelectedIds(selectedBrands || []);
+    // Only update when a real array is provided to avoid setting a new empty
+    // array reference on every render (which would cause a render loop).
+    if (Array.isArray(selectedBrands)) {
+      setSelectedIds(selectedBrands);
+    }
   }, [selectedBrands]);
 
   useEffect(() => {

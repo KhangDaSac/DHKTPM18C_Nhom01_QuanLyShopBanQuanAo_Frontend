@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import styles from "./Header.module.css"
 import { AiOutlineLeft, AiOutlineRight, AiOutlineSearch, AiOutlineHeart, AiOutlineUser, AiOutlineShoppingCart, AiFillCaretDown } from "react-icons/ai";
@@ -6,6 +6,7 @@ import { AiOutlineLeft, AiOutlineRight, AiOutlineSearch, AiOutlineHeart, AiOutli
 import { useAuth } from '@/contexts/authContext';
 import { useCart } from '@/hooks/useCart';
 import { cartService } from '@/services/cart';
+import { productService } from '@/services/product';
 import { categoryService, type Category } from '@/services/category';
 import { brandService, type BrandResponse } from '@/services/brand';
 
@@ -22,6 +23,39 @@ export default function Header() {
     const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showSearchModal, setShowSearchModal] = useState(false);
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const debounceRef = useRef<number | null>(null);
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const [modalStyle, setModalStyle] = useState<React.CSSProperties | undefined>(undefined);
+
+    // compute modal position from input bounding rect
+    const updateModalPosition = () => {
+        const el = inputRef.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const style: React.CSSProperties = {
+            position: 'fixed',
+            top: r.bottom + 8,
+            left: r.left,
+            width: r.width,
+            zIndex: 10000,
+        };
+        setModalStyle(style);
+    };
+
+    useEffect(() => {
+        if (!showSearchModal) return;
+        updateModalPosition();
+        const onResize = () => updateModalPosition();
+        window.addEventListener('resize', onResize);
+        window.addEventListener('scroll', onResize, true);
+        return () => {
+            window.removeEventListener('resize', onResize);
+            window.removeEventListener('scroll', onResize, true);
+        };
+    }, [showSearchModal]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [allCategories, setAllCategories] = useState<Category[]>([]);
     const [brands, setBrands] = useState<BrandResponse[]>([]);
@@ -134,6 +168,51 @@ export default function Header() {
         }
     };
 
+    // Autocomplete: fetch suggestions when user types (debounced)
+    useEffect(() => {
+        const q = searchQuery.trim();
+        console.debug('Header: searchQuery changed ->', q);
+
+        if (debounceRef.current) {
+            window.clearTimeout(debounceRef.current);
+            debounceRef.current = null;
+        }
+
+        // Trigger suggestions from 1 character so user sees modal while typing
+        if (q.length >= 1) {
+            // show modal immediately (loading state) so suggestions appear while debounce runs
+            setShowSearchModal(true);
+            setSearchResults([]);
+            debounceRef.current = window.setTimeout(async () => {
+                try {
+                    setSearchLoading(true);
+                    const res = await productService.searchProductsByName(q);
+                    console.debug('Header: autocomplete response', res);
+                    if (res.success && res.data) {
+                        setSearchResults(res.data.slice(0, 8));
+                    } else {
+                        setSearchResults([]);
+                    }
+                } catch (err) {
+                    console.error('Autocomplete search error:', err);
+                    setSearchResults([]);
+                } finally {
+                    setSearchLoading(false);
+                }
+            }, 250);
+        } else {
+            setShowSearchModal(false);
+            setSearchResults([]);
+        }
+
+        return () => {
+            if (debounceRef.current) {
+                window.clearTimeout(debounceRef.current);
+                debounceRef.current = null;
+            }
+        };
+    }, [searchQuery]);
+
     return (
         <>
             <div className={styles.header}>
@@ -171,16 +250,87 @@ export default function Header() {
                         </div>
                         <div className={styles['header__search-container']}>
                             <form onSubmit={handleSearch} className={styles['header__search-box']}>
-                                <input type="text"
+                                <input ref={inputRef} type="text"
                                     className={styles['header__search-input']}
                                     placeholder='Tìm kiếm...'
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => { console.debug('Header input onChange:', e.target.value); setSearchQuery(e.target.value); }}
+                                    onFocus={() => { console.debug('Header input onFocus'); setShowSearchModal(true); updateModalPosition(); }}
+                                    onBlur={() => { console.debug('Header input onBlur'); setTimeout(() => setShowSearchModal(false), 200); }}
+                                    onKeyDown={(e) => { console.debug('Header input onKeyDown:', e.key); }}
+                                    onKeyUp={(e) => { console.debug('Header input onKeyUp:', e.key); }}
+                                    onInput={(e: any) => { console.debug('Header input onInput:', e.target.value); }}
                                 />
+                                {/* debug badge removed */}
                                 <button type="submit" className={styles['header__search-button']}>
                                     <AiOutlineSearch />
                                 </button>
                             </form>
+                            {showSearchModal && (
+                                <div className={styles['header__search-modal']} role="list" style={modalStyle}>
+                                    {searchLoading ? (
+                                        <div className={styles['header__search-modal-loading']}>Đang tìm...</div>
+                                    ) : searchResults.length === 0 ? (
+                                        <div className={styles['header__search-modal-empty']}>Không có kết quả</div>
+                                    ) : (
+                                        <ul className={styles['header__search-modal-list']}>
+                                            {searchResults.slice(0, 5).map((p: any) => {
+                                                const img = (p.images && p.images.length > 0) ? p.images[0] : (p.image || '/default-product.png');
+
+                                                // Prefer variant pricing when available
+                                                const variant = (p.productVariants && p.productVariants.length > 0) ? p.productVariants[0] : undefined;
+                                                const rawOriginal = variant?.originalPrice ?? variant?.price ?? p.originalPrice ?? p.price ?? p.listPrice ?? null;
+                                                const rawCurrent = variant?.price ?? variant?.currentPrice ?? p.currentPrice ?? p.price ?? p.listPrice ?? null;
+
+                                                const toNumber = (v: any) => {
+                                                    if (v == null) return null;
+                                                    const n = Number(String(v).replace(/[^0-9.-]+/g, ''));
+                                                    return Number.isFinite(n) ? n : null;
+                                                };
+
+                                                const original = toNumber(rawOriginal);
+                                                const current = toNumber(rawCurrent) ?? original;
+
+                                                // Prefer explicit discount fields if provided (variant or product level)
+                                                const rawExplicitDiscount = variant?.discountPercent ?? variant?.discount ?? p.discountPercent ?? p.discount ?? null;
+                                                const parseDiscount = (d: any) => {
+                                                    if (d == null) return null;
+                                                    const n = Number(String(d).replace(/[^0-9.-]+/g, ''));
+                                                    if (!Number.isFinite(n)) return null;
+                                                    // if discount expressed as fraction (0.2) assume fraction and convert to percent
+                                                    if (n > 0 && n <= 1) return Math.round(n * 100);
+                                                    return Math.round(n);
+                                                };
+
+                                                let discount = parseDiscount(rawExplicitDiscount);
+                                                if (discount == null && original && current && original > current) {
+                                                    discount = Math.round((1 - current / original) * 100);
+                                                }
+
+                                                const displayPrice = (value: number | null) => value != null ? `${value.toLocaleString('vi-VN')}đ` : '';
+
+                                                return (
+                                                    <li key={p.id} className={styles['header__search-modal-item']} onMouseDown={() => { navigate(`/detail/${p.id}`); setShowSearchModal(false); }}>
+                                                        <img src={img} alt={p.name} className={styles['header__search-modal-item-img']} />
+                                                        <div className={styles['header__search-modal-item-body']}>
+                                                            <div className={styles['header__search-modal-item-name']}>{p.name}</div>
+                                                            {p.description && <div className={styles['header__search-modal-item-desc']}>{String(p.description).slice(0, 80)}</div>}
+                                                            <div className={styles['header__search-modal-item-price-row']}>
+                                                                <div className={styles['header__search-modal-item-price']}>{displayPrice(current)}</div>
+                                                                {discount ? (
+                                                                    <div className={styles['header__search-modal-item-discount']}>-{discount}%</div>
+                                                                ) : (original && original !== current) ? (
+                                                                    <div className={styles['header__search-modal-item-original']}>{displayPrice(original)}</div>
+                                                                ) : null}
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         <div className={styles.header__actions}>
                             <Link to="/favorites" className={`${styles.header__action} ${styles['header__action--link']}`}>
